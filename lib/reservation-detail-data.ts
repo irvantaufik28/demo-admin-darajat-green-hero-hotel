@@ -1,4 +1,5 @@
 import { initialReservations, resolveReservationStatus, type ReservationRecord } from "./reservation-list-data";
+import { departuresToday } from "./departures-today-data";
 import { roomTypes } from "./walk-in-data";
 
 const reservationsKey = "green-hero-reservations";
@@ -73,7 +74,7 @@ function readSavedReservation(bookingId: string): ReservationRecord | null {
 
 export function loadReservationDetail(bookingId: string): ReservationDetail | null {
   clearLegacyStorage();
-  const base = readSavedReservation(bookingId) ?? initialReservations.find(item => item.bookingId === bookingId);
+  const base = readSavedReservation(bookingId) ?? initialReservations.find(item => item.bookingId === bookingId) ?? departuresToday.find(item => item.bookingId === bookingId);
   if (!base) return null;
   const operation = operations.get(bookingId) ?? {};
   const status = operation.status ?? base.status;

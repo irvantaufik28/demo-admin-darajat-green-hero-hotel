@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { AdminShell } from "../layout/AdminShell";
@@ -43,6 +43,7 @@ function DetailRow({ label, children }: { label: string; children: ReactNode }) 
 }
 
 export function ReservationDetailPage() {
+  const checkInAutoOpened = useRef(false);
   const params = useParams<{ bookingId: string }>();
   const bookingId = params.bookingId;
   const [reservation, setReservation] = useState<ReservationDetail | null>(null);
@@ -88,7 +89,7 @@ export function ReservationDetailPage() {
   const balance = Math.max(0, total - amountPaid);
   const heldDeposit = reservation?.status === "Checked-out" ? 0 : reservation?.depositAmount ?? 0;
 
-  function openCheckIn() {
+  const openCheckIn = useCallback(() => {
     if (!reservation) return;
     const used = new Set<string>();
     setAssignedRooms(units.map((unit, index) => {
@@ -103,7 +104,13 @@ export function ReservationDetailPage() {
     setDepositNote(reservation.depositNote || "");
     setBalanceAcknowledged(false);
     setError(""); setModal("check-in");
-  }
+  }, [reservation, units]);
+
+  useEffect(() => {
+    if (checkInAutoOpened.current || reservation?.status !== "Confirmed" || reservation.paymentStatus !== "Paid" || window.location.hash !== "#check-in") return;
+    checkInAutoOpened.current = true;
+    openCheckIn();
+  }, [reservation, openCheckIn]);
 
   function confirmCheckIn() {
     if (!reservation) return;
@@ -150,7 +157,7 @@ export function ReservationDetailPage() {
 
   if (!loaded) return <AdminShell title="Reservations" context="Reservation Detail"><div className="reservation-detail-page">Memuat reservasi...</div></AdminShell>;
   if (!reservation) return <AdminShell title="Reservations" context="Reservation Detail"><div className="reservation-detail-page reservation-detail-missing"><h1>Reservasi tidak ditemukan</h1><Link href="/reservations">Kembali ke All Reservations</Link></div></AdminShell>;
-  if (reservation.status === "Pending" && (reservation.paymentStatus === "Unpaid" || reservation.paymentStatus === "Partial")) {
+  if ((reservation.status === "Pending" || reservation.status === "Confirmed") && (reservation.paymentStatus === "Unpaid" || reservation.paymentStatus === "Partial")) {
     return <PendingReservationDetail reservation={reservation} notice={notice} onDismissNotice={() => setNotice("")} onUpdate={(updated, message) => { setReservation(updated); setNotice(message); }} />;
   }
 
@@ -170,8 +177,8 @@ export function ReservationDetailPage() {
         </div>
         <aside className="reservation-detail-summary"><div className="reservation-detail-section-title"><h2>{reservation.status === "Checked-in" || reservation.status === "Checked-out" ? "Stay Summary" : "Reservation Summary"}</h2><span>{nights} {nights === 1 ? "Night" : "Nights"}</span></div><div className="reservation-detail-summary-rows"><DetailRow label="Guest">{reservation.guestName}</DetailRow><DetailRow label="Stay">{formatStayDate(reservation.checkIn)} → {formatStayDate(reservation.checkOut)}</DetailRow><DetailRow label="Room Type">{reservation.room}</DetailRow><DetailRow label="Room Number">{reservation.roomNumbers?.length ? reservation.roomNumbers.join(", ") : "Not Assigned"}</DetailRow><div className="reservation-detail-summary-divider" /><DetailRow label="Booking Total">{formatRupiah(total)}</DetailRow><DetailRow label="Payment"><Badge value={reservation.paymentStatus} /></DetailRow>{(reservation.status === "Checked-in" || reservation.status === "Checked-out") && <DetailRow label="Deposit">{formatRupiah(reservation.depositAmount ?? 0)}</DetailRow>}<DetailRow label="Balance">{formatRupiah(balance)}</DetailRow><DetailRow label="Status"><Badge value={reservation.status} /></DetailRow></div>
           {reservation.status === "Pending" && reservation.paymentStatus === "Paid" && <ConfirmReservationAction reservation={reservation} onUpdate={(updated, message) => { setReservation(updated); setNotice(message); }} />}
-          {(reservation.status === "Confirmed" || reservation.status === "Checked-in") && (reservation.paymentStatus === "Partial" || reservation.paymentStatus === "Unpaid") && <RecordOutstandingPayment reservation={reservation} onUpdate={(updated, message) => { setReservation(updated); setNotice(message); }} />}
-          {reservation.status === "Confirmed" && <button type="button" className="action-button reservation-detail-main-action" onClick={openCheckIn}>Check-in Guest</button>}
+          {reservation.status === "Checked-in" && (reservation.paymentStatus === "Partial" || reservation.paymentStatus === "Unpaid") && <RecordOutstandingPayment reservation={reservation} onUpdate={(updated, message) => { setReservation(updated); setNotice(message); }} />}
+          {reservation.status === "Confirmed" && reservation.paymentStatus === "Paid" && <button type="button" className="action-button reservation-detail-main-action" onClick={openCheckIn}>Check-in Guest</button>}
           {reservation.status === "Checked-in" && reservation.paymentStatus === "Paid" && <button type="button" className="action-button reservation-detail-main-action" onClick={openCheckOut}>Check Out Guest</button>}
           {reservation.status === "Pending" && <p className="reservation-detail-summary-hint">Pembayaran telah diterima. Reservasi menunggu konfirmasi.</p>}
           {reservation.status === "Cancelled" && <p className="reservation-detail-summary-hint">Reservasi dibatalkan. {reservation.paymentStatus === "Partial" || reservation.paymentStatus === "Paid" ? "Pembayaran memerlukan settlement atau refund." : reservation.paymentStatus === "Refunded" ? "Refund telah selesai." : "Belum ada pembayaran."}</p>}

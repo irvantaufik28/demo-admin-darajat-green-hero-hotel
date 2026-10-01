@@ -403,7 +403,7 @@ button { cursor: pointer; }
 .reservations-list-tools button:hover, .reservations-list-filters select:hover { background: var(--background); }
 .reservations-table-shell { overflow: hidden; border: 1px solid var(--border); border-radius: 6px; background: white; }
 .reservations-table-scroll { overflow-x: auto; }
-.reservations-table { width: 100%; min-width: 970px; border-collapse: collapse; text-align: left; }
+.reservations-table { width: 100%; min-width: 1110px; border-collapse: collapse; text-align: left; }
 .reservations-table thead { background: #fbfbfa; }
 .reservations-table th { height: 36px; padding: 8px 12px; border-bottom: 1px solid var(--border); color: var(--text-secondary); white-space: nowrap; font-size: 11px; font-weight: 600; letter-spacing: .02em; }
 .reservations-table th:first-child, .reservations-table td:first-child { padding-left: 16px; }
@@ -567,7 +567,7 @@ button { cursor: pointer; }
 .arrivals-filters input { flex: 1; min-width: 250px; }
 .arrivals-filters input:focus, .arrivals-filters select:focus { border-color: var(--primary); box-shadow: 0 0 0 2px rgba(23,61,49,.1); }
 .arrivals-table-scroll { overflow-x: auto; }
-.arrivals-table { width: 100%; min-width: 960px; border-collapse: collapse; text-align: left; }
+.arrivals-table { width: 100%; min-width: 1100px; border-collapse: collapse; text-align: left; }
 .arrivals-table thead { background: #fbfbfa; }
 .arrivals-table th { height: 36px; padding: 8px 12px; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); color: var(--text-secondary); font-size: 11px; font-weight: 600; letter-spacing: .02em; }
 .arrivals-table td { height: 52px; padding: 8px 12px; border-bottom: 1px solid #f0efea; white-space: nowrap; font-size: 12.5px; }
@@ -599,7 +599,7 @@ button { cursor: pointer; }
 .departures-filters > span { color: var(--text-secondary); font-size: 11.5px; white-space: nowrap; }
 .departures-table-shell { overflow: hidden; border: 1px solid var(--border); border-radius: 8px; background: white; }
 .departures-table-scroll { overflow-x: auto; }
-.departures-table { width: 100%; min-width: 880px; border-collapse: collapse; text-align: left; }
+.departures-table { width: 100%; min-width: 1120px; border-collapse: collapse; text-align: left; }
 .departures-table thead { background: var(--background); }
 .departures-table th { height: 36px; padding: 8px 18px; border-bottom: 1px solid var(--border); color: var(--text-secondary); white-space: nowrap; font-size: 11px; font-weight: 600; letter-spacing: .02em; }
 .departures-table td { height: 56px; padding: 8px 18px; border-bottom: 1px solid #f0efea; white-space: nowrap; font-size: 12.5px; }
@@ -635,7 +635,7 @@ button { cursor: pointer; }
 .in-house-filters > span strong { color: var(--text-primary); }
 .in-house-table-shell { overflow: hidden; border: 1px solid var(--border); border-radius: 8px; background: white; }
 .in-house-table-scroll { overflow-x: auto; }
-.in-house-table { width: 100%; min-width: 1000px; border-collapse: collapse; text-align: left; }
+.in-house-table { width: 100%; min-width: 1140px; border-collapse: collapse; text-align: left; }
 .in-house-table thead { background: #f9f9f7; }
 .in-house-table th { height: 36px; padding: 8px 16px; border-bottom: 1px solid var(--border); color: var(--text-secondary); white-space: nowrap; font-size: 11.5px; font-weight: 600; letter-spacing: .02em; }
 .in-house-table td { height: 60px; padding: 9px 16px; border-bottom: 1px solid #f0efea; white-space: nowrap; font-size: 12.5px; }

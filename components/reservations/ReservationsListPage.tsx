@@ -13,10 +13,10 @@ function sourceLabel(reservation: ReservationRecord) {
 }
 
 function statusClass(value: string) {
-  if (value === "Paid" || value === "Confirmed") return "success";
-  if (value === "Checked-in") return "info";
-  if (value === "Checked-out") return "neutral";
-  if (value === "Cancelled" || value === "Expired" || value === "Failed") return "danger";
+  if (value === "Paid" || value === "Confirmed" || value === "Ready to Check-in") return "success";
+  if (value === "Checked-in" || value === "Checked In" || value === "In House" || value === "Due Out") return "info";
+  if (value === "Checked-out" || value === "Checked Out") return "neutral";
+  if (value === "Cancelled" || value === "Expired" || value === "Failed" || value === "Overdue") return "danger";
   if (value === "Refunded") return "neutral";
   return "warning";
 }
@@ -77,8 +77,8 @@ export function ReservationsListPage() {
   }
 
   function exportCsv() {
-    const header = ["Booking ID", "Guest", "WhatsApp", "Source", "Check-in", "Check-out", "Room", "Payment", "Status", "Total"];
-    const rows = filtered.map(item => [item.bookingId, item.guestName, item.whatsapp, sourceLabel(item), item.checkIn, item.checkOut, item.room, item.paymentStatus, item.status, item.total ?? ""]);
+    const header = ["Booking ID", "Guest", "WhatsApp", "Source", "Check-in", "Check-out", "Room", "Payment", "Status", "Operational Status", "Total"];
+    const rows = filtered.map(item => [item.bookingId, item.guestName, item.whatsapp, sourceLabel(item), item.checkIn, item.checkOut, item.room, item.paymentStatus, item.status, item.operationalStatus ?? "", item.total ?? ""]);
     const csv = [header, ...rows].map(row => row.map(csvCell).join(",")).join("\r\n");
     const url = URL.createObjectURL(new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8" }));
     const link = document.createElement("a");
@@ -106,7 +106,7 @@ export function ReservationsListPage() {
       </div>
       <div className="reservations-table-shell">
         <div className="reservations-table-scroll"><table className="reservations-table">
-          <thead><tr><th><button type="button" onClick={() => setSortDirection(current => current === "asc" ? "desc" : "asc")}>BOOKING ↕</button></th><th>GUEST</th><th>SOURCE</th><th>STAY</th><th>ROOM</th><th>PAYMENT</th><th>STATUS</th><th>ACTION</th></tr></thead>
+          <thead><tr><th><button type="button" onClick={() => setSortDirection(current => current === "asc" ? "desc" : "asc")}>BOOKING ↕</button></th><th>GUEST</th><th>SOURCE</th><th>STAY</th><th>ROOM</th><th>PAYMENT</th><th>STATUS</th><th>OPERATIONAL STATUS</th><th>ACTION</th></tr></thead>
           <tbody>{visible.map(item => {
             const nights = calculateNights(item.checkIn, item.checkOut);
             return <tr key={item.bookingId}>
@@ -117,12 +117,13 @@ export function ReservationsListPage() {
               <td>{item.room}</td>
               <td><span className={"reservations-badge reservations-badge--" + statusClass(item.paymentStatus)}>{item.paymentStatus}</span></td>
               <td><span className={"reservations-badge reservations-badge--" + statusClass(item.status)}>{item.status}</span></td>
+              <td><span className={"reservations-badge reservations-badge--" + statusClass(item.operationalStatus ?? "")}>{item.operationalStatus ?? "—"}</span></td>
               <td><div className="reservations-row-actions">
                 <Link className="reservations-view-link" href={"/reservations/" + encodeURIComponent(item.bookingId)}>View</Link>
                 <div className="reservations-menu-anchor"><button type="button" aria-label={"Opsi " + item.bookingId} aria-expanded={openMenu === item.bookingId} onClick={event => { const rect = event.currentTarget.getBoundingClientRect(); setMenuPosition({ top: rect.bottom + 4, right: window.innerWidth - rect.right }); setOpenMenu(current => current === item.bookingId ? null : item.bookingId); }}>⋮</button></div>
               </div></td>
             </tr>;
-          })}{visible.length === 0 && <tr><td colSpan={8} className="reservations-empty">Tidak ada reservasi yang cocok dengan filter.</td></tr>}</tbody>
+          })}{visible.length === 0 && <tr><td colSpan={9} className="reservations-empty">Tidak ada reservasi yang cocok dengan filter.</td></tr>}</tbody>
         </table></div>
         <div className="reservations-pagination"><span>Showing <strong>{filtered.length ? (currentPage - 1) * pageSize + 1 : 0}–{Math.min(currentPage * pageSize, filtered.length)}</strong> of <strong>{filtered.length}</strong> reservations</span><div><button type="button" disabled={currentPage === 1} onClick={() => setPage(currentPage - 1)}>‹ Previous</button>{Array.from({ length: pageCount }, (_, index) => index + 1).map(number => <button key={number} type="button" className={currentPage === number ? "reservations-page-active" : ""} aria-current={currentPage === number ? "page" : undefined} onClick={() => setPage(number)}>{number}</button>)}<button type="button" disabled={currentPage === pageCount} onClick={() => setPage(currentPage + 1)}>Next ›</button></div></div>
       </div>

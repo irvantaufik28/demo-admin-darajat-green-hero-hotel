@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { formatRupiah, roomTypes } from "../../lib/walk-in-data";
 import { saveReservationDetail, type ReservationDetail } from "../../lib/reservation-detail-data";
 
@@ -14,6 +14,7 @@ function parseCurrency(value: string) {
 }
 
 export function PendingCheckInAction({ reservation, onUpdate }: Props) {
+  const autoOpened = useRef(false);
   const [open, setOpen] = useState(false);
   const [assignedRooms, setAssignedRooms] = useState<string[]>([]);
   const [requireDeposit, setRequireDeposit] = useState(true);
@@ -39,7 +40,7 @@ export function PendingCheckInAction({ reservation, onUpdate }: Props) {
     return () => { document.body.style.overflow = previousOverflow; window.removeEventListener("keydown", onEscape); };
   }, [open]);
 
-  function openDialog() {
+  const openDialog = useCallback(() => {
     const used = new Set<string>();
     setAssignedRooms(units.map((unit, index) => {
       const next = reservation.roomNumbers?.[index] || unit.type.numbers.find(number => !used.has(number)) || "";
@@ -53,10 +54,16 @@ export function PendingCheckInAction({ reservation, onUpdate }: Props) {
     setBalanceAcknowledged(false);
     setError("");
     setOpen(true);
-  }
+  }, [units, reservation.roomNumbers, reservation.depositAmount, reservation.depositMethod, reservation.depositNote]);
+
+  useEffect(() => {
+    if (autoOpened.current || reservation.status !== "Confirmed" || window.location.hash !== "#check-in") return;
+    autoOpened.current = true;
+    openDialog();
+  }, [reservation.status, openDialog]);
 
   function confirmCheckIn() {
-    if (reservation.status !== "Pending" || !(reservation.paymentStatus === "Partial" || reservation.paymentStatus === "Unpaid") || (reservation.paymentStatus === "Partial" && (reservation.amountPaid ?? 0) <= 0) || balance <= 0) {
+    if (!(reservation.status === "Pending" || reservation.status === "Confirmed") || !(reservation.paymentStatus === "Partial" || reservation.paymentStatus === "Unpaid") || (reservation.paymentStatus === "Partial" && (reservation.amountPaid ?? 0) <= 0) || balance <= 0) {
       setError("Reservasi harus berstatus Unpaid atau Partial dengan sisa tagihan sebelum check-in.");
       return;
     }

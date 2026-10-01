@@ -1,5 +1,6 @@
 import { initialReservations, resolveReservationStatus, type ReservationRecord } from "./reservation-list-data";
 import { departuresToday } from "./departures-today-data";
+import { multiRoomArrivals } from "./arrivals-today-data";
 import { roomTypes } from "./walk-in-data";
 
 const reservationsKey = "green-hero-reservations";
@@ -61,7 +62,7 @@ function readSavedReservation(bookingId: string): ReservationRecord | null {
       channel: value.channel, reference: value.reference,
       checkIn: value.checkIn || "", checkOut: value.checkOut || "", room,
       quantities, assignments: value.assignments, adults: value.adults, children: value.children,
-      selectedExtras: value.selectedExtras, extraQuantities: value.extraQuantities,
+      selectedExtras: value.selectedExtras, extraQuantities: value.extraQuantities, roomExtraBeds: value.roomExtraBeds,
       paymentMethod: value.paymentMethod, paymentStatus: value.paymentStatus || "Unpaid",
       total: value.total, amountPaid: value.amountPaid, status: value.status || "Pending",
       checkInAt: value.checkInAt,
@@ -74,7 +75,7 @@ function readSavedReservation(bookingId: string): ReservationRecord | null {
 
 export function loadReservationDetail(bookingId: string): ReservationDetail | null {
   clearLegacyStorage();
-  const base = readSavedReservation(bookingId) ?? initialReservations.find(item => item.bookingId === bookingId) ?? departuresToday.find(item => item.bookingId === bookingId);
+  const base = readSavedReservation(bookingId) ?? initialReservations.find(item => item.bookingId === bookingId) ?? multiRoomArrivals.find(item => item.bookingId === bookingId) ?? departuresToday.find(item => item.bookingId === bookingId);
   if (!base) return null;
   const operation = operations.get(bookingId) ?? {};
   const status = operation.status ?? base.status;

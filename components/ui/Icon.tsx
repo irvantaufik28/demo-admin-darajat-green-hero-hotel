@@ -4,7 +4,10 @@ export type IconName =
   | "dashboard" | "calendar" | "rooms" | "prices" | "policy"
   | "campaign" | "experiences" | "payments" | "guests"
   | "reports" | "settings" | "plus" | "chevron" | "arrow"
-  | "bell" | "menu" | "pin" | "logout" | "help" | "close";
+  | "bell" | "menu" | "pin" | "logout" | "help" | "close"
+  | "search" | "more" | "reset" | "info" | "chevronLeft" | "chevronRight"
+  | "trash" | "warning"
+  | "expGrill" | "expRestaurant" | "expDinner" | "expBirthday" | "expCelebration" | "expFlorist";
 
 const paths: Record<IconName, ReactNode> = {
   dashboard: <><rect x="3" y="3" width="7" height="7" rx="1" /><rect x="14" y="3" width="7" height="7" rx="1" /><rect x="3" y="14" width="7" height="7" rx="1" /><rect x="14" y="14" width="7" height="7" rx="1" /></>,
@@ -27,6 +30,21 @@ const paths: Record<IconName, ReactNode> = {
   logout: <><path d="M10 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h5M14 7l5 5-5 5M19 12H9" /></>,
   help: <><circle cx="12" cy="12" r="9" /><path d="M9.5 9a2.5 2.5 0 1 1 4.1 1.9c-1 .8-1.6 1.3-1.6 2.6M12 17h.01" /></>,
   close: <path d="M5 5 19 19M19 5 5 19" />,
+  search: <><circle cx="11" cy="11" r="7" /><path d="m21 21-4.35-4.35" /></>,
+  more: <><circle cx="12" cy="5" r="1" /><circle cx="12" cy="12" r="1" /><circle cx="12" cy="19" r="1" /></>,
+  reset: <path d="M1 4v6h6M23 20v-6h-6M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4-4.64 4.36A9 9 0 0 1 3.51 15" />,
+  info: <><circle cx="12" cy="12" r="9" /><path d="M12 8h.01M11 12h1v4h1" /></>,
+  chevronLeft: <path d="m15 18-6-6 6-6" />,
+  chevronRight: <path d="m9 18 6-6-6-6" />,
+  trash: <><polyline points="3 6 5 6 21 6" /><path d="M19 6l-1 14H6L5 6M10 11v6M14 11v6M9 6V4h6v2" /></>,
+  warning: <><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" /><line x1="12" y1="9" x2="12" y2="13" /><line x1="12" y1="17" x2="12.01" y2="17" /></>,
+  // Experience icons
+  expGrill:       <><path d="M3 5a1 1 0 0 1 1-1h3l2 4H5L3 5ZM21 5a1 1 0 0 0-1-1h-3l-2 4h4l2-4ZM12 8v13M8 21h8M5 8h14" /></>,
+  expRestaurant:  <><path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2M7 2v20M21 15V2a5 5 0 0 0-5 5v6h3.5M16 22v-5" /></>,
+  expDinner:      <><path d="m17 8-1.5 1.5M12.5 4l7 7M3 21l7.5-7.5M19 3 5 17M10 14 3 21" /></>,
+  expBirthday:    <><path d="M20 21v-8a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8M2 21h20M7 21v-5a1 1 0 0 1 1-1h8a1 1 0 0 1 1 1v5" /><path d="M12 11V7m-2-3c0-1 2-3 2-3s2 2 2 3a2 2 0 1 1-4 0Z" /></>,
+  expCelebration: <><path d="M5.8 11.3 2 22l10.7-3.79M4 3h.01M22 8h.01M15 2h.01M22 20h.01M22 2l-2.24 2.24M3.34 19.1l-.71-.71M20.66 4.9l-.71-.71" /><path d="m9 8 3 3-2.5 5.5L14 13l-3-3 2.5-5.5z" /></>,
+  expFlorist:     <><path d="M12 7.5a4.5 4.5 0 1 1 4.5 4.5M12 7.5A4.5 4.5 0 1 0 7.5 12M12 7.5V13m0 0a4.5 4.5 0 1 0 4.5 4.5M12 13A4.5 4.5 0 1 1 7.5 17.5" /><circle cx="12" cy="13" r="1" /></>,
 };
 
 export function Icon({ name, ...props }: SVGProps<SVGSVGElement> & { name: IconName }) {

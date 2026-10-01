@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { BrandMark } from "../ui/BrandMark";
@@ -37,8 +37,12 @@ const items: Item[] = [
   { label: "Experiences", icon: "experiences" },
   { label: "Payments", icon: "payments" },
   { label: "Guests", icon: "guests" },
-  { label: "Reports", icon: "reports", children: ["Occupancy", "Revenue"] },
-  { label: "Settings", icon: "settings", children: ["Property", "Staff"] },
+  { label: "Master", icon: "rooms", children: [
+    "Amenities", "Bed Types", "Meal Types", "Room View Types", "Floor",
+    "Experience Categories", "OTA Channels", "Payment Methods", "Cancellation Policy Types",
+  ] },
+  { label: "Reports", icon: "reports", children: ["Reservation Report", "Room Performance", "Revenue"] },
+  { label: "Settings", icon: "settings", children: ["Reservation Settings", "Users", "Roles & Permissions"] },
 ];
 const reservationRoutes: Record<string, string> = {
   "New Reservation": "/reservations/create-reservation-walkin",
@@ -50,6 +54,21 @@ const reservationRoutes: Record<string, string> = {
   "In House": "/reservations/in-house",
   "Room Types": "/rooms",
   "Room Numbers": "/rooms/numbers",
+  "Reservation Report": "/reports/reservations",
+  "Room Performance": "/reports/room-performance",
+  "Revenue": "/reports/revenue",
+  "Roles & Permissions": "/settings/roles-permissions",
+  "Users": "/settings/users",
+  "Reservation Settings": "/settings/reservations",
+  "Amenities": "/master/amenities",
+  "Bed Types": "/master/bed-types",
+  "Meal Types": "/master/meal-types",
+  "Room View Types": "/master/room-view-types",
+  "Floor": "/master/floor",
+  "Experience Categories": "/master/experience-categories",
+  "OTA Channels": "/master/ota-channels",
+  "Payment Methods": "/master/payment-methods",
+  "Cancellation Policy Types": "/master/cancellation-policy-types",
 };
 
 // Top-level items that have their own dedicated route
@@ -59,7 +78,25 @@ const topLevelRoutes: Record<string, string> = {
   "Cancellation Policies": "/cancellation-policies",
   "Campaigns & Promotions": "/campaigns",
   "Experiences": "/experiences",
+  "Payments": "/payments",
+  "Guests": "/guests",
 };
+
+let openGroupsCache: string[] | null = null;
+
+export function hydrateSidebarOpenGroups() {
+  if (openGroupsCache !== null) return;
+  try {
+    const stored: unknown = JSON.parse(sessionStorage.getItem("green-hero-sidebar-open-groups") || "null");
+    if (Array.isArray(stored)) {
+      openGroupsCache = stored.filter((value): value is string =>
+        typeof value === "string" && items.some((item) => item.label === value && item.children),
+      );
+    }
+  } catch {
+    // Use the current route when no saved group state is available.
+  }
+}
 
 export function Sidebar({
   pinned,
@@ -70,14 +107,38 @@ export function Sidebar({
 }: Props) {
   const pathname = usePathname();
   const [hovered, setHovered] = useState(false);
-  const [openGroup, setOpenGroup] = useState<string | null>(
+  const currentGroup =
     pathname.startsWith("/reservations")
       ? "Reservations"
       : pathname.startsWith("/rooms")
         ? "Rooms"
-        : null,
+        : pathname.startsWith("/reports")
+          ? "Reports"
+          : pathname.startsWith("/master")
+            ? "Master"
+          : pathname.startsWith("/settings")
+            ? "Settings"
+            : null;
+  const [openGroups, setOpenGroups] = useState<string[]>(
+    () => openGroupsCache ?? (currentGroup ? [currentGroup] : []),
   );
   const expanded = pinned || hovered || mobileOpen;
+
+  useEffect(() => {
+    if (openGroupsCache === null) openGroupsCache = openGroups;
+  }, [openGroups]);
+
+  function toggleGroup(label: string) {
+    setOpenGroups((current) => {
+      const next = current.includes(label)
+        ? current.filter((value) => value !== label)
+        : [...current, label];
+      openGroupsCache = next;
+      sessionStorage.setItem("green-hero-sidebar-open-groups", JSON.stringify(next));
+      return next;
+    });
+    if (!expanded) setHovered(true);
+  }
 
   return (
     <>
@@ -156,20 +217,19 @@ export function Sidebar({
                       className={
                         ((item.label === "Reservations" &&
                           pathname.startsWith("/reservations")) ||
-                          (item.label === "Rooms" && pathname.startsWith("/rooms")))
+                          (item.label === "Rooms" && pathname.startsWith("/rooms")) ||
+                          (item.label === "Master" && pathname.startsWith("/master")) ||
+                          (item.label === "Settings" && pathname.startsWith("/settings")))
                           ? "sidebar-link sidebar-link--active"
                           : "sidebar-link"
                       }
                       title={item.label}
                       aria-expanded={
-                        item.children ? openGroup === item.label : undefined
+                        item.children ? openGroups.includes(item.label) : undefined
                       }
                       onClick={() => {
                         if (item.children) {
-                          setOpenGroup((current) =>
-                            current === item.label ? null : item.label,
-                          );
-                          if (!expanded) setHovered(true);
+                          toggleGroup(item.label);
                         } else onUnavailable(item.label);
                       }}
                     >
@@ -179,7 +239,7 @@ export function Sidebar({
                         <Icon
                           name="chevron"
                           className={
-                            openGroup === item.label
+                            openGroups.includes(item.label)
                               ? "sidebar-chevron sidebar-chevron--open"
                               : "sidebar-chevron"
                           }
@@ -188,8 +248,14 @@ export function Sidebar({
                         />
                       )}
                     </button>
-                    {item.children && openGroup === item.label && expanded && (
-                      <div className="sidebar-submenu">
+                    {item.children && expanded && (
+                      <div
+                        className={openGroups.includes(item.label)
+                          ? "sidebar-submenu-wrap sidebar-submenu-wrap--open"
+                          : "sidebar-submenu-wrap"}
+                        aria-hidden={!openGroups.includes(item.label)}
+                        inert={!openGroups.includes(item.label)}
+                      ><div className="sidebar-submenu">
                         {item.children.map((child) =>
                           reservationRoutes[child] ? (
                             <Link
@@ -215,7 +281,7 @@ export function Sidebar({
                             </button>
                           ),
                         )}
-                      </div>
+                      </div></div>
                     )}
                   </>
                 )}

@@ -165,6 +165,8 @@ function GuestStay({ guest }: { guest: InHouseRecord }) {
   const [paymentInput, setPaymentInput] = useState("");
   const [extensionDate, setExtensionDate] = useState("2026-10-02");
   const [overstayReviewed, setOverstayReviewed] = useState(false);
+  const [checkoutBalanceAcknowledged, setCheckoutBalanceAcknowledged] = useState(false);
+  const [checkoutOutstandingReason, setCheckoutOutstandingReason] = useState("");
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const [addedExtras, setAddedExtras] = useState<AddedExtra[]>(() =>
@@ -260,6 +262,8 @@ function GuestStay({ guest }: { guest: InHouseRecord }) {
   }
   function openCheckout() {
     setOverstayReviewed(false);
+    setCheckoutBalanceAcknowledged(false);
+    setCheckoutOutstandingReason("");
     setError("");
     setModal("checkout");
   }
@@ -541,8 +545,12 @@ function GuestStay({ guest }: { guest: InHouseRecord }) {
   }
 
   function concludeCheckout() {
-    if (balance > 0 || hasPendingBillChanges) {
-      setError("Simpan tagihan dan lunasi sisa pembayaran sebelum check-out.");
+    if (hasPendingBillChanges) {
+      setError("Simpan perubahan tagihan sebelum check-out.");
+      return;
+    }
+    if (balance > 0 && (!checkoutBalanceAcknowledged || !checkoutOutstandingReason.trim())) {
+      setError("Centang konfirmasi dan isi alasan check-out dengan sisa tagihan.");
       return;
     }
     if (isOverdue && !overstayReviewed) {
@@ -552,11 +560,7 @@ function GuestStay({ guest }: { guest: InHouseRecord }) {
       return;
     }
     setStayState("Checked Out");
-    setNotice(
-      guest.deposit > 0
-        ? `Check-out selesai. Deposit ${formatRupiah(guest.deposit)} perlu diselesaikan.`
-        : "Check-out tamu selesai pada demo ini.",
-    );
+    setNotice(`Check-out selesai.${balance > 0 ? ` Sisa tagihan ${formatRupiah(balance)}. Alasan: ${checkoutOutstandingReason.trim()}.` : ""}${guest.deposit > 0 ? ` Deposit ${formatRupiah(guest.deposit)} perlu diselesaikan.` : ""}`);
     setModal(null);
   }
 
@@ -648,7 +652,7 @@ function GuestStay({ guest }: { guest: InHouseRecord }) {
             >
               Extend Stay
             </button>
-            {paymentStatus === "Paid" && !hasPendingBillChanges && (
+            {!hasPendingBillChanges && (
               <button
                 type="button"
                 className="guest-stay-button guest-stay-button--danger"
@@ -663,10 +667,10 @@ function GuestStay({ guest }: { guest: InHouseRecord }) {
       {(isDueOut || isOverdue) && balance > 0 && (
         <div className="guest-stay-alert guest-stay-alert--warning">
           <div>
-            <strong>Outstanding payment required</strong>
+            <strong>Outstanding payment</strong>
             <p>
-              Sisa tagihan {formatRupiah(balance)} wajib dilunasi sebelum
-              check-out dapat diselesaikan.
+              Sisa tagihan {formatRupiah(balance)} dapat ditindaklanjuti setelah
+              check-out dengan konfirmasi dan alasan petugas.
             </p>
           </div>
         </div>
@@ -1095,7 +1099,7 @@ function GuestStay({ guest }: { guest: InHouseRecord }) {
                         : "guest-stay-button--primary")
                     }
                     onClick={openCheckout}
-                    disabled={balance > 0 || hasPendingBillChanges}
+                    disabled={hasPendingBillChanges}
                   >
                     Check Out Guest
                   </button>
@@ -1117,7 +1121,7 @@ function GuestStay({ guest }: { guest: InHouseRecord }) {
           </div>
           {balance > 0 && (
             <p className="guest-stay-summary-note">
-              Lunasi sisa tagihan sebelum menyelesaikan check-out.
+              Check-out dengan sisa tagihan memerlukan konfirmasi dan alasan petugas.
             </p>
           )}
           {hasPendingBillChanges && (
@@ -1171,6 +1175,16 @@ function GuestStay({ guest }: { guest: InHouseRecord }) {
                   <p>
                     Remaining balance: <strong>{formatRupiah(balance)}</strong>
                   </p>
+                  {balance > 0 && <div className="guest-stay-outstanding-checkout">
+                    <p>Sisa tagihan tetap tercatat setelah check-out.</p>
+                    <label className="guest-stay-modal-check">
+                      <input type="checkbox" checked={checkoutBalanceAcknowledged} onChange={(event) => setCheckoutBalanceAcknowledged(event.target.checked)} />
+                      <span>Saya menyetujui check-out dengan pembayaran belum lunas.</span>
+                    </label>
+                    <label className="guest-stay-outstanding-reason">Alasan <span>*</span>
+                      <textarea value={checkoutOutstandingReason} onChange={(event) => setCheckoutOutstandingReason(event.target.value)} placeholder="Jelaskan alasan check-out sebelum pelunasan" rows={3} />
+                    </label>
+                  </div>}
                   <label>
                     Payment amount
                     <input
@@ -1258,6 +1272,7 @@ function GuestStay({ guest }: { guest: InHouseRecord }) {
               <button
                 type="button"
                 className="guest-stay-button guest-stay-button--primary"
+                disabled={modal === "checkout" && balance > 0 && (!checkoutBalanceAcknowledged || !checkoutOutstandingReason.trim())}
                 onClick={
                   modal === "payment"
                     ? recordPayment

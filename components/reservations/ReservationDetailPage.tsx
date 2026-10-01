@@ -124,6 +124,8 @@ export function ReservationDetailPage() {
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const [balanceAcknowledged, setBalanceAcknowledged] = useState(false);
+  const [checkoutBalanceAcknowledged, setCheckoutBalanceAcknowledged] = useState(false);
+  const [checkoutOutstandingReason, setCheckoutOutstandingReason] = useState("");
 
   useEffect(() => {
     setReservation(loadReservationDetail(bookingId));
@@ -246,14 +248,16 @@ export function ReservationDetailPage() {
     setDepositHandling("full");
     setDeductionAmount(0);
     setDeductionNote("");
+    setCheckoutBalanceAcknowledged(false);
+    setCheckoutOutstandingReason("");
     setError("");
     setModal("check-out");
   }
 
   function confirmCheckOut() {
     if (!reservation) return;
-    if (reservation.paymentStatus !== "Paid" || balance > 0) {
-      setError("Lunasi sisa pembayaran sebelum check-out tamu.");
+    if (balance > 0 && (!checkoutBalanceAcknowledged || !checkoutOutstandingReason.trim())) {
+      setError("Centang konfirmasi dan isi alasan check-out dengan sisa tagihan.");
       return;
     }
     const deposit = reservation.depositAmount ?? 0;
@@ -273,11 +277,12 @@ export function ReservationDetailPage() {
         depositDeducted: deducted,
         deductionNote: deducted ? deductionNote.trim() : "",
         checkOutAt: new Date().toISOString(),
+        checkoutOutstandingReason: balance > 0 ? checkoutOutstandingReason.trim() : "",
       },
     );
     setReservation(updated);
     setModal(null);
-    setNotice("Check-out tamu berhasil dicatat.");
+    setNotice(balance > 0 ? `Check-out dicatat dengan sisa tagihan ${formatRupiah(balance)}.` : "Check-out tamu berhasil dicatat.");
   }
 
   if (!loaded)
@@ -669,7 +674,7 @@ export function ReservationDetailPage() {
                   }}
                 />
               )}
-            {reservation.status === "Checked-in" &&
+            {(reservation.status === "Checked-in" || reservation.status === "Checked-out") &&
               (reservation.paymentStatus === "Partial" ||
                 reservation.paymentStatus === "Unpaid") && (
                 <RecordOutstandingPayment
@@ -691,7 +696,7 @@ export function ReservationDetailPage() {
                 </button>
               )}
             {reservation.status === "Checked-in" &&
-              reservation.paymentStatus === "Paid" && (
+              ["Paid", "Partial", "Unpaid"].includes(reservation.paymentStatus) && (
                 <button
                   type="button"
                   className="action-button reservation-detail-main-action"
@@ -724,7 +729,7 @@ export function ReservationDetailPage() {
             )}
             {reservation.status === "Checked-out" && (
               <p className="reservation-detail-summary-hint">
-                Tamu telah check-out.
+                Tamu telah check-out.{reservation.checkoutOutstandingReason ? ` Alasan sisa tagihan: ${reservation.checkoutOutstandingReason}` : ""}
               </p>
             )}
           </aside>
@@ -875,6 +880,17 @@ export function ReservationDetailPage() {
                         <strong>{formatRupiah(heldDeposit)}</strong>
                       </div>
                     </div>
+                    {balance > 0 && <div className="reservation-outstanding-checkout">
+                      <strong>Check-out dengan sisa tagihan</strong>
+                      <p>Sisa {formatRupiah(balance)} tetap tercatat sebagai tagihan tamu setelah check-out.</p>
+                      <label className="reservation-operation-check">
+                        <input type="checkbox" checked={checkoutBalanceAcknowledged} onChange={(event) => setCheckoutBalanceAcknowledged(event.target.checked)} />
+                        Saya menyetujui check-out dengan pembayaran belum lunas.
+                      </label>
+                      <label className="reservation-outstanding-reason">Alasan <span>*</span>
+                        <textarea value={checkoutOutstandingReason} onChange={(event) => setCheckoutOutstandingReason(event.target.value)} placeholder="Jelaskan alasan check-out sebelum pelunasan" rows={3} />
+                      </label>
+                    </div>}
                     <div className="reservation-operation-deposit">
                       <strong>Deposit Handling</strong>
                       <label className="reservation-operation-radio">
@@ -957,8 +973,8 @@ export function ReservationDetailPage() {
                       <span>
                         Saya mengonfirmasi sisa tagihan{" "}
                         <strong>{formatRupiah(balance)}</strong> telah
-                        dijelaskan kepada tamu. Pelunasan wajib sebelum
-                        check-out.
+                        dijelaskan kepada tamu. Jika belum lunas saat check-out,
+                        petugas wajib mencatat konfirmasi dan alasan.
                       </span>
                     </label>
                   )}
@@ -982,11 +998,7 @@ export function ReservationDetailPage() {
                   onClick={
                     modal === "check-in" ? confirmCheckIn : confirmCheckOut
                   }
-                  disabled={
-                    modal === "check-in" &&
-                    reservation.paymentStatus !== "Paid" &&
-                    !balanceAcknowledged
-                  }
+                  disabled={modal === "check-in" && reservation.paymentStatus !== "Paid" && !balanceAcknowledged || modal === "check-out" && balance > 0 && (!checkoutBalanceAcknowledged || !checkoutOutstandingReason.trim())}
                 >
                   Confirm {modal === "check-in" ? "Check-in" : "Check-out"}
                 </button>

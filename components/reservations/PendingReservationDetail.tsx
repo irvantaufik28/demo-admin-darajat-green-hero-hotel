@@ -589,7 +589,7 @@ export function PendingReservationDetail({
               ) : (
                 <p className="pending-detail-summary-warning">
                   Reservasi telah dikonfirmasi. Sisa tagihan perlu disampaikan
-                  sebelum check-in dan dilunasi sebelum check-out.
+                  sebelum check-in. Jika belum lunas saat check-out, petugas wajib mencatat konfirmasi dan alasan.
                 </p>
               )}
               <div className="pending-detail-summary-actions">

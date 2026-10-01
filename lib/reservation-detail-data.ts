@@ -16,6 +16,7 @@ export type ReservationOperation = {
   deductionNote?: string;
   checkInAt?: string;
   checkOutAt?: string;
+  checkoutOutstandingReason?: string;
   paymentStatus?: string;
   amountPaid?: number;
   paymentMethod?: string;
@@ -107,7 +108,7 @@ export function saveReservationDetail(bookingId: string, status: string, operati
 
 export function recordReservationPayment(bookingId: string, amount: number, method: string, reference: string, note: string): ReservationDetail | null {
   const current = loadReservationDetail(bookingId);
-  if (!current || !["Pending", "Confirmed", "Checked-in"].includes(current.status) || !["Unpaid", "Partial"].includes(current.paymentStatus)) return null;
+  if (!current || !["Pending", "Confirmed", "Checked-in", "Checked-out"].includes(current.status) || !["Unpaid", "Partial"].includes(current.paymentStatus)) return null;
   const balance = Math.max(0, (current.total ?? 0) - (current.amountPaid ?? 0));
   if (amount <= 0 || amount > balance) return null;
   const amountPaid = (current.amountPaid ?? 0) + amount;

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { Icon } from "../ui/Icon";
 
 type Props = {
@@ -78,15 +79,17 @@ export function Navbar({
               setMenu((value) => (value === "profile" ? null : "profile"))
             }
           >
-            <span className="navbar-avatar">FO</span>
+            <span className="navbar-avatar">JD</span>
             <span className="navbar-profile__text">
-              <strong>Front Office</strong>
-              <small>Darajat Reception</small>
+              <strong>Jhon Doe</strong>
+              <small>Green Hero Darajat</small>
             </span>
           </button>
           {menu === "profile" && (
             <div className="navbar-popover navbar-popover--profile">
-              <strong>Front Office</strong>
+              <strong>Jhon Doe</strong>
+              <Link href="/profile" onClick={() => setMenu(null)}>Profile</Link>
+              <Link href="/change-password" onClick={() => setMenu(null)}>Change Password</Link>
               <button type="button" onClick={onSignOut}>
                 <Icon name="logout" width={16} height={16} />
                 Keluar

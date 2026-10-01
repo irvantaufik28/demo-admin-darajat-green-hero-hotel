@@ -28,6 +28,7 @@ export function LoginForm() {
     }
     setLoading(true);
     saveSession(remember);
+    sessionStorage.setItem("green-hero-demo-notice-pending", "true");
     router.replace("/dashboard");
   }
 

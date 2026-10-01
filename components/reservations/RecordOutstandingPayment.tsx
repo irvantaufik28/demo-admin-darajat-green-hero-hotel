@@ -83,8 +83,10 @@ export function RecordOutstandingPayment({ reservation, onUpdate }: Props) {
       updated.paymentStatus === "Paid"
         ? updated.status === "Checked-in"
           ? "Sisa pembayaran lunas. Tamu dapat check-out."
-          : "Sisa pembayaran lunas. Status reservasi tetap Confirmed."
-        : "Pembayaran tambahan dicatat. Sisa tagihan tetap harus dilunasi sebelum check-out.",
+          : updated.status === "Checked-out"
+            ? "Sisa pembayaran lunas setelah check-out."
+            : "Sisa pembayaran lunas. Status reservasi tetap sama."
+        : "Pembayaran tambahan dicatat. Check-out dengan sisa tagihan memerlukan konfirmasi dan alasan petugas.",
     );
   }
 
@@ -98,7 +100,7 @@ export function RecordOutstandingPayment({ reservation, onUpdate }: Props) {
         Record Payment
       </button>
       <p className="reservation-detail-summary-hint">
-        Sisa tagihan {formatRupiah(balance)} wajib dilunasi sebelum check-out.
+        Sisa tagihan {formatRupiah(balance)} perlu ditindaklanjuti. {reservation.status === "Checked-out" ? "Pembayaran masih dapat dicatat setelah check-out." : "Check-out tetap dapat dilakukan dengan konfirmasi dan alasan."}
       </p>
       {open && (
         <div

@@ -99,7 +99,8 @@ export function RoomTypesPage() {
               <tbody>
                 {filtered.map((room, index) => (
                   <tr key={room.id}>
-                    <td className="room-types-no">{index + 1}</td>                    <td>
+                    <td className="room-types-no">{index + 1}</td>
+                    <td>
                       <div className="room-types-name-cell">
                         {room.cover && <img src={room.cover.url} alt="" />}
                         <div>
@@ -134,7 +135,7 @@ export function RoomTypesPage() {
                 ))}
                 {filtered.length === 0 && (
                   <tr>
-                    <td colSpan={7} className="room-types-empty">Tidak ada tipe kamar yang cocok.</td>
+                    <td colSpan={8} className="room-types-empty">Tidak ada tipe kamar yang cocok.</td>
                   </tr>
                 )}
               </tbody>

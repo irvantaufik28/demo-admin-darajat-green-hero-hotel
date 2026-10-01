@@ -59,7 +59,7 @@ export function DashboardContent() {
           <div className="table-scroll">
             <table className="data-table">
               <thead><tr><th>Guest</th><th>Room</th><th>Type</th><th>Status</th><th className="cell-right">Action</th></tr></thead>
-              <tbody>{todayActivities.map(row => (
+              <tbody>{todayActivities.slice(0, 6).map(row => (
                 <tr key={row.type + "-" + row.bookingId}>
                   <td className="cell-strong">{row.guest}</td><td className="cell-muted">{row.room}</td><td><span className={"activity-type activity-type--" + row.type.toLowerCase()}>{row.type}</span></td>
                   <td><StatusBadge value={row.status} /></td>

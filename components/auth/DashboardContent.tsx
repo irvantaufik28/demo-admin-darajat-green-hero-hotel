@@ -63,7 +63,7 @@ export function DashboardContent() {
                 <tr key={row.type + "-" + row.bookingId}>
                   <td className="cell-strong">{row.guest}</td><td className="cell-muted">{row.room}</td><td><span className={"activity-type activity-type--" + row.type.toLowerCase()}>{row.type}</span></td>
                   <td><StatusBadge value={row.status} /></td>
-                  <td className="cell-right"><button type="button" className="table-action" disabled>View</button></td>
+                  <td className="cell-right"><Link href={`${row.type === "Overdue" ? "/reservations/in-house" : "/reservations"}/${encodeURIComponent(row.bookingId)}`} className="table-action">View</Link></td>
                 </tr>
               ))}{todayActivities.length === 0 && <tr><td colSpan={5} className="cell-muted">Belum ada aktivitas yang perlu ditindak.</td></tr>}</tbody>
             </table>

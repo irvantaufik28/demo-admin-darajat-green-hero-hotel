@@ -1,5 +1,6 @@
 import type { ReservationRecord } from "./reservation-list-data";
 import { reservationReferenceDate } from "./reservation-list-data";
+import { inHouseGuests } from "./in-house-data";
 import { formatRupiah, formatStayDate, roomTypes } from "./walk-in-data";
 
 export type DashboardActivity = {
@@ -27,7 +28,7 @@ export function getTodayActivities(
     type,
     status: type === "Payment" ? item.paymentStatus : item.status,
   });
-  return [
+  const activities = [
     ...active
       .filter(
         (item) =>
@@ -48,14 +49,24 @@ export function getTodayActivities(
           item.paymentStatus === "Unpaid" || item.paymentStatus === "Partial",
       )
       .map((item) => row(item, "Payment")),
-    ...active
-      .filter(
-        (item) =>
-          item.checkOut < reservationReferenceDate &&
-          item.status === "Checked-in",
-      )
-      .map((item) => row(item, "Overdue")),
+    ...inHouseGuests
+      .filter((item) => item.operationalStatus === "Overdue")
+      .sort((a, b) => b.bookingId.localeCompare(a.bookingId))
+      .map((item): DashboardActivity => ({
+        bookingId: item.bookingId,
+        guest: item.guestName,
+        room: item.room,
+        type: "Overdue",
+        status: item.reservationStatus,
+      })),
   ];
+  const seen = new Set<string>();
+  return activities.filter((activity) => {
+    const key = `${activity.type}:${activity.status}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
 }
 
 export type DashboardSummary = {

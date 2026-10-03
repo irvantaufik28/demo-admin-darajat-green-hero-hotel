@@ -8,8 +8,10 @@ import { QuantityControl } from "./QuantityControl";
 import { ReservationField } from "./ReservationField";
 import { SaveReservationConfirmation } from "./SaveReservationConfirmation";
 import { ReservationSuccessTransition } from "./ReservationSuccessTransition";
+import { RoomExtraBedOption } from "./RoomExtraBedOption";
 import {
   calculateNights,
+  extraBedRates,
   extras,
   formatRupiah,
   getExtraCost,
@@ -54,6 +56,7 @@ export function ReservationPage({ mode }: { mode: "walk-in" | "phone" }) {
   const [extraQuantities, setExtraQuantities] = useState<
     Record<string, number>
   >(initialExtraQuantities);
+  const [roomExtraBeds, setRoomExtraBeds] = useState<Record<string, boolean>>({});
   const [addingExtra, setAddingExtra] = useState(false);
   const [guestName, setGuestName] = useState("Andi Pratama");
   const [whatsapp, setWhatsapp] = useState("+62 812 3456 7890");
@@ -98,7 +101,15 @@ export function ReservationPage({ mode }: { mode: "walk-in" | "phone" }) {
         : 0),
     0,
   );
-  const total = roomTotal + extrasTotal;
+  const extraBedsTotal = roomTypes.reduce(
+    (sum, room) =>
+      sum +
+      Array.from({ length: quantities[room.id] }, (_, index) =>
+        roomExtraBeds[`${room.id}-${index}`] ? extraBedRates[room.id] * nights : 0,
+      ).reduce((roomSum, amount) => roomSum + amount, 0),
+    0,
+  );
+  const total = roomTotal + extrasTotal + extraBedsTotal;
   const amountPaid =
     paymentStatus === "Paid"
       ? total
@@ -133,6 +144,13 @@ export function ReservationPage({ mode }: { mode: "walk-in" | "phone" }) {
     }
     setQuantities((current) => ({ ...current, [type]: quantity }));
     setAssignments((current) => ({ ...current, [type]: assigned }));
+    setRoomExtraBeds((current) =>
+      Object.fromEntries(
+        Object.entries(current).filter(([key]) =>
+          key.startsWith(`${type}-`) ? Number(key.split("-")[1]) < quantity : true,
+        ),
+      ),
+    );
     setFeedback(null);
   }
 
@@ -154,6 +172,7 @@ export function ReservationPage({ mode }: { mode: "walk-in" | "phone" }) {
     setAssignments(initialAssignments);
     setSelectedExtras(initialExtras);
     setExtraQuantities(initialExtraQuantities);
+    setRoomExtraBeds({});
     setAddingExtra(false);
     setGuestName("Andi Pratama");
     setWhatsapp("+62 812 3456 7890");
@@ -209,12 +228,11 @@ export function ReservationPage({ mode }: { mode: "walk-in" | "phone" }) {
       return;
     }
     if (
-      (extraQuantities["extra-bed"] ?? 0) > selectedRooms ||
       (extraQuantities.breakfast ?? 0) > adults + children
     ) {
       setFeedback({
         kind: "error",
-        text: "Jumlah Extra Bed atau Breakfast melebihi kamar atau jumlah tamu.",
+        text: "Jumlah Breakfast melebihi jumlah tamu.",
       });
       return;
     }
@@ -287,13 +305,14 @@ export function ReservationPage({ mode }: { mode: "walk-in" | "phone" }) {
       adults,
       children,
       quantities,
-      assignments: checkInGuest
-        ? assignedAtCheckIn
-        : isPhone
-          ? null
-          : assignments,
+      assignments: checkInGuest ? assignedAtCheckIn : assignments,
       selectedExtras,
       extraQuantities,
+      roomExtraBeds: Object.fromEntries(
+        Object.entries(roomExtraBeds)
+          .filter(([, selected]) => selected)
+          .map(([key]) => [key, nights]),
+      ),
       guestName: guestName.trim(),
       whatsapp: whatsapp.trim(),
       email: email.trim(),
@@ -536,8 +555,7 @@ export function ReservationPage({ mode }: { mode: "walk-in" | "phone" }) {
               </div>
             </section>
 
-            {!isPhone && (
-              <section className="reservation-panel">
+            <section className="reservation-panel">
                 <h2>Assign Rooms</h2>
                 <div className="room-assignments">
                   {roomTypes
@@ -548,36 +566,45 @@ export function ReservationPage({ mode }: { mode: "walk-in" | "phone" }) {
                           {room.name} × {quantities[room.id]}
                         </strong>
                         {assignments[room.id].map((number, index) => (
-                          <ReservationField
-                            key={index}
-                            label={"Room " + (index + 1)}
-                            htmlFor={room.id + "-" + index}
-                          >
-                            <select
-                              id={room.id + "-" + index}
-                              value={number}
-                              onChange={(event) =>
-                                updateAssignment(
-                                  room.id,
-                                  index,
-                                  event.target.value,
-                                )
-                              }
+                          <div className="room-assignment__unit" key={index}>
+                            <ReservationField
+                              label={"Room " + (index + 1)}
+                              htmlFor={room.id + "-" + index}
                             >
-                              {room.numbers.map((option) => (
-                                <option
-                                  key={option}
-                                  value={option}
-                                  disabled={
-                                    option !== number &&
-                                    assignments[room.id].includes(option)
-                                  }
-                                >
-                                  Room {option}
-                                </option>
-                              ))}
-                            </select>
-                          </ReservationField>
+                              <select
+                                id={room.id + "-" + index}
+                                value={number}
+                                onChange={(event) =>
+                                  updateAssignment(room.id, index, event.target.value)
+                                }
+                              >
+                                {isPhone && <option value="">Assign saat check-in</option>}
+                                {room.numbers.map((option) => (
+                                  <option
+                                    key={option}
+                                    value={option}
+                                    disabled={
+                                      option !== number && assignments[room.id].includes(option)
+                                    }
+                                  >
+                                    Room {option}
+                                  </option>
+                                ))}
+                              </select>
+                            </ReservationField>
+                            <RoomExtraBedOption
+                              roomType={room.id}
+                              roomLabel={number ? `Room ${number}` : `${room.name} #${index + 1}`}
+                              nights={nights}
+                              selected={Boolean(roomExtraBeds[`${room.id}-${index}`])}
+                              onChange={(selected) =>
+                                setRoomExtraBeds((current) => ({
+                                  ...current,
+                                  [`${room.id}-${index}`]: selected,
+                                }))
+                              }
+                            />
+                          </div>
                         ))}
                       </div>
                     ))}
@@ -588,7 +615,6 @@ export function ReservationPage({ mode }: { mode: "walk-in" | "phone" }) {
                   )}
                 </div>
               </section>
-            )}
 
             <section className="reservation-panel">
               <h2>Guest Information</h2>
@@ -663,7 +689,7 @@ export function ReservationPage({ mode }: { mode: "walk-in" | "phone" }) {
                   >
                     <option value="">Pilih paket</option>
                     {extras
-                      .filter((extra) => !selectedExtras.includes(extra.id))
+                      .filter((extra) => extra.id !== "extra-bed" && !selectedExtras.includes(extra.id))
                       .map((extra) => (
                         <option key={extra.id} value={extra.id}>
                           {extra.label} · {formatRupiah(extra.price)}{" "}
@@ -678,11 +704,8 @@ export function ReservationPage({ mode }: { mode: "walk-in" | "phone" }) {
                   const extra = extras.find((item) => item.id === id);
                   if (!extra) return null;
                   const count = extraQuantities[id] ?? 1;
-                  const adjustable = id === "extra-bed" || id === "breakfast";
-                  const limit =
-                    id === "extra-bed"
-                      ? Math.max(1, selectedRooms)
-                      : Math.max(1, adults + children);
+                  const adjustable = id === "breakfast";
+                  const limit = Math.max(1, adults + children);
                   return (
                     <div className="selected-extra" key={id}>
                       <div className="selected-extra__description">
@@ -865,6 +888,7 @@ export function ReservationPage({ mode }: { mode: "walk-in" | "phone" }) {
             quantities={quantities}
             selectedExtras={selectedExtras}
             extraQuantities={extraQuantities}
+            roomExtraBeds={roomExtraBeds}
             total={total}
             amountPaid={amountPaid}
             paymentStatus={paymentStatus}

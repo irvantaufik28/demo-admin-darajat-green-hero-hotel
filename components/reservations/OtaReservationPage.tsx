@@ -7,8 +7,10 @@ import { QuantityControl } from "./QuantityControl";
 import { ReservationField } from "./ReservationField";
 import { SaveReservationConfirmation } from "./SaveReservationConfirmation";
 import { ReservationSuccessTransition } from "./ReservationSuccessTransition";
+import { RoomExtraBedOption } from "./RoomExtraBedOption";
 import {
   calculateNights,
+  extraBedRates,
   extras,
   formatRupiah,
   formatStayDate,
@@ -60,6 +62,8 @@ export function OtaReservationPage() {
     Record<string, number>
   >(initialExtraQuantities);
   const [addingExtra, setAddingExtra] = useState(false);
+  const [roomAssignments, setRoomAssignments] = useState<Record<string, string>>({});
+  const [roomExtraBeds, setRoomExtraBeds] = useState<Record<string, boolean>>({});
   const [feedback, setFeedback] = useState<Feedback | null>(null);
   const [saveConfirmationOpen, setSaveConfirmationOpen] = useState(false);
   const [savedBookingId, setSavedBookingId] = useState<string | null>(null);
@@ -74,12 +78,48 @@ export function OtaReservationPage() {
     (sum, id) => sum + getExtraCost(id, extraQuantities[id] ?? 1, nights),
     0,
   );
-  const total = roomsTotal + extrasTotal;
+  const extraBedsTotal = rooms.reduce(
+    (sum, room) =>
+      sum +
+      Array.from({ length: room.quantity }, (_, index) =>
+        roomExtraBeds[`${room.type}-${index}`] ? extraBedRates[room.type] * nights : 0,
+      ).reduce((roomSum, amount) => roomSum + amount, 0),
+    0,
+  );
+  const total = roomsTotal + extrasTotal + extraBedsTotal;
   const paymentStatus = "Paid";
   const amountPaid = total;
   const remainingBalance = 0;
 
   function updateRoom(id: number, changes: Partial<RoomRow>) {
+    const previous = rooms.find((room) => room.id === id);
+    if (previous && changes.type && changes.type !== previous.type) {
+      setRoomAssignments((current) =>
+        Object.fromEntries(Object.entries(current).filter(([key]) => !key.startsWith(`${id}-`))),
+      );
+      setRoomExtraBeds((current) =>
+        Object.fromEntries(
+          Object.entries(current).filter(([key]) => !key.startsWith(`${previous.type}-`)),
+        ),
+      );
+    } else if (previous && changes.quantity !== undefined && changes.quantity < previous.quantity) {
+      setRoomAssignments((current) =>
+        Object.fromEntries(
+          Object.entries(current).filter(([key]) =>
+            key.startsWith(`${id}-`) ? Number(key.split("-")[1]) < changes.quantity! : true,
+          ),
+        ),
+      );
+      setRoomExtraBeds((current) =>
+        Object.fromEntries(
+          Object.entries(current).filter(([key]) =>
+            key.startsWith(`${previous.type}-`)
+              ? Number(key.split("-")[1]) < changes.quantity!
+              : true,
+          ),
+        ),
+      );
+    }
     setRooms((current) =>
       current.map((room) => (room.id === id ? { ...room, ...changes } : room)),
     );
@@ -121,6 +161,8 @@ export function OtaReservationPage() {
     setSelectedExtras(["family-grill"]);
     setExtraQuantities(initialExtraQuantities);
     setAddingExtra(false);
+    setRoomAssignments({});
+    setRoomExtraBeds({});
     setFeedback(null);
     setSaveConfirmationOpen(false);
     setSavedBookingId(null);
@@ -153,13 +195,19 @@ export function OtaReservationPage() {
         text: "Nama tamu dan nomor WhatsApp wajib diisi.",
       });
     if (
-      (extraQuantities["extra-bed"] ?? 0) > selectedRooms ||
       (extraQuantities.breakfast ?? 0) > adults + children
     ) {
       return setFeedback({
         kind: "error",
-        text: "Jumlah Extra Bed atau Breakfast melebihi kamar atau jumlah tamu.",
+        text: "Jumlah Breakfast melebihi jumlah tamu.",
       });
+    }
+    const selectedNumbers = rooms.flatMap((room) =>
+      Array.from({ length: room.quantity }, (_, index) => roomAssignments[`${room.id}-${index}`])
+        .filter(Boolean),
+    );
+    if (new Set(selectedNumbers).size !== selectedNumbers.length) {
+      return setFeedback({ kind: "error", text: "Pilih nomor kamar yang berbeda untuk setiap kamar." });
     }
     const bookingId = "GH-OTA-" + Date.now().toString().slice(-8);
     const quantities = { deluxe: 0, family: 0, suite: 0 };
@@ -181,9 +229,29 @@ export function OtaReservationPage() {
         quantity,
         rate,
       })),
-      assignments: null,
+      assignments: Object.fromEntries(
+        roomTypes.map((type) => [
+          type.id,
+          rooms
+            .filter((room) => room.type === type.id)
+            .flatMap((room) =>
+              Array.from({ length: room.quantity }, (_, index) =>
+                roomAssignments[`${room.id}-${index}`] ?? "",
+              ),
+            ),
+        ]),
+      ),
       selectedExtras,
       extraQuantities,
+      roomExtraBeds: Object.fromEntries(
+        rooms.flatMap((room) =>
+          Array.from({ length: room.quantity }, (_, index) =>
+            roomExtraBeds[`${room.type}-${index}`]
+              ? [[`${room.type}-${index}`, nights]]
+              : [],
+          ),
+        ),
+      ),
       guestName: guestName.trim(),
       whatsapp: whatsapp.trim(),
       email: email.trim(),
@@ -478,11 +546,19 @@ export function OtaReservationPage() {
                         type="button"
                         className="ota-remove-room"
                         aria-label={"Hapus " + (type?.name ?? "kamar")}
-                        onClick={() =>
-                          setRooms((current) =>
-                            current.filter((item) => item.id !== room.id),
-                          )
-                        }
+                        onClick={() => {
+                          setRooms((current) => current.filter((item) => item.id !== room.id));
+                          setRoomAssignments((current) =>
+                            Object.fromEntries(
+                              Object.entries(current).filter(([key]) => !key.startsWith(`${room.id}-`)),
+                            ),
+                          );
+                          setRoomExtraBeds((current) =>
+                            Object.fromEntries(
+                              Object.entries(current).filter(([key]) => !key.startsWith(`${room.type}-`)),
+                            ),
+                          );
+                        }}
                       >
                         ×
                       </button>
@@ -507,6 +583,62 @@ export function OtaReservationPage() {
                 ⓘ &nbsp; OTA reservations record external bookings directly
                 without deducting or validating system inventory.
               </p>
+            </section>
+            <section className="reservation-panel">
+              <h2>Assign Rooms</h2>
+              <div className="room-assignments">
+                {rooms.map((room) => {
+                  const type = roomTypes.find((item) => item.id === room.type)!;
+                  return (
+                    <div className="room-assignment" key={room.id}>
+                      <strong>{type.name} × {room.quantity}</strong>
+                      {Array.from({ length: room.quantity }, (_, index) => {
+                        const key = `${room.id}-${index}`;
+                        const number = roomAssignments[key] ?? "";
+                        return (
+                          <div className="room-assignment__unit" key={key}>
+                            <ReservationField label={`Room ${index + 1}`} htmlFor={`ota-assignment-${key}`}>
+                              <select
+                                id={`ota-assignment-${key}`}
+                                value={number}
+                                onChange={(event) =>
+                                  setRoomAssignments((current) => ({ ...current, [key]: event.target.value }))
+                                }
+                              >
+                                <option value="">Assign saat check-in</option>
+                                {type.numbers.map((option) => (
+                                  <option
+                                    key={option}
+                                    value={option}
+                                    disabled={
+                                      option !== number && Object.values(roomAssignments).includes(option)
+                                    }
+                                  >
+                                    Room {option}
+                                  </option>
+                                ))}
+                              </select>
+                            </ReservationField>
+                            <RoomExtraBedOption
+                              roomType={room.type}
+                              roomLabel={number ? `Room ${number}` : `${type.name} #${index + 1}`}
+                              nights={nights}
+                              selected={Boolean(roomExtraBeds[`${room.type}-${index}`])}
+                              onChange={(selected) =>
+                                setRoomExtraBeds((current) => ({
+                                  ...current,
+                                  [`${room.type}-${index}`]: selected,
+                                }))
+                              }
+                            />
+                          </div>
+                        );
+                      })}
+                    </div>
+                  );
+                })}
+                {selectedRooms === 0 && <p className="reservation-empty">Pilih kamar terlebih dahulu.</p>}
+              </div>
             </section>
             <section className="reservation-panel">
               <h2>Guest Information</h2>
@@ -584,7 +716,7 @@ export function OtaReservationPage() {
                   >
                     <option value="">Pilih paket</option>
                     {extras
-                      .filter((extra) => !selectedExtras.includes(extra.id))
+                      .filter((extra) => extra.id !== "extra-bed" && !selectedExtras.includes(extra.id))
                       .map((extra) => (
                         <option key={extra.id} value={extra.id}>
                           {extra.label} · {formatRupiah(extra.price)}{" "}
@@ -599,11 +731,8 @@ export function OtaReservationPage() {
                   const extra = extras.find((item) => item.id === id);
                   if (!extra) return null;
                   const count = extraQuantities[id] ?? 1;
-                  const adjustable = id === "extra-bed" || id === "breakfast";
-                  const limit =
-                    id === "extra-bed"
-                      ? Math.max(1, selectedRooms)
-                      : Math.max(1, adults + children);
+                  const adjustable = id === "breakfast";
+                  const limit = Math.max(1, adults + children);
                   return (
                     <div className="selected-extra" key={id}>
                       <div className="selected-extra__description">
@@ -721,6 +850,16 @@ export function OtaReservationPage() {
                 <span>Rooms Total</span>
                 <strong>{formatRupiah(roomsTotal)}</strong>
               </div>
+              {rooms.flatMap((room) =>
+                Array.from({ length: room.quantity }, (_, index) =>
+                  roomExtraBeds[`${room.type}-${index}`] ? (
+                    <div key={`bed-${room.id}-${index}`}>
+                      <span>↳ Extra Bed · {roomTypes.find((type) => type.id === room.type)?.name} #{index + 1} · {nights} malam</span>
+                      <strong>{formatRupiah(extraBedRates[room.type] * nights)}</strong>
+                    </div>
+                  ) : null,
+                ),
+              )}
               {selectedExtras.map((id) => {
                 const extra = extras.find((item) => item.id === id);
                 return extra ? (
@@ -783,8 +922,8 @@ export function OtaReservationPage() {
               </button>
             </div>
             <p className="booking-summary__note booking-summary__note--after">
-              Nomor fisik kamar dan uang jaminan (deposit) akan dialokasikan
-              saat tamu hadir dan melakukan check-in di hotel.
+              Nomor kamar dapat ditetapkan sekarang atau saat tamu check-in.
+              Deposit dicatat saat tamu hadir di hotel.
             </p>
           </aside>
         </div>

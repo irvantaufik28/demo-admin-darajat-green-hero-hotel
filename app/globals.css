@@ -289,6 +289,13 @@ button { cursor: pointer; }
 .room-assignment > strong { font-size: 12px; font-weight: 600; }
 .room-assignment .reservation-field label { color: var(--text-secondary); font-size: 11px; }
 .room-assignment .reservation-field select { height: 33px; }
+.room-assignment__unit { display: grid; gap: 8px; }
+.room-extra-bed-option { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border: 1px solid #d9e5dd; border-radius: 5px; background: #f2f7f3; cursor: pointer; }
+.room-extra-bed-option input { width: 16px; height: 16px; flex: none; accent-color: var(--primary); }
+.room-extra-bed-option span { display: grid; gap: 3px; min-width: 0; flex: 1; }
+.room-extra-bed-option span strong { font-size: 12px; font-weight: 600; }
+.room-extra-bed-option small { color: var(--text-secondary); font-size: 11px; }
+.room-extra-bed-option > strong { color: #a1762c; font-size: 12px; white-space: nowrap; }
 .guest-fields { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 12px; }
 .reservation-add-button { min-height: 27px; padding: 0 9px; }
 .selected-extras { display: grid; gap: 7px; }

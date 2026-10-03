@@ -1,6 +1,7 @@
 import {
   formatRupiah,
   formatStayDate,
+  extraBedRates,
   roomTypes,
   extras,
   getExtraCost,
@@ -16,6 +17,7 @@ type Props = {
   quantities: Record<RoomType, number>;
   selectedExtras: string[];
   extraQuantities: Record<string, number>;
+  roomExtraBeds: Record<string, boolean>;
   total: number;
   deposit: number;
   amountPaid: number;
@@ -33,6 +35,7 @@ export function BookingSummary({
   quantities,
   selectedExtras,
   extraQuantities,
+  roomExtraBeds,
   total,
   deposit,
   amountPaid,
@@ -75,6 +78,17 @@ export function BookingSummary({
             </div>
           ))}
 
+        {roomTypes.flatMap((room) =>
+          Array.from({ length: quantities[room.id] }, (_, index) =>
+            roomExtraBeds[`${room.id}-${index}`] ? (
+              <div key={`bed-${room.id}-${index}`}>
+                <span>↳ Extra Bed · {room.name} #{index + 1} · {nights} malam</span>
+                <strong>{formatRupiah(extraBedRates[room.id] * nights)}</strong>
+              </div>
+            ) : null,
+          ),
+        )}
+
         {selectedExtras.map((id) => {
           const extra = extras.find((item) => item.id === id);
           if (!extra) return null;
@@ -93,7 +107,7 @@ export function BookingSummary({
           );
         })}
 
-        {selectedExtras.length === 0 && (
+        {selectedExtras.length === 0 && !Object.values(roomExtraBeds).some(Boolean) && (
           <div className="booking-summary__empty">Belum ada add-on</div>
         )}
       </div>
@@ -197,8 +211,8 @@ export function BookingSummary({
       {/* Phone mode note */}
       {isPhone && (
         <p className="booking-summary__note booking-summary__note--after">
-          Jika disimpan tanpa check-in, nomor kamar akan ditetapkan saat tamu
-          tiba. Check-in dengan sisa tagihan memerlukan konfirmasi petugas.
+          Nomor kamar dapat diubah saat tamu tiba. Check-in dengan sisa tagihan
+          memerlukan konfirmasi petugas.
         </p>
       )}
     </aside>

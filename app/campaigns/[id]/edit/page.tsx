@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
-import { CampaignForm } from "../../../../components/campaigns/CampaignForm";
-import { getCampaignById } from "../../../../lib/campaigns-data";
+import { CampaignForm } from "../../../../features/campaigns/components/CampaignForm";
+import { getCampaignById } from "../../../../features/campaigns/constants/campaigns-data";
 
 type Props = {
   params: Promise<{ id: string }>;

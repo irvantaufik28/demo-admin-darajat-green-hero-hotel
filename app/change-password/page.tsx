@@ -1,4 +1,4 @@
-import { ChangePasswordPage } from "../../components/profile/ChangePasswordPage";
+import { ChangePasswordPage } from "../../features/profile/components/ChangePasswordPage";
 
 export default function Page() {
   return <ChangePasswordPage />;

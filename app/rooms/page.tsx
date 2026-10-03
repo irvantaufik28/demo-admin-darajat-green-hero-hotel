@@ -1,4 +1,4 @@
-import { RoomTypesPage } from "../../components/rooms/RoomTypesPage";
+import { RoomTypesPage } from "../../features/rooms/components/RoomTypesPage";
 
 export default function RoomsPage() {
   return <RoomTypesPage />;

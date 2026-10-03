@@ -1,4 +1,4 @@
-import { ReservationDetailPage } from "../../../components/reservations/ReservationDetailPage";
+import { ReservationDetailPage } from "../../../features/reservations/components/ReservationDetailPage";
 
 export default function ReservationDetailRoute() {
   return <ReservationDetailPage />;

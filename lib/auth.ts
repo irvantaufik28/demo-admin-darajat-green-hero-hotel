@@ -1,49 +1,90 @@
-export const credentials = { username: "admin.darajat", password: "admin123" };
-export const sessionKey = "green-hero-admin-session";
-export const sessionDurationMs = 15 * 60 * 1000;
+import { apiRequest, clearAccessToken, setAccessToken } from "./api/client";
 
-function getStoredSession() {
-  if (typeof window === "undefined") return null;
-  const raw = sessionStorage.getItem(sessionKey) || localStorage.getItem(sessionKey);
-  if (!raw) return null;
+export type AuthUser = {
+  id: string;
+  roleId: string;
+  name: string;
+  email: string;
+  roleName: string;
+  permissions: string[];
+};
+
+type AuthSession = {
+  accessToken: string;
+  tokenType: "Bearer";
+  expiresIn: number;
+  sessionExpiresAt: string;
+  user: AuthUser;
+};
+
+let currentUser: AuthUser | null = null;
+let sessionExpiresAt = 0;
+let restorePromise: Promise<boolean> | null = null;
+let sessionVersion = 0;
+
+function applySession(session: AuthSession): void {
+  sessionVersion += 1;
+  setAccessToken(session.accessToken);
+  currentUser = session.user;
+  sessionExpiresAt = Date.parse(session.sessionExpiresAt);
+}
+
+export function getCurrentUser(): AuthUser | null {
+  return currentUser;
+}
+
+export function getSessionRemainingMs(): number {
+  return Math.max(0, sessionExpiresAt - Date.now());
+}
+
+export function hasSession(): boolean {
+  return Boolean(currentUser) && getSessionRemainingMs() > 0;
+}
+
+export async function login(identifier: string, password: string): Promise<AuthUser> {
+  const session = await apiRequest<AuthSession>("auth/login", {
+    method: "POST",
+    auth: false,
+    body: { identifier: identifier.trim(), password },
+  });
+  applySession(session);
+  return session.user;
+}
+
+export async function restoreSession(): Promise<boolean> {
+  if (hasSession()) return true;
+  if (!restorePromise) {
+    const version = sessionVersion;
+    restorePromise = (async () => {
+      try {
+        const session = await apiRequest<AuthSession>("auth/refresh", {
+          method: "POST",
+          auth: false,
+        });
+        if (version === sessionVersion) applySession(session);
+        return hasSession();
+      } catch {
+        if (version === sessionVersion) clearLocalSession();
+        return hasSession();
+      } finally {
+        restorePromise = null;
+      }
+    })();
+  }
+  return restorePromise;
+}
+
+function clearLocalSession(): void {
+  sessionVersion += 1;
+  clearAccessToken();
+  currentUser = null;
+  sessionExpiresAt = 0;
+}
+
+export async function logout(): Promise<void> {
   try {
-    const value: unknown = JSON.parse(raw);
-    if (value && typeof value === "object" &&
-      typeof (value as { expiresAt?: unknown }).expiresAt === "number") {
-      return value as { expiresAt: number };
-    }
-  } catch {
-    // Previous demo sessions without an expiry are no longer valid.
+    await apiRequest<void>("auth/logout", { method: "POST", auth: false });
+  } finally {
+    clearLocalSession();
   }
-  clearSession();
-  return null;
-}
-
-export function getSessionRemainingMs() {
-  const session = getStoredSession();
-  if (!session) return 0;
-  const remaining = session.expiresAt - Date.now();
-  if (remaining <= 0) {
-    clearSession();
-    return 0;
-  }
-  return remaining;
-}
-
-export function hasSession() {
-  return getSessionRemainingMs() > 0;
-}
-
-export function saveSession(remember: boolean) {
-  localStorage.removeItem(sessionKey);
-  sessionStorage.removeItem(sessionKey);
-  (remember ? localStorage : sessionStorage).setItem(
-    sessionKey,
-    JSON.stringify({ expiresAt: Date.now() + sessionDurationMs }),
-  );
-}
-
-export function clearSession() {
-  localStorage.removeItem(sessionKey);
-  sessionStorage.removeItem(sessionKey);
 }

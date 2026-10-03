@@ -3,8 +3,10 @@
 import { useState } from "react";
 import Link from "next/link";
 import { Icon } from "../ui/Icon";
+import type { AuthUser } from "../../lib/auth";
 
 type Props = {
+  user: AuthUser | null;
   title: string;
   context: string;
   badge?: string;
@@ -13,6 +15,7 @@ type Props = {
 };
 
 export function Navbar({
+  user,
   title,
   context,
   badge,
@@ -79,15 +82,15 @@ export function Navbar({
               setMenu((value) => (value === "profile" ? null : "profile"))
             }
           >
-            <span className="navbar-avatar">JD</span>
+            <span className="navbar-avatar">{user?.name.split(" ").map((part) => part[0]).slice(0, 2).join("").toUpperCase() || "GH"}</span>
             <span className="navbar-profile__text">
-              <strong>Jhon Doe</strong>
-              <small>Green Hero Darajat</small>
+              <strong>{user?.name ?? "User"}</strong>
+              <small>{user?.roleName ?? "Green Hero Darajat"}</small>
             </span>
           </button>
           {menu === "profile" && (
             <div className="navbar-popover navbar-popover--profile">
-              <strong>Jhon Doe</strong>
+              <strong>{user?.name ?? "User"}</strong>
               <Link href="/profile" onClick={() => setMenu(null)}>Profile</Link>
               <Link href="/change-password" onClick={() => setMenu(null)}>Change Password</Link>
               <button type="button" onClick={onSignOut}>

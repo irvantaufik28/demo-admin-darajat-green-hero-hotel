@@ -1,4 +1,4 @@
-import { ArrivalsTodayPage } from "../../../components/reservations/ArrivalsTodayPage";
+import { ArrivalsTodayPage } from "../../../features/reservations/components/ArrivalsTodayPage";
 
 export default function ArrivalsTodayRoute() {
   return <ArrivalsTodayPage />;

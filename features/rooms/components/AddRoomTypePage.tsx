@@ -793,7 +793,7 @@ function Capacity({
 export function AddRoomTypePage({ roomId }: { roomId?: string }) {
   const router = useRouter();
   const [step, setStep] = useState(0);
-  const [highestStep, setHighestStep] = useState(0);
+  const [visitedSteps, setVisitedSteps] = useState<number[]>([0]);
   const [room, setRoom] = useState<RoomTypeEntry>(initialRoom);
   const [options, setOptions] = useState<RoomTypeOptions | null>(null);
   const [original, setOriginal] = useState<RoomTypeRecord | null>(null);
@@ -832,7 +832,7 @@ export function AddRoomTypePage({ roomId }: { roomId?: string }) {
           });
         }
         setStep(0);
-        setHighestStep(0);
+        setVisitedSteps([0]);
       } catch (caught) {
         if (controller.signal.aborted) return;
         if (caught instanceof ApiError && caught.status === 404)
@@ -885,7 +885,7 @@ export function AddRoomTypePage({ roomId }: { roomId?: string }) {
       }
     }
     setError("");
-    setHighestStep((current) => Math.max(current, step + 1));
+    setVisitedSteps((current) => [...new Set([...current, step + 1])]);
     setStep((current) => current + 1);
   }
 
@@ -954,7 +954,7 @@ export function AddRoomTypePage({ roomId }: { roomId?: string }) {
               : descriptions[step]}
           </p>
         </div>
-        <nav className="room-wizard-steps" aria-label="Add Room Type steps">
+        <nav className="room-wizard-steps" aria-label="Room Type form sections">
           {steps.map((name, index) => (
             <button
               type="button"
@@ -962,27 +962,25 @@ export function AddRoomTypePage({ roomId }: { roomId?: string }) {
               className={
                 index === step
                   ? "is-current"
-                  : index < step
+                  : visitedSteps.includes(index)
                     ? "is-complete"
                     : ""
               }
               onClick={() => {
-                if (index <= highestStep) {
-                  setStep(index);
-                  setError("");
-                }
+                setStep(index);
+                setVisitedSteps((current) => [...new Set([...current, index])]);
+                setError("");
               }}
-              disabled={index > highestStep}
               aria-current={index === step ? "step" : undefined}
             >
-              <span>{index < step ? "✓" : index + 1}</span>
+              <span>{index + 1}</span>
               <strong>{name}</strong>
               <small>
                 {index === step
                   ? "In Progress"
-                  : index < step
-                    ? "Completed"
-                    : "Pending"}
+                  : visitedSteps.includes(index)
+                    ? "Visited"
+                    : "Not visited"}
               </small>
             </button>
           ))}

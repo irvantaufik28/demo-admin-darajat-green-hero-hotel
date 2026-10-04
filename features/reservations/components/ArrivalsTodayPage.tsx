@@ -1,131 +1,24 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { AdminShell } from "../../../components/layout/AdminShell";
-import { calculateNights, formatStayDate } from "../constants/walk-in-data";
-import type { OperationalStatus, ReservationRecord } from "../constants/reservation-list-data";
-import { multiRoomArrivals } from "../constants/arrivals-today-data";
+import { formatStayDate } from "../constants/walk-in-data";
+import { getArrivalsToday, type ArrivalTodayItem } from "../services/api";
+import { restoreSession } from "../../../lib/auth";
 
-type ArrivalRecord = ReservationRecord & {
-  operationalStatus: OperationalStatus;
-  action: "View";
-};
+const pageSize = 20;
 
-const arrivals: ArrivalRecord[] = [
-  {
-    bookingId: "GH-260929-117",
-    guestName: "Dewi Kartika",
-    whatsapp: "+62 812 3311 2217",
-    source: "Website",
-    checkIn: "2026-09-30",
-    checkOut: "2026-10-01",
-    room: "Deluxe Room",
-    paymentStatus: "Paid",
-    status: "Confirmed",
-    operationalStatus: "Ready to Check-in",
-    action: "View",
-  },
-  {
-    bookingId: "GH-260929-105",
-    guestName: "Rafi Nugraha",
-    whatsapp: "+62 812 3311 2205",
-    source: "Phone",
-    checkIn: "2026-09-30",
-    checkOut: "2026-10-01",
-    room: "Family Room",
-    paymentStatus: "Partial",
-    status: "Confirmed",
-    operationalStatus: "Ready to Check-in",
-    action: "View",
-  },
-  {
-    bookingId: "GH-260929-104",
-    guestName: "Sari Wulandari",
-    whatsapp: "+62 812 3311 2204",
-    source: "Phone",
-    checkIn: "2026-09-30",
-    checkOut: "2026-10-01",
-    room: "Deluxe Room",
-    paymentStatus: "Unpaid",
-    status: "Confirmed",
-    operationalStatus: "Ready to Check-in",
-    action: "View",
-  },
-  {
-    bookingId: "GH-260929-101",
-    guestName: "Nabila Putri",
-    whatsapp: "+62 857 1122 3344",
-    source: "Phone",
-    checkIn: "2026-09-30",
-    checkOut: "2026-10-01",
-    room: "Deluxe Room",
-    paymentStatus: "Unpaid",
-    status: "Pending",
-    operationalStatus: "Awaiting Confirmation",
-    action: "View",
-  },
-  {
-    bookingId: "GH-260929-102",
-    guestName: "Ayu Lestari",
-    whatsapp: "+62 812 7788 9900",
-    source: "Phone",
-    checkIn: "2026-09-30",
-    checkOut: "2026-10-01",
-    room: "Family Room",
-    paymentStatus: "Partial",
-    status: "Pending",
-    operationalStatus: "Awaiting Confirmation",
-    action: "View",
-  },
-  {
-    bookingId: "GH-260929-119",
-    guestName: "Intan Permata",
-    whatsapp: "+62 812 3311 2219",
-    source: "Phone",
-    checkIn: "2026-09-30",
-    checkOut: "2026-10-01",
-    room: "Deluxe Room",
-    paymentStatus: "Paid",
-    status: "Checked-in",
-    operationalStatus: "Checked In",
-    action: "View",
-  },
-  {
-    bookingId: "GH-260929-120",
-    guestName: "Yusuf Maulana",
-    whatsapp: "+62 812 3311 2220",
-    source: "Walk-in",
-    checkIn: "2026-09-30",
-    checkOut: "2026-10-01",
-    room: "Family Room",
-    paymentStatus: "Partial",
-    status: "Checked-in",
-    operationalStatus: "Checked In",
-    action: "View",
-  },
-  {
-    bookingId: "GH-260929-121",
-    guestName: "Maya Lestari",
-    whatsapp: "+62 812 3311 2221",
-    source: "Phone",
-    checkIn: "2026-09-30",
-    checkOut: "2026-10-01",
-    room: "Suite Room",
-    paymentStatus: "Unpaid",
-    status: "Checked-in",
-    operationalStatus: "Checked In",
-    action: "View",
-  },
-  ...multiRoomArrivals.map(item => ({
-    ...item,
-    operationalStatus: item.operationalStatus ?? "Ready to Check-in",
-    action: "View" as const,
-  })),
-];
+function label(value: string) {
+  if (value === "walk_in") return "Walk-in";
+  if (value === "ota") return "OTA";
+  return value.split("_").map(part => part[0].toUpperCase() + part.slice(1)).join("-");
+}
 
-function sourceLabel(item: ReservationRecord) {
-  return item.source === "OTA" && item.channel ? "OTA · " + item.channel : item.source;
+function sourceLabel(item: ArrivalTodayItem) {
+  return item.source === "ota" && item.otaChannel?.name
+    ? `OTA · ${item.otaChannel.name}`
+    : label(item.source);
 }
 
 function statusTone(value: string) {
@@ -136,26 +29,39 @@ function statusTone(value: string) {
 }
 
 export function ArrivalsTodayPage() {
+  const [arrivals, setArrivals] = useState<ArrivalTodayItem[]>([]);
+  const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(1);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
   const [search, setSearch] = useState("");
   const [source, setSource] = useState("all");
-  const filtered = arrivals.filter(item => {
-    const query = search.trim().toLowerCase();
 
-    if (
-      query &&
-      ![item.bookingId, item.guestName, item.whatsapp].some(value =>
-        value.toLowerCase().includes(query),
-      )
-    ) {
-      return false;
-    }
-
-    if (source !== "all" && item.source.toLowerCase() !== source) {
-      return false;
-    }
-
-    return true;
-  });
+  useEffect(() => {
+    const controller = new AbortController();
+    const timer = window.setTimeout(async () => {
+      setLoading(true);
+      setError("");
+      try {
+        if (!(await restoreSession())) return;
+        const query = new URLSearchParams({ page: String(page), limit: String(pageSize) });
+        if (search.trim()) query.set("search", search.trim());
+        if (source !== "all") query.set("source", source);
+        const response = await getArrivalsToday(query, controller.signal);
+        if (!controller.signal.aborted) {
+          setArrivals(response.items);
+          setTotal(response.total);
+        }
+      } catch (cause) {
+        if (!controller.signal.aborted) {
+          setError(cause instanceof Error ? cause.message : "Data kedatangan gagal dimuat.");
+        }
+      } finally {
+        if (!controller.signal.aborted) setLoading(false);
+      }
+    }, search ? 300 : 0);
+    return () => { window.clearTimeout(timer); controller.abort(); };
+  }, [page, search, source]);
 
   return (
     <AdminShell title="Reservations" context="Arrivals Today">
@@ -164,7 +70,7 @@ export function ArrivalsTodayPage() {
           <div>
             <span className="arrivals-eyebrow">FRONT DESK · ARRIVALS</span>
             <h1>Arrivals Today</h1>
-            <p>Data demo kedatangan dan tamu yang sudah check-in.</p>
+            <p>Reservasi yang dijadwalkan tiba hari ini dan tamu yang sudah check-in.</p>
           </div>
           <Link href="/reservations/create-reservation-walkin" className="action-button">
             ＋ New Reservation
@@ -175,7 +81,7 @@ export function ArrivalsTodayPage() {
           <div className="arrivals-panel-header">
             <div>
               <h2>Today&apos;s Arrival List</h2>
-              <p>{arrivals.length} reservasi demo</p>
+              <p>{total} reservasi</p>
             </div>
             <div className="arrivals-panel-actions">
               <Link href="/reservations" className="reservation-secondary-button">
@@ -187,18 +93,18 @@ export function ArrivalsTodayPage() {
           <div className="arrivals-filters">
             <input
               value={search}
-              onChange={event => setSearch(event.target.value)}
+              onChange={event => { setSearch(event.target.value); setPage(1); }}
               placeholder="Search booking ID, guest, or WhatsApp"
               aria-label="Cari kedatangan"
             />
             <select
               value={source}
-              onChange={event => setSource(event.target.value)}
+              onChange={event => { setSource(event.target.value); setPage(1); }}
               aria-label="Filter sumber reservasi"
             >
               <option value="all">All Sources</option>
               <option value="website">Website</option>
-              <option value="walk-in">Walk-in</option>
+              <option value="walk_in">Walk-in</option>
               <option value="phone">Phone</option>
               <option value="ota">OTA</option>
             </select>
@@ -221,14 +127,14 @@ export function ArrivalsTodayPage() {
                 </tr>
               </thead>
               <tbody>
-                {filtered.map((item, index) => (
-                  <tr key={item.bookingId}>
-                    <td className="reservations-no">{index + 1}</td>
-                    <td className="reservations-booking">{item.bookingId}</td>
+                {arrivals.map((item, index) => (
+                  <tr key={item.id}>
+                    <td className="reservations-no">{(page - 1) * pageSize + index + 1}</td>
+                    <td className="reservations-booking">{item.bookingCode}</td>
                     <td>
                       <div className="reservations-guest">
-                        <strong>{item.guestName}</strong>
-                        <small>{item.whatsapp}</small>
+                        <strong>{item.guest.fullName}</strong>
+                        <small>{item.guest.phone}</small>
                       </div>
                     </td>
                     <td>
@@ -237,30 +143,30 @@ export function ArrivalsTodayPage() {
                     <td>
                       <div className="reservations-stay">
                         <strong>
-                          {formatStayDate(item.checkIn)} → {formatStayDate(item.checkOut)}
+                          {formatStayDate(item.checkInDate)} → {formatStayDate(item.checkOutDate)}
                         </strong>
-                        <small>{calculateNights(item.checkIn, item.checkOut)} nights</small>
+                        <small>{item.nights} {item.nights === 1 ? "night" : "nights"}</small>
                       </div>
                     </td>
-                    <td>{item.room}</td>
+                    <td>{item.roomSummary || "—"}</td>
                     <td>
-                      <span className={"reservations-badge reservations-badge--" + statusTone(item.paymentStatus)}>
-                        {item.paymentStatus}
+                      <span className={"reservations-badge reservations-badge--" + statusTone(label(item.paymentStatus))}>
+                        {label(item.paymentStatus)}
                       </span>
                     </td>
                     <td>
-                      <span className={"reservations-badge reservations-badge--" + statusTone(item.status)}>
-                        {item.status}
+                      <span className={"reservations-badge reservations-badge--" + statusTone(label(item.reservationStatus))}>
+                        {label(item.reservationStatus)}
                       </span>
                     </td>
                     <td>
-                      <span className={"reservations-badge reservations-badge--" + statusTone(item.operationalStatus)}>
-                        {item.operationalStatus}
+                      <span className={"reservations-badge reservations-badge--" + statusTone(item.operationalStatus.label)}>
+                        {item.operationalStatus.label}
                       </span>
                     </td>
                     <td>
                       <Link
-                        href={"/reservations/" + encodeURIComponent(item.bookingId)}
+                        href={"/reservations/" + encodeURIComponent(item.id)}
                         className="reservations-view-link"
                       >
                         View
@@ -268,10 +174,10 @@ export function ArrivalsTodayPage() {
                     </td>
                   </tr>
                 ))}
-                {filtered.length === 0 && (
+                {(loading || error || arrivals.length === 0) && (
                   <tr>
                     <td className="arrivals-empty" colSpan={10}>
-                      Tidak ada kedatangan yang cocok dengan filter.
+                      {loading ? "Memuat kedatangan..." : error || "Tidak ada kedatangan yang cocok dengan filter."}
                     </td>
                   </tr>
                 )}
@@ -280,11 +186,17 @@ export function ArrivalsTodayPage() {
           </div>
 
           <div className="arrivals-table-footer">
-            Showing {filtered.length} of {arrivals.length} arrivals
+            Showing {arrivals.length} of {total} arrivals
+            {total > pageSize && (
+              <div>
+                <button type="button" disabled={page === 1} onClick={() => setPage(value => value - 1)}>Previous</button>
+                <span> Page {page} of {Math.ceil(total / pageSize)} </span>
+                <button type="button" disabled={page * pageSize >= total} onClick={() => setPage(value => value + 1)}>Next</button>
+              </div>
+            )}
           </div>
         </section>
       </div>
     </AdminShell>
   );
 }
-

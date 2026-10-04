@@ -48,6 +48,91 @@ export function getReservations(query: URLSearchParams, signal?: AbortSignal) {
   return apiRequest<ReservationListResponse>(`reservations?${query}`, { signal });
 }
 
+export type ArrivalTodayItem = {
+  id: string;
+  bookingCode: string;
+  source: string;
+  checkInDate: string;
+  checkOutDate: string;
+  nights: number;
+  reservationStatus: ReservationStatus;
+  paymentStatus: PaymentStatus;
+  operationalStatus: { code: string; label: string };
+  guest: { fullName: string; phone: string };
+  otaChannel: { name: string } | null;
+  roomSummary: string;
+};
+
+export type ArrivalsTodayResponse = {
+  date: string;
+  items: ArrivalTodayItem[];
+  page: number;
+  limit: number;
+  total: number;
+};
+
+export function getArrivalsToday(query: URLSearchParams, signal?: AbortSignal) {
+  return apiRequest<ArrivalsTodayResponse>(`reservations/arrivals-today?${query}`, { signal });
+}
+
+export type DepartureTodayItem = {
+  id: string;
+  bookingCode: string;
+  checkOutDate: string;
+  reservationStatus: ReservationStatus;
+  paymentStatus: PaymentStatus;
+  operationalStatus: { code: string; label: string };
+  guest: { fullName: string; phone: string };
+  rooms: { id: string; roomNumber: string | null }[];
+  roomSummary: string;
+  deposit: {
+    amountHeld: number;
+    amountRefunded: number;
+    amountDeducted: number;
+    heldBalance: number;
+    label: string;
+  };
+};
+
+export type DeparturesTodayResponse = {
+  date: string;
+  summary: { total: number; dueOut: number; checkedOut: number };
+  items: DepartureTodayItem[];
+  page: number;
+  limit: number;
+  total: number;
+};
+
+export function getDeparturesToday(query: URLSearchParams, signal?: AbortSignal) {
+  return apiRequest<DeparturesTodayResponse>(`reservations/departures-today?${query}`, { signal });
+}
+
+export type InHouseItem = {
+  id: string;
+  bookingCode: string;
+  checkOutDate: string;
+  reservationStatus: ReservationStatus;
+  paymentStatus: PaymentStatus;
+  operationalStatus: { code: string; label: string };
+  guest: { fullName: string; phone: string };
+  rooms: { id: string; roomNumber: string | null }[];
+  roomSummary: string;
+  deposit: { heldBalance: number; label: string };
+};
+
+export type InHouseResponse = {
+  date: string;
+  summary: { guestsInHouse: number; roomsOccupied: number; inHouse: number; dueOut: number; overdue: number };
+  items: InHouseItem[];
+  page: number;
+  limit: number;
+  total: number;
+};
+
+export function getInHouse(query: URLSearchParams, signal?: AbortSignal) {
+  return apiRequest<InHouseResponse>(`reservations/in-house?${query}`, { signal });
+}
+
 export type ApiReservationDetail = {
   reservation: {
     id: string;
@@ -86,7 +171,21 @@ export type ApiReservationDetail = {
       id: string;
       stayDate: string;
       basePrice: number;
+      discountAmount: number;
       finalPrice: number;
+      campaignSnapshot: {
+        id: string;
+        name: string;
+        promoCode: string | null;
+        channel: string;
+        discountType: string;
+        discountValue: number;
+        priority: number;
+        bookingStart: string | null;
+        bookingEnd: string | null;
+        stayStart: string | null;
+        stayEnd: string | null;
+      } | null;
     }[];
     extraBeds: {
       id: string;
@@ -95,6 +194,11 @@ export type ApiReservationDetail = {
       dateTo: string;
       unitPricePerNight: number;
     }[];
+  }[];
+  appliedCampaigns: {
+    id: string;
+    name: string;
+    promoCode: string | null;
   }[];
   experiences: {
     id: string;

@@ -147,9 +147,6 @@ export function RoomTypesPage() {
                     </td>
                     <td>
                       <div className="room-types-name-cell">
-                        {room.coverImage && (
-                          <img src={room.coverImage.url} alt="" />
-                        )}
                         <div>
                           <strong>{room.name}</strong>
                           <small>{room.description ?? "—"}</small>

@@ -11,15 +11,17 @@ export type CancellationRule = {
   chargeValue: number; // percent, IDR, or nights
 };
 
-export type NoShowChargeType = "Percentage" | "First Night Charge" | "Full Stay Amount";
+export type NoShowChargeType = "None" | "Percentage" | "First Night Charge" | "Full Stay Amount";
 export type CancellationSource = "Website" | "Phone";
 
 export type CancellationPolicy = {
   id: string;
+  policyTypeId?: string;
   name: string;
   status: "Active" | "Inactive";
   sources: CancellationSource[];
   roomTypes: string[]; // empty = all room types
+  roomTypeIds?: string[];
   stayStart: string | null; // null = all dates
   stayEnd: string | null;
   applyToAllDates: boolean;
@@ -98,10 +100,10 @@ export const cancellationPolicies: CancellationPolicy[] = [
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 export function formatStayPeriod(policy: CancellationPolicy): string {
-  if (policy.applyToAllDates || !policy.stayStart || !policy.stayEnd) {
+  if (policy.applyToAllDates || (!policy.stayStart && !policy.stayEnd)) {
     return "All Dates";
   }
-  return `${formatStayDate(policy.stayStart)} — ${formatStayDate(policy.stayEnd)}`;
+  return `${policy.stayStart ? formatStayDate(policy.stayStart) : "Any date"} — ${policy.stayEnd ? formatStayDate(policy.stayEnd) : "Any date"}`;
 }
 
 export function formatRoomTypes(policy: CancellationPolicy): string {
@@ -125,11 +127,15 @@ export function getPolicySummary(policy: CancellationPolicy): { main: string; su
   const mainText = firstFreeRule
     ? `Free until ${firstFreeRule.days} days before check-in`
     : chargeRule
-      ? `${chargeRule.chargeValue}% charge ${chargeRule.timing.toLowerCase()} ${chargeRule.days} days`
+      ? `${chargeRule.chargeType === "Percentage" ? `${chargeRule.chargeValue}%` : chargeRule.chargeType === "Nights Count" ? `${chargeRule.chargeValue} night(s)` : `Rp${new Intl.NumberFormat("id-ID").format(chargeRule.chargeValue)}`} charge ${chargeRule.timing.toLowerCase()} ${chargeRule.days} days`
       : "See policy details";
 
   const ruleCount = policy.rules.length;
-  const noShowText = `No-show: ${policy.noShowChargeValue}%`;
+  const noShowText = policy.noShowChargeType === "Percentage"
+    ? `No-show: ${policy.noShowChargeValue}%`
+    : policy.noShowChargeType === "None"
+      ? "No-show: no charge"
+      : `No-show: ${policy.noShowChargeType}`;
   const sub = firstFreeRule && chargeRule
     ? `${ruleCount} rules • ${noShowText}`
     : noShowText;

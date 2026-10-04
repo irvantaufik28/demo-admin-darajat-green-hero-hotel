@@ -1,10 +1,18 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { AdminShell } from "../../../components/layout/AdminShell";
 import { formatRupiah, formatStayDate } from "../constants/walk-in-data";
-import { inHouseGuests } from "../constants/in-house-data";
+import { restoreSession } from "../../../lib/auth";
+import { getInHouse, type InHouseItem } from "../services/api";
+
+const pageSize = 20;
+
+function label(value: string) {
+  return value.split("_").map(part => part[0].toUpperCase() + part.slice(1)).join("-");
+}
+
 function paymentTone(status: string) {
   if (status === "Paid") return "success";
   if (status === "Unpaid") return "danger";
@@ -12,33 +20,43 @@ function paymentTone(status: string) {
 }
 
 export function InHousePage() {
+  const [guests, setGuests] = useState<InHouseItem[]>([]);
+  const [summary, setSummary] = useState({ guestsInHouse: 0, roomsOccupied: 0 });
+  const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(1);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
   const [search, setSearch] = useState("");
   const [checkOut, setCheckOut] = useState("all");
   const [payment, setPayment] = useState("all");
 
-  const filtered = inHouseGuests.filter((item) => {
-    const query = search.trim().toLowerCase();
-    if (
-      query &&
-      ![
-        item.guestName,
-        item.bookingId,
-        item.room,
-        item.roomNumber,
-        ...(item.rooms?.flatMap((room) => [room.room, room.roomNumber]) ?? []),
-      ].some((value) => value.toLowerCase().includes(query))
-    )
-      return false;
-    if (checkOut !== "all" && item.operationalStatus.toLowerCase() !== checkOut)
-      return false;
-    if (payment !== "all" && item.paymentStatus.toLowerCase() !== payment)
-      return false;
-    return true;
-  });
-  const roomsOccupied = inHouseGuests.reduce(
-    (sum, item) => sum + (item.rooms?.length ?? 1),
-    0,
-  );
+  useEffect(() => {
+    const controller = new AbortController();
+    const timer = window.setTimeout(async () => {
+      setLoading(true);
+      setError("");
+      try {
+        if (!(await restoreSession())) return;
+        const query = new URLSearchParams({ page: String(page), limit: String(pageSize) });
+        if (search.trim()) query.set("search", search.trim());
+        if (checkOut !== "all") query.set("operationalStatus", checkOut);
+        if (payment !== "all") query.set("paymentStatus", payment);
+        const response = await getInHouse(query, controller.signal);
+        if (!controller.signal.aborted) {
+          setGuests(response.items);
+          setSummary(response.summary);
+          setTotal(response.total);
+        }
+      } catch (cause) {
+        if (!controller.signal.aborted) {
+          setError(cause instanceof Error ? cause.message : "Data tamu menginap gagal dimuat.");
+        }
+      } finally {
+        if (!controller.signal.aborted) setLoading(false);
+      }
+    }, search ? 300 : 0);
+    return () => { window.clearTimeout(timer); controller.abort(); };
+  }, [page, search, checkOut, payment]);
 
   return (
     <AdminShell title="Reservations" context="In House">
@@ -48,11 +66,11 @@ export function InHousePage() {
             <div className="in-house-title">
               <h1>In House</h1>
               <span>
-                {inHouseGuests.length} guests in house · {roomsOccupied} rooms
+                {summary.guestsInHouse} guests in house · {summary.roomsOccupied} rooms
                 occupied
               </span>
             </div>
-            <p>Data demo tamu yang masih berstatus Checked-in.</p>
+            <p>Tamu yang masih berstatus Checked-in.</p>
           </div>
           <Link
             href="/reservations/create-reservation-walkin"
@@ -65,23 +83,23 @@ export function InHousePage() {
           <div className="in-house-filter-controls">
             <input
               value={search}
-              onChange={(event) => setSearch(event.target.value)}
+              onChange={(event) => { setSearch(event.target.value); setPage(1); }}
               placeholder="Search guest, room, or booking ID"
               aria-label="Search in-house guests"
             />
             <select
               value={checkOut}
-              onChange={(event) => setCheckOut(event.target.value)}
+              onChange={(event) => { setCheckOut(event.target.value); setPage(1); }}
               aria-label="Filter check-out status"
             >
               <option value="all">Check-out: All</option>
-              <option value="in house">Check-out: Later</option>
-              <option value="due out">Check-out: Today</option>
+              <option value="in_house">Check-out: Later</option>
+              <option value="due_out">Check-out: Today</option>
               <option value="overdue">Check-out: Overdue</option>
             </select>
             <select
               value={payment}
-              onChange={(event) => setPayment(event.target.value)}
+              onChange={(event) => { setPayment(event.target.value); setPage(1); }}
               aria-label="Filter payment status"
             >
               <option value="all">Payment: All Payments</option>
@@ -95,14 +113,15 @@ export function InHousePage() {
                 setSearch("");
                 setCheckOut("all");
                 setPayment("all");
+                setPage(1);
               }}
             >
               Reset
             </button>
           </div>
           <span>
-            Showing <strong>{filtered.length}</strong> of{" "}
-            <strong>{inHouseGuests.length}</strong> entries
+            Showing <strong>{guests.length}</strong> of{" "}
+            <strong>{total}</strong> entries
           </span>
         </div>
         <section className="in-house-table-shell">
@@ -123,67 +142,68 @@ export function InHousePage() {
                 </tr>
               </thead>
               <tbody>
-                {filtered.map((item, index) => (
-                  <tr key={item.bookingId}>
-                    <td className="reservations-no">{index + 1}</td>
+                {guests.map((item, index) => (
+                  <tr key={item.id}>
+                    <td className="reservations-no">{(page - 1) * pageSize + index + 1}</td>
                     <td>
                       <div className="reservations-guest">
-                        <strong>{item.guestName}</strong>
-                        <small>{item.whatsapp}</small>
+                        <strong>{item.guest.fullName}</strong>
+                        <small>{item.guest.phone}</small>
                       </div>
                     </td>
                     <td>
-                      <span className="in-house-booking">{item.bookingId}</span>
+                      <span className="in-house-booking">{item.bookingCode}</span>
                     </td>
                     <td className="in-house-room">
-                      {item.rooms && item.rooms.length > 1
-                        ? `${item.rooms.length} Rooms · ${item.rooms.map((room) => room.roomNumber).join(", ")}`
-                        : `${item.room} · ${item.roomNumber}`}
+                      {item.roomSummary || "—"}
+                      {item.rooms.some(room => room.roomNumber)
+                        ? ` · ${item.rooms.map(room => room.roomNumber).filter(Boolean).join(", ")}`
+                        : ""}
                     </td>
-                    <td>{formatStayDate(item.checkOut)}</td>
+                    <td>{formatStayDate(item.checkOutDate)}</td>
                     <td>
                       <span
                         className={
                           "reservations-badge reservations-badge--" +
-                          paymentTone(item.paymentStatus)
+                          paymentTone(label(item.paymentStatus))
                         }
                       >
-                        {item.paymentStatus}
+                        {label(item.paymentStatus)}
                       </span>
                     </td>
                     <td>
                       <span className="reservations-badge reservations-badge--info">
-                        {item.reservationStatus}
+                        {label(item.reservationStatus)}
                       </span>
                     </td>
                     <td>
                       <span
                         className={
                           "reservations-badge reservations-badge--" +
-                          (item.operationalStatus === "Overdue"
+                          (item.operationalStatus.code === "overdue"
                             ? "danger"
-                            : item.operationalStatus === "Due Out"
+                            : item.operationalStatus.code === "due_out"
                               ? "warning"
                               : "info")
                         }
                       >
-                        {item.operationalStatus}
+                        {item.operationalStatus.label}
                       </span>
                     </td>
                     <td>
-                      {item.deposit === 0 ? (
+                      {item.deposit.heldBalance === 0 ? (
                         <span className="in-house-muted">No Deposit</span>
                       ) : (
                         <span className="reservations-badge reservations-badge--warning">
-                          {formatRupiah(item.deposit)}
+                          {formatRupiah(item.deposit.heldBalance)}
                         </span>
                       )}
                     </td>
                     <td>
                       <Link
                         href={
-                          "/reservations/in-house/" +
-                          encodeURIComponent(item.bookingId)
+                          "/reservations/" +
+                          encodeURIComponent(item.id)
                         }
                         className="in-house-view-button"
                       >
@@ -192,10 +212,10 @@ export function InHousePage() {
                     </td>
                   </tr>
                 ))}
-                {filtered.length === 0 && (
+                {(loading || error || guests.length === 0) && (
                   <tr>
                     <td className="in-house-empty" colSpan={10}>
-                      Tidak ada tamu yang cocok dengan filter.
+                      {loading ? "Memuat tamu menginap..." : error || "Tidak ada tamu yang cocok dengan filter."}
                     </td>
                   </tr>
                 )}
@@ -204,7 +224,14 @@ export function InHousePage() {
           </div>
           <div className="in-house-table-footer">
             <span className="in-house-audit-dot" />
-            Data demo statis
+            {total} guests in house
+            {total > pageSize && (
+              <div>
+                <button type="button" disabled={page === 1} onClick={() => setPage(value => value - 1)}>Previous</button>
+                <span> Page {page} of {Math.ceil(total / pageSize)} </span>
+                <button type="button" disabled={page * pageSize >= total} onClick={() => setPage(value => value + 1)}>Next</button>
+              </div>
+            )}
           </div>
         </section>
       </div>

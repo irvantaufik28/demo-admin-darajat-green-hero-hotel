@@ -229,6 +229,26 @@ export function ReservationDetailPage() {
                   </div>
                 </section>
 
+                {detail.appliedCampaigns?.length > 0 && (
+                  <section>
+                    <div className="reservation-detail-section-title"><h2>Campaign &amp; Discount</h2></div>
+                    {detail.appliedCampaigns.map((campaign) => (
+                      <div className="reservation-detail-row" key={campaign.id}>
+                        <span>{campaign.name}{campaign.promoCode ? ` · ${campaign.promoCode}` : ""}</span>
+                        <strong>
+                          −{rupiah(detail.rooms.reduce(
+                            (total, room) => total + room.nights.reduce(
+                              (sum, night) => sum + (night.campaignSnapshot?.id === campaign.id ? night.discountAmount : 0),
+                              0,
+                            ),
+                            0,
+                          ))}
+                        </strong>
+                      </div>
+                    ))}
+                  </section>
+                )}
+
                 <section>
                   <div className="reservation-detail-section-title"><h2>Experiences & Add-ons</h2></div>
                   {detail.experiences.map((item) => <div className="reservation-detail-row" key={item.id}><span>{item.nameSnapshot} × {item.quantity}</span><strong>{rupiah(item.quantity * item.unitPrice)}</strong></div>)}

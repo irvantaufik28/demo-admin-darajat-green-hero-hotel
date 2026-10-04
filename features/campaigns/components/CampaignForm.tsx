@@ -1,18 +1,28 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { AdminShell } from "../../../components/layout/AdminShell";
 import { Icon } from "../../../components/ui/Icon";
+import { DateRangePicker } from "./DateRangePicker";
+import { restoreSession } from "../../../lib/auth";
 import {
   ALL_DAYS,
-  ALL_ROOM_TYPE_OPTIONS,
-  ALL_SOURCES,
-  CANCELLATION_POLICIES,
   type BlackoutDate,
-  type Campaign,
   type DiscountType,
 } from "../constants/campaigns-data";
+import {
+  createCampaign,
+  getCampaign,
+  listCampaignRoomTypes,
+  listCancellationPolicyOptions,
+  updateCampaign,
+  type CampaignChannel,
+  type CampaignDetail,
+  type CampaignInput,
+  type CampaignRoomTypeOption,
+  type CancellationPolicyOption,
+} from "../services/campaigns";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -20,7 +30,7 @@ type FormState = {
   name: string;
   status: "Active" | "Inactive";
   priority: number;
-  sources: string[];
+  channel: CampaignChannel;
   roomTypes: string[];
   bookingStart: string;
   bookingEnd: string;
@@ -40,36 +50,41 @@ type FormState = {
 
 type Props = {
   mode: "add" | "edit";
-  initialData?: Campaign;
+  campaignId?: string;
 };
 
 // ─── Default state ────────────────────────────────────────────────────────────
 
-function buildDefault(data?: Campaign): FormState {
+function buildDefault(data?: CampaignDetail): FormState {
   if (data) {
     return {
       name: data.name,
-      status: data.status,
+      status: data.isActive ? "Active" : "Inactive",
       priority: data.priority,
-      sources: data.sources,
-      roomTypes: data.roomTypes,
-      bookingStart: data.bookingStart,
-      bookingEnd: data.bookingEnd,
-      stayStart: data.stayStart,
-      stayEnd: data.stayEnd,
-      applicableDays: data.applicableDays,
+      channel: data.channel,
+      roomTypes: data.roomTypes.map((room) => room.id),
+      bookingStart: data.bookingStart ?? "",
+      bookingEnd: data.bookingEnd ?? "",
+      stayStart: data.stayStart ?? "",
+      stayEnd: data.stayEnd ?? "",
+      applicableDays: data.weekdays.map((weekday) => ALL_DAYS[weekday - 1]),
       minNights: data.minNights,
       minRooms: data.minRooms,
       discountType: data.discountType,
       discountValue: data.discountValue,
-      cancellationPolicy: data.cancellationPolicy,
-      requirePromoCode: data.requirePromoCode,
+      cancellationPolicy: data.cancellationPolicyId ?? "",
+      requirePromoCode: data.requiresCode,
       promoCode: data.promoCode ?? "",
       useBlackoutDates: data.blackoutDates.length > 0,
       blackoutDates:
         data.blackoutDates.length > 0
-          ? data.blackoutDates
-          : [{ id: crypto.randomUUID(), from: "", to: "", label: "" }],
+          ? data.blackoutDates.map((item) => ({
+              id: item.id,
+              from: item.dateFrom,
+              to: item.dateTo,
+              label: item.label ?? "",
+            }))
+          : [{ id: "empty", from: "", to: "", label: "" }],
     };
   }
 
@@ -77,7 +92,7 @@ function buildDefault(data?: Campaign): FormState {
     name: "",
     status: "Active",
     priority: 1,
-    sources: ["Website", "Walk-in"],
+    channel: "website",
     roomTypes: [],
     bookingStart: "",
     bookingEnd: "",
@@ -88,21 +103,12 @@ function buildDefault(data?: Campaign): FormState {
     minRooms: 1,
     discountType: "percent",
     discountValue: 10,
-    cancellationPolicy: CANCELLATION_POLICIES[0],
+    cancellationPolicy: "",
     requirePromoCode: false,
     promoCode: "",
     useBlackoutDates: false,
-    blackoutDates: [{ id: crypto.randomUUID(), from: "", to: "", label: "" }],
+    blackoutDates: [{ id: "empty", from: "", to: "", label: "" }],
   };
-}
-
-// ─── Overlap check (simple static check against existing campaigns) ──────────
-
-function hasOverlap(form: FormState, currentId?: string): boolean {
-  // Stub: in a real system this would query the server.
-  // For demo: just return true to show the warning banner when all key fields filled.
-  if (!form.bookingStart || !form.stayStart || form.name.length < 2) return false;
-  return false; // disable by default; set true to demo the warning
 }
 
 // ─── Section wrapper ──────────────────────────────────────────────────────────
@@ -161,17 +167,53 @@ function CheckboxGroup({
 
 // ─── Main component ───────────────────────────────────────────────────────────
 
-export function CampaignForm({ mode, initialData }: Props) {
+export function CampaignForm({ mode, campaignId }: Props) {
   const router = useRouter();
-  const [form, setForm] = useState<FormState>(() => buildDefault(initialData));
+  const [form, setForm] = useState<FormState>(() => buildDefault());
+  const [roomOptions, setRoomOptions] = useState<CampaignRoomTypeOption[]>([]);
+  const [policyOptions, setPolicyOptions] = useState<CancellationPolicyOption[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [hasLoadedCampaign, setHasLoadedCampaign] = useState(mode === "add");
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    const controller = new AbortController();
+    void (async () => {
+      try {
+        if (!(await restoreSession())) return;
+        const [rooms, policies, detail] = await Promise.all([
+          listCampaignRoomTypes(controller.signal),
+          listCancellationPolicyOptions(controller.signal),
+          mode === "edit" && campaignId
+            ? getCampaign(campaignId, controller.signal)
+            : Promise.resolve(null),
+        ]);
+        if (controller.signal.aborted) return;
+        setRoomOptions(rooms);
+        setPolicyOptions(policies);
+        if (detail) {
+          setForm(buildDefault(detail.campaign));
+          setHasLoadedCampaign(true);
+        }
+        if (mode === "edit" && !detail) setError("Campaign tidak ditemukan.");
+      } catch (cause) {
+        if (!controller.signal.aborted) {
+          setError(cause instanceof Error ? cause.message : "Campaign gagal dimuat.");
+        }
+      } finally {
+        if (!controller.signal.aborted) setLoading(false);
+      }
+    })();
+    return () => controller.abort();
+  }, [mode, campaignId]);
 
   function set<K extends keyof FormState>(key: K, value: FormState[K]) {
     setForm((prev) => ({ ...prev, [key]: value }));
   }
 
   // ── Room types helpers ──
-  const allRoomsChecked =
-    ALL_ROOM_TYPE_OPTIONS.every((r) => form.roomTypes.includes(r));
+  const allRoomsChecked = form.roomTypes.length === 0;
 
   function toggleRoomType(rt: string) {
     set(
@@ -183,10 +225,7 @@ export function CampaignForm({ mode, initialData }: Props) {
   }
 
   function toggleSelectAll() {
-    set(
-      "roomTypes",
-      allRoomsChecked ? [] : [...ALL_ROOM_TYPE_OPTIONS],
-    );
+    set("roomTypes", []);
   }
 
   // ── Blackout dates helpers ──
@@ -197,11 +236,11 @@ export function CampaignForm({ mode, initialData }: Props) {
     ]);
   }
 
-  function updateBlackout(id: string, field: keyof BlackoutDate, value: string) {
+  function updateBlackoutRange(id: string, from: string, to: string) {
     set(
       "blackoutDates",
       form.blackoutDates.map((bd) =>
-        bd.id === id ? { ...bd, [field]: value } : bd,
+        bd.id === id ? { ...bd, from, to } : bd,
       ),
     );
   }
@@ -214,14 +253,68 @@ export function CampaignForm({ mode, initialData }: Props) {
   }
 
   // ── Submit ──
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    // In a real app: call API / dispatch action
-    router.push("/campaigns");
+    if (saving || loading) return;
+    setError("");
+    if (!form.name.trim() || form.applicableDays.length === 0) {
+      setError("Isi nama campaign dan pilih minimal satu Applicable Day.");
+      return;
+    }
+    if (form.requirePromoCode && !form.promoCode.trim()) {
+      setError("Isi promo code ketika Require Promo Code aktif.");
+      return;
+    }
+    if (form.useBlackoutDates && form.blackoutDates.some((item) => !item.from || !item.to)) {
+      setError("Lengkapi tanggal From dan To pada setiap Blackout Date.");
+      return;
+    }
+    const input: CampaignInput = {
+      name: form.name.trim(),
+      promoCode: form.requirePromoCode ? form.promoCode.trim().toUpperCase() : null,
+      requiresCode: form.requirePromoCode,
+      bookingStart: form.bookingStart || null,
+      bookingEnd: form.bookingEnd || null,
+      stayStart: form.stayStart || null,
+      stayEnd: form.stayEnd || null,
+      discountType: form.discountType,
+      discountValue: form.discountValue,
+      minNights: form.minNights,
+      minRooms: form.minRooms,
+      priority: form.priority,
+      cancellationPolicyId: form.cancellationPolicy || null,
+      isActive: form.status === "Active",
+      channel: form.channel,
+      roomTypeIds: form.roomTypes,
+      weekdays: form.applicableDays.map((day) => ALL_DAYS.indexOf(day as typeof ALL_DAYS[number]) + 1),
+      blackoutDates: form.useBlackoutDates
+        ? form.blackoutDates.map((item) => ({
+            dateFrom: item.from,
+            dateTo: item.to,
+            label: item.label?.trim() || null,
+          }))
+        : [],
+    };
+    setSaving(true);
+    try {
+      if (mode === "edit" && campaignId) {
+        await updateCampaign(campaignId, input);
+      } else {
+        await createCampaign(input);
+      }
+      router.push("/campaigns");
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Campaign gagal disimpan.");
+    } finally {
+      setSaving(false);
+    }
   }
 
   const isEdit = mode === "edit";
-  const overlap = hasOverlap(form, initialData?.id);
+  const availablePolicies = policyOptions.filter((policy) =>
+    policy.id === form.cancellationPolicy ||
+    (policy.isActive && (form.channel === "website" ? policy.appliesWebsite : policy.appliesPhone)),
+  );
 
   return (
     <AdminShell
@@ -239,6 +332,10 @@ export function CampaignForm({ mode, initialData }: Props) {
           </p>
         </div>
 
+        {error && <div className="campaigns-api-message" role="alert">{error}</div>}
+        {loading ? (
+          <div className="campaigns-api-message" role="status">Memuat data campaign...</div>
+        ) : hasLoadedCampaign ? (
         <form className="cf-form" onSubmit={handleSubmit} noValidate>
           <div className="cf-card">
 
@@ -316,26 +413,26 @@ export function CampaignForm({ mode, initialData }: Props) {
             {/* ── 2. Applicable Source ────────────────────────────────── */}
             <Section title="Applicable Source">
               <div className="cf-checkbox-row">
-                {ALL_SOURCES.map((src) => (
-                  <label key={src} className="cf-checkbox-label">
+                {([
+                  ["website", "Website"],
+                  ["front_desk", "Front Desk (Walk-in & Phone)"],
+                ] as const).map(([channel, label]) => (
+                  <label key={channel} className="cf-checkbox-label">
                     <input
-                      type="checkbox"
+                      type="radio"
+                      name="campaign-channel"
                       className="cf-checkbox"
-                      checked={form.sources.includes(src)}
-                      onChange={() =>
-                        set(
-                          "sources",
-                          form.sources.includes(src)
-                            ? form.sources.filter((s) => s !== src)
-                            : [...form.sources, src],
-                        )
-                      }
+                      checked={form.channel === channel}
+                      onChange={() => {
+                        set("channel", channel);
+                        set("cancellationPolicy", "");
+                      }}
                     />
-                    <span>{src}</span>
+                    <span>{label}</span>
                   </label>
                 ))}
                 <span className="cf-hint-inline">
-                  (Pilih minimal satu saluran pemesanan)
+                  (Satu channel per campaign)
                 </span>
               </div>
             </Section>
@@ -343,15 +440,15 @@ export function CampaignForm({ mode, initialData }: Props) {
             {/* ── 3. Applicable Room Types ────────────────────────────── */}
             <Section title="Applicable Room Types">
               <div className="cf-checkbox-row">
-                {ALL_ROOM_TYPE_OPTIONS.map((rt) => (
-                  <label key={rt} className="cf-checkbox-label">
+                {roomOptions.map((room) => (
+                  <label key={room.id} className="cf-checkbox-label">
                     <input
                       type="checkbox"
                       className="cf-checkbox"
-                      checked={form.roomTypes.includes(rt)}
-                      onChange={() => toggleRoomType(rt)}
+                      checked={form.roomTypes.includes(room.id)}
+                      onChange={() => toggleRoomType(room.id)}
                     />
-                    <span>{rt}</span>
+                    <span>{room.name}{!room.isActive ? " (Inactive)" : ""}</span>
                   </label>
                 ))}
                 <label className="cf-checkbox-label cf-checkbox-label--secondary">
@@ -361,7 +458,7 @@ export function CampaignForm({ mode, initialData }: Props) {
                     checked={allRoomsChecked}
                     onChange={toggleSelectAll}
                   />
-                  <span>Select All</span>
+                  <span>All Room Types</span>
                 </label>
               </div>
             </Section>
@@ -372,43 +469,23 @@ export function CampaignForm({ mode, initialData }: Props) {
                 {/* Booking Period */}
                 <div className="cf-period-row">
                   <span className="cf-period-label">Booking Period</span>
-                  <div className="cf-date-range">
-                    <span className="cf-date-sep">From</span>
-                    <input
-                      type="date"
-                      className="cf-input-date"
-                      value={form.bookingStart}
-                      onChange={(e) => set("bookingStart", e.target.value)}
-                    />
-                    <span className="cf-date-sep">To</span>
-                    <input
-                      type="date"
-                      className="cf-input-date"
-                      value={form.bookingEnd}
-                      onChange={(e) => set("bookingEnd", e.target.value)}
-                    />
-                  </div>
+                  <DateRangePicker
+                    label="Booking Period"
+                    start={form.bookingStart}
+                    end={form.bookingEnd}
+                    onChange={(bookingStart, bookingEnd) => setForm((current) => ({ ...current, bookingStart, bookingEnd }))}
+                  />
                   <span className="cf-period-note">Periode pemesanan dibuat</span>
                 </div>
                 {/* Stay Period */}
                 <div className="cf-period-row">
                   <span className="cf-period-label">Stay Period</span>
-                  <div className="cf-date-range">
-                    <span className="cf-date-sep">From</span>
-                    <input
-                      type="date"
-                      className="cf-input-date"
-                      value={form.stayStart}
-                      onChange={(e) => set("stayStart", e.target.value)}
-                    />
-                    <span className="cf-date-sep">To</span>
-                    <input
-                      type="date"
-                      className="cf-input-date"
-                      value={form.stayEnd}
-                      onChange={(e) => set("stayEnd", e.target.value)}
-                    />
-                  </div>
+                  <DateRangePicker
+                    label="Stay Period"
+                    start={form.stayStart}
+                    end={form.stayEnd}
+                    onChange={(stayStart, stayEnd) => setForm((current) => ({ ...current, stayStart, stayEnd }))}
+                  />
                   <span className="cf-period-note">Periode tamu menginap</span>
                 </div>
               </div>
@@ -515,9 +592,10 @@ export function CampaignForm({ mode, initialData }: Props) {
                   value={form.cancellationPolicy}
                   onChange={(e) => set("cancellationPolicy", e.target.value)}
                 >
-                  {CANCELLATION_POLICIES.map((p) => (
-                    <option key={p} value={p}>
-                      {p}
+                  <option value="">Default cancellation policy</option>
+                  {availablePolicies.map((policy) => (
+                    <option key={policy.id} value={policy.id}>
+                      {policy.name}{!policy.isActive ? " (Inactive)" : ""}
                     </option>
                   ))}
                 </select>
@@ -541,7 +619,6 @@ export function CampaignForm({ mode, initialData }: Props) {
                 />
                 <span>Require Promo Code</span>
               </label>
-              {form.requirePromoCode && (
                 <div className="cf-promo-code-row">
                   <span className="cf-label-inline">Code:</span>
                   <input
@@ -550,12 +627,12 @@ export function CampaignForm({ mode, initialData }: Props) {
                     className="cf-input cf-input--code"
                     placeholder="e.g. PROMO2026"
                     value={form.promoCode}
+                    disabled={!form.requirePromoCode}
                     onChange={(e) =>
                       set("promoCode", e.target.value.toUpperCase())
                     }
                   />
                 </div>
-              )}
             </Section>
 
             {/* ── 10. Blackout Dates ──────────────────────────────────── */}
@@ -570,28 +647,16 @@ export function CampaignForm({ mode, initialData }: Props) {
                 <span>Use Blackout Dates</span>
               </label>
 
-              {form.useBlackoutDates && (
                 <>
                   <div className="cf-blackout-list">
                     {form.blackoutDates.map((bd) => (
                       <div key={bd.id} className="cf-blackout-row">
-                        <span className="cf-date-sep">From</span>
-                        <input
-                          type="date"
-                          className="cf-input-date cf-input-date--sm"
-                          value={bd.from}
-                          onChange={(e) =>
-                            updateBlackout(bd.id, "from", e.target.value)
-                          }
-                        />
-                        <span className="cf-date-sep">To</span>
-                        <input
-                          type="date"
-                          className="cf-input-date cf-input-date--sm"
-                          value={bd.to}
-                          onChange={(e) =>
-                            updateBlackout(bd.id, "to", e.target.value)
-                          }
+                        <DateRangePicker
+                          label="Blackout Date"
+                          start={bd.from}
+                          end={bd.to}
+                          disabled={!form.useBlackoutDates}
+                          onChange={(from, to) => updateBlackoutRange(bd.id, from, to)}
                         />
                         {bd.label && (
                           <span className="cf-blackout-label">
@@ -602,6 +667,7 @@ export function CampaignForm({ mode, initialData }: Props) {
                           type="button"
                           className="cf-blackout-delete"
                           aria-label="Hapus blackout date"
+                          disabled={!form.useBlackoutDates}
                           onClick={() => removeBlackout(bd.id)}
                         >
                           <Icon name="trash" width={15} height={15} />
@@ -612,25 +678,14 @@ export function CampaignForm({ mode, initialData }: Props) {
                   <button
                     type="button"
                     className="cf-add-blackout"
+                    disabled={!form.useBlackoutDates}
                     onClick={addBlackout}
                   >
                     <Icon name="plus" width={14} height={14} />
                     <span>Add Blackout Date</span>
                   </button>
                 </>
-              )}
 
-              {/* Overlap warning */}
-              {overlap && (
-                <div className="cf-overlap-warning">
-                  <Icon name="warning" width={16} height={16} className="cf-overlap-warning__icon" />
-                  <span>
-                    Another active campaign overlaps this configuration (Source,
-                    Room Type, &amp; Period). Priority determines which campaign
-                    is applied.
-                  </span>
-                </div>
-              )}
             </Section>
           </div>
 
@@ -643,11 +698,12 @@ export function CampaignForm({ mode, initialData }: Props) {
             >
               Cancel
             </button>
-            <button type="submit" className="cf-btn-save">
-              {isEdit ? "Save Changes" : "Save Campaign"}
+            <button type="submit" className="cf-btn-save" disabled={saving}>
+              {saving ? "Saving..." : isEdit ? "Save Changes" : "Save Campaign"}
             </button>
           </div>
         </form>
+        ) : null}
       </div>
     </AdminShell>
   );

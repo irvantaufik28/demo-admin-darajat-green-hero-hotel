@@ -1,11 +1,10 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { AdminShell } from "../../../components/layout/AdminShell";
 import { Icon } from "../../../components/ui/Icon";
+import { restoreSession } from "../../../lib/auth";
 import {
-  ALL_ROOM_TYPES,
-  cancellationPolicies as initialPolicies,
   formatRoomTypes,
   formatStayPeriod,
   getPolicySummary,
@@ -16,6 +15,19 @@ import {
   type NoShowChargeType,
   type TimingType,
 } from "../constants/cancellation-policies-data";
+import {
+  createPolicy,
+  getPolicy,
+  listPolicies,
+  listPolicyRoomTypes,
+  listPolicyTypes,
+  setPolicyStatus,
+  updatePolicy,
+  type PolicyInput,
+  type PolicyRecord,
+  type PolicyRoomTypeOption,
+  type PolicyTypeOption,
+} from "../services/cancellation-policies";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -27,15 +39,80 @@ type ModalState = {
   policy: CancellationPolicy;
 };
 
+function toPolicy(record: PolicyRecord): CancellationPolicy {
+  return {
+    id: record.id,
+    policyTypeId: record.policyTypeId,
+    name: record.name,
+    status: record.isActive ? "Active" : "Inactive",
+    sources: [
+      ...(record.appliesWebsite ? ["Website" as const] : []),
+      ...(record.appliesPhone ? ["Phone" as const] : []),
+    ],
+    roomTypes: record.roomTypes.map((room) => room.name),
+    roomTypeIds: record.roomTypes.map((room) => room.id),
+    stayStart: record.stayStart,
+    stayEnd: record.stayEnd,
+    applyToAllDates: !record.stayStart && !record.stayEnd,
+    rules: record.rules.map((rule) => ({
+      id: rule.id,
+      timing: rule.timingType === "more_than" ? "More than" : "Within",
+      days: rule.daysBefore,
+      chargeType: rule.chargeType === "percentage" ? "Percentage" : rule.chargeType === "fixed" ? "Fixed Amount" : "Nights Count",
+      chargeValue: rule.chargeValue,
+    })),
+    noShowChargeType: record.noShowChargeType === "first_night"
+      ? "First Night Charge"
+      : record.noShowChargeType === "full_stay"
+        ? "Full Stay Amount"
+        : record.noShowChargeType === "percentage"
+          ? "Percentage"
+          : "None",
+    noShowChargeValue: record.noShowChargeValue,
+  };
+}
+
+function toPolicyInput(policy: CancellationPolicy): PolicyInput {
+  return {
+    policyTypeId: policy.policyTypeId ?? "",
+    appliesWebsite: policy.sources.includes("Website"),
+    appliesPhone: policy.sources.includes("Phone"),
+    stayStart: policy.applyToAllDates ? null : policy.stayStart || null,
+    stayEnd: policy.applyToAllDates ? null : policy.stayEnd || null,
+    noShowChargeType: policy.noShowChargeType === "None"
+      ? null
+      : policy.noShowChargeType === "First Night Charge"
+        ? "first_night"
+        : policy.noShowChargeType === "Full Stay Amount"
+          ? "full_stay"
+          : "percentage",
+    noShowChargeValue: policy.noShowChargeType === "None" ? 0
+      : policy.noShowChargeType === "First Night Charge" ? 1
+        : policy.noShowChargeType === "Full Stay Amount" ? 100
+          : policy.noShowChargeValue,
+    isActive: policy.status === "Active",
+    roomTypeIds: policy.roomTypeIds ?? [],
+    rules: policy.rules.map((rule, index) => ({
+      timingType: rule.timing === "More than" ? "more_than" : "within",
+      daysBefore: rule.days,
+      chargeType: rule.chargeType === "Percentage" ? "percentage" : rule.chargeType === "Fixed Amount" ? "fixed" : "nights",
+      chargeValue: rule.chargeValue,
+      sortOrder: index,
+    })),
+  };
+}
+
 // ─── Blank policy factory ─────────────────────────────────────────────────────
 
 function blankPolicy(): CancellationPolicy {
   return {
     id: "",
+    policyTypeId: "",
     name: "",
     status: "Active",
     sources: ["Website", "Phone"],
     roomTypes: [],
+    roomTypeIds: [],
     stayStart: "",
     stayEnd: "",
     applyToAllDates: false,
@@ -143,12 +220,18 @@ function PolicyModal({
   state,
   onClose,
   onSave,
-  onDelete,
+  policyTypes,
+  roomTypeOptions,
+  saving,
+  error,
 }: {
   state: ModalState;
   onClose: () => void;
-  onSave: (policy: CancellationPolicy) => void;
-  onDelete: (id: string) => void;
+  onSave: (policy: CancellationPolicy) => Promise<void>;
+  policyTypes: PolicyTypeOption[];
+  roomTypeOptions: PolicyRoomTypeOption[];
+  saving: boolean;
+  error: string;
 }) {
   const [form, setForm] = useState<CancellationPolicy>(state.policy);
   const overlayRef = useRef<HTMLDivElement>(null);
@@ -172,11 +255,12 @@ function PolicyModal({
   }
 
   // Room type toggles
-  const allSelected = ALL_ROOM_TYPES.every((r) => form.roomTypes.includes(r));
-  function toggleRoom(rt: string) {
-    set("roomTypes", form.roomTypes.includes(rt)
-      ? form.roomTypes.filter((r) => r !== rt)
-      : [...form.roomTypes, rt]);
+  const selectedRoomIds = form.roomTypeIds ?? [];
+  const allSelected = selectedRoomIds.length === 0;
+  function toggleRoom(id: string) {
+    set("roomTypeIds", selectedRoomIds.includes(id)
+      ? selectedRoomIds.filter((roomId) => roomId !== id)
+      : [...selectedRoomIds, id]);
   }
 
   function toggleSource(source: CancellationSource) {
@@ -232,14 +316,21 @@ function PolicyModal({
             <div className="cp-modal-info-grid">
               <div className="cp-modal-field cp-modal-field--name">
                 <label className="cp-modal-label" htmlFor="cp-policy-name">Policy Name</label>
-                <input
+                <select
                   id="cp-policy-name"
-                  type="text"
                   className="cp-modal-input"
-                  placeholder="e.g. Flexible Cancellation"
-                  value={form.name}
-                  onChange={(e) => set("name", e.target.value)}
-                />
+                  value={form.policyTypeId ?? ""}
+                  onChange={(e) => setForm((current) => ({
+                    ...current,
+                    policyTypeId: e.target.value,
+                    name: policyTypes.find((item) => item.id === e.target.value)?.name ?? "",
+                  }))}
+                >
+                  <option value="">Select policy type</option>
+                  {policyTypes.map((item) => <option key={item.id} value={item.id} disabled={!item.isActive && item.id !== form.policyTypeId}>
+                    {item.name}{!item.isActive ? " (Inactive)" : ""}
+                  </option>)}
+                </select>
               </div>
               <div className="cp-modal-field">
                 <span className="cp-modal-label">Status</span>
@@ -285,23 +376,21 @@ function PolicyModal({
                   type="checkbox"
                   className="cp-checkbox"
                   checked={allSelected}
-                  onChange={() =>
-                    set("roomTypes", allSelected ? [] : [...ALL_ROOM_TYPES])
-                  }
+                  onChange={() => set("roomTypeIds", [])}
                 />
                 <span>Select All</span>
               </label>
-              {ALL_ROOM_TYPES.map((rt) => {
-                const checked = form.roomTypes.includes(rt);
+              {roomTypeOptions.map((rt) => {
+                const checked = selectedRoomIds.includes(rt.id);
                 return (
-                  <label key={rt} className={checked ? "cp-room-option cp-room-option--checked" : "cp-room-option"}>
+                  <label key={rt.id} className={checked ? "cp-room-option cp-room-option--checked" : "cp-room-option"}>
                     <input
                       type="checkbox"
                       className="cp-checkbox"
                       checked={checked}
-                      onChange={() => toggleRoom(rt)}
+                      onChange={() => toggleRoom(rt.id)}
                     />
-                    <span>{rt}</span>
+                    <span>{rt.name}{!rt.isActive ? " (Inactive)" : ""}</span>
                   </label>
                 );
               })}
@@ -379,8 +468,15 @@ function PolicyModal({
                 <select
                   className="cp-rule-select"
                   value={form.noShowChargeType}
-                  onChange={(e) => set("noShowChargeType", e.target.value as NoShowChargeType)}
+                  onChange={(e) => setForm((current) => ({
+                    ...current,
+                    noShowChargeType: e.target.value as NoShowChargeType,
+                    noShowChargeValue: e.target.value === "First Night Charge" ? 1
+                      : e.target.value === "Full Stay Amount" ? 100
+                        : e.target.value === "None" ? 0 : current.noShowChargeValue,
+                  }))}
                 >
+                  <option>None</option>
                   <option>Percentage</option>
                   <option>First Night Charge</option>
                   <option>Full Stay Amount</option>
@@ -392,6 +488,7 @@ function PolicyModal({
                     min={0}
                     max={form.noShowChargeType === "Percentage" ? 100 : undefined}
                     value={form.noShowChargeValue}
+                    disabled={form.noShowChargeType !== "Percentage"}
                     onChange={(e) => set("noShowChargeValue", Math.max(0, Number(e.target.value)))}
                   />
                   <span className="cp-rule-unit">
@@ -402,6 +499,8 @@ function PolicyModal({
               <span className="cp-noshow-hint">
                 {form.noShowChargeType === "Percentage"
                   ? `${form.noShowChargeValue}% of entire stay charged`
+                  : form.noShowChargeType === "None"
+                    ? "No no-show charge"
                   : form.noShowChargeType === "First Night Charge"
                     ? "First night charged"
                     : "Full stay amount charged"}
@@ -416,7 +515,8 @@ function PolicyModal({
             <button
               type="button"
               className="cp-delete-btn"
-              onClick={() => { onDelete(form.id); onClose(); }}
+              disabled
+              title="Delete Policy belum tersedia di API. Gunakan status Inactive."
             >
               <Icon name="trash" width={14} height={14} />
               <span>Delete Policy</span>
@@ -425,14 +525,15 @@ function PolicyModal({
             <span />
           )}
           <div className="cp-modal__footer-actions">
-            <button type="button" className="cp-btn-cancel" onClick={onClose}>Cancel</button>
+            {error && <span className="cp-modal-error" role="alert">{error}</span>}
+            <button type="button" className="cp-btn-cancel" disabled={saving} onClick={onClose}>Cancel</button>
             <button
               type="button"
               className="cp-btn-save"
-              disabled={form.sources.length === 0}
-              onClick={() => { onSave(form); onClose(); }}
+              disabled={saving || !form.policyTypeId || form.sources.length === 0 || form.rules.length === 0}
+              onClick={() => void onSave(form)}
             >
-              {isEdit ? "Save Changes" : "Add Policy"}
+              {saving ? "Saving..." : isEdit ? "Save Changes" : "Add Policy"}
             </button>
           </div>
         </div>
@@ -444,50 +545,126 @@ function PolicyModal({
 // ─── Main page ────────────────────────────────────────────────────────────────
 
 export function CancellationPoliciesPage() {
-  const [policies, setPolicies] = useState<CancellationPolicy[]>(initialPolicies);
+  const [policies, setPolicies] = useState<CancellationPolicy[]>([]);
+  const [policyTypes, setPolicyTypes] = useState<PolicyTypeOption[]>([]);
+  const [roomTypeOptions, setRoomTypeOptions] = useState<PolicyRoomTypeOption[]>([]);
   const [search, setSearch] = useState("");
   const [roomFilter, setRoomFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [page, setPage] = useState(1);
+  const [total, setTotal] = useState(0);
+  const [counts, setCounts] = useState({ active: 0, inactive: 0 });
+  const [loading, setLoading] = useState(true);
+  const [busyId, setBusyId] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+  const [formError, setFormError] = useState("");
+  const [reload, setReload] = useState(0);
+  const limit = 20;
   const [modal, setModal] = useState<ModalState>({
     open: false,
     mode: "add",
     policy: blankPolicy(),
   });
 
-  const filtered = useMemo(() => {
-    return policies.filter((p) => {
-      const term = search.trim().toLowerCase();
-      if (term && !p.name.toLowerCase().includes(term) &&
-          !formatRoomTypes(p).toLowerCase().includes(term)) return false;
-      if (statusFilter !== "all" && p.status.toLowerCase() !== statusFilter) return false;
-      if (roomFilter !== "all") {
-        if (p.roomTypes.length > 0 && !p.roomTypes.includes(roomFilter)) return false;
+  useEffect(() => {
+    const controller = new AbortController();
+    void (async () => {
+      try {
+        if (!(await restoreSession())) return;
+        const [types, rooms] = await Promise.all([
+          listPolicyTypes(controller.signal),
+          listPolicyRoomTypes(controller.signal),
+        ]);
+        if (!controller.signal.aborted) {
+          setPolicyTypes(types);
+          setRoomTypeOptions(rooms);
+        }
+      } catch (cause) {
+        if (!controller.signal.aborted) setError(cause instanceof Error ? cause.message : "Pilihan policy gagal dimuat.");
       }
-      return true;
-    });
-  }, [policies, search, roomFilter, statusFilter]);
+    })();
+    return () => controller.abort();
+  }, []);
 
-  const activeCount = policies.filter((p) => p.status === "Active").length;
-  const inactiveCount = policies.filter((p) => p.status === "Inactive").length;
+  useEffect(() => {
+    const controller = new AbortController();
+    const timer = window.setTimeout(() => {
+      void (async () => {
+        setLoading(true);
+        setError("");
+        try {
+          if (!(await restoreSession())) return;
+          const query = new URLSearchParams({ page: String(page), limit: String(limit) });
+          if (search.trim()) query.set("search", search.trim());
+          if (roomFilter !== "all") query.set("roomTypeId", roomFilter);
+          if (statusFilter !== "all") query.set("isActive", String(statusFilter === "active"));
+          const result = await listPolicies(query, controller.signal);
+          if (controller.signal.aborted) return;
+          if (page > 1 && result.items.length === 0 && result.total > 0) {
+            setPage(page - 1);
+            return;
+          }
+          setPolicies(result.items.map(toPolicy));
+          setTotal(result.total);
+          setCounts(result.counts);
+        } catch (cause) {
+          if (!controller.signal.aborted) setError(cause instanceof Error ? cause.message : "Policy gagal dimuat.");
+        } finally {
+          if (!controller.signal.aborted) setLoading(false);
+        }
+      })();
+    }, search ? 250 : 0);
+    return () => { controller.abort(); window.clearTimeout(timer); };
+  }, [search, roomFilter, statusFilter, page, reload]);
 
   function openAdd() {
+    setFormError("");
     setModal({ open: true, mode: "add", policy: blankPolicy() });
   }
-  function openEdit(policy: CancellationPolicy) {
-    setModal({ open: true, mode: "edit", policy: { ...policy } });
+  async function openEdit(policy: CancellationPolicy) {
+    setBusyId(policy.id);
+    setError("");
+    setFormError("");
+    try {
+      const result = await getPolicy(policy.id);
+      setModal({ open: true, mode: "edit", policy: toPolicy(result.policy) });
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Detail policy gagal dimuat.");
+    } finally {
+      setBusyId("");
+    }
   }
   function closeModal() {
     setModal((prev) => ({ ...prev, open: false }));
   }
-  function handleSave(updated: CancellationPolicy) {
-    if (modal.mode === "add") {
-      setPolicies((prev) => [...prev, { ...updated, id: "cp-" + Date.now() }]);
-    } else {
-      setPolicies((prev) => prev.map((p) => (p.id === updated.id ? updated : p)));
+  async function handleSave(updated: CancellationPolicy) {
+    setSaving(true);
+    setFormError("");
+    try {
+      const body = toPolicyInput(updated);
+      if (modal.mode === "add") await createPolicy(body);
+      else await updatePolicy(updated.id, body);
+      closeModal();
+      setReload((current) => current + 1);
+    } catch (cause) {
+      setFormError(cause instanceof Error ? cause.message : "Policy gagal disimpan.");
+    } finally {
+      setSaving(false);
     }
   }
-  function handleDelete(id: string) {
-    setPolicies((prev) => prev.filter((p) => p.id !== id));
+
+  async function handleStatus(policy: CancellationPolicy) {
+    setBusyId(policy.id);
+    setError("");
+    try {
+      await setPolicyStatus(policy.id, policy.status !== "Active");
+      setReload((current) => current + 1);
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Status policy gagal diubah.");
+    } finally {
+      setBusyId("");
+    }
   }
 
   return (
@@ -499,7 +676,7 @@ export function CancellationPoliciesPage() {
             <h1>Cancellation Policies</h1>
             <p>Kelola aturan pembatalan berdasarkan tipe kamar dan periode menginap</p>
           </div>
-          <button type="button" className="action-button" onClick={openAdd}>
+          <button type="button" className="action-button" disabled={policyTypes.length === 0} onClick={openAdd}>
             <Icon name="plus" />
             <span>Add Cancellation Policy</span>
           </button>
@@ -515,18 +692,18 @@ export function CancellationPoliciesPage() {
                 className="campaigns-search"
                 placeholder="Search policy name or room type"
                 value={search}
-                onChange={(e) => { setSearch(e.target.value); }}
+                onChange={(e) => { setSearch(e.target.value); setPage(1); }}
               />
             </div>
             <div className="campaigns-select-wrap">
               <select
                 className="campaigns-select"
                 value={roomFilter}
-                onChange={(e) => setRoomFilter(e.target.value)}
+                onChange={(e) => { setRoomFilter(e.target.value); setPage(1); }}
               >
                 <option value="all">All Room Types</option>
-                {ALL_ROOM_TYPES.map((rt) => (
-                  <option key={rt} value={rt}>{rt}</option>
+                {roomTypeOptions.map((rt) => (
+                  <option key={rt.id} value={rt.id}>{rt.name}</option>
                 ))}
               </select>
               <Icon name="chevron" className="campaigns-select-chevron" width={14} height={14} />
@@ -535,7 +712,7 @@ export function CancellationPoliciesPage() {
               <select
                 className="campaigns-select"
                 value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
+                onChange={(e) => { setStatusFilter(e.target.value); setPage(1); }}
               >
                 <option value="all">All Status</option>
                 <option value="active">Active</option>
@@ -547,7 +724,7 @@ export function CancellationPoliciesPage() {
               <button
                 type="button"
                 className="campaigns-reset-button"
-                onClick={() => { setSearch(""); setRoomFilter("all"); setStatusFilter("all"); }}
+                onClick={() => { setSearch(""); setRoomFilter("all"); setStatusFilter("all"); setPage(1); }}
               >
                 <Icon name="reset" width={14} height={14} />
                 <span>Reset</span>
@@ -557,15 +734,17 @@ export function CancellationPoliciesPage() {
           <div className="cp-filter-bar__counts">
             <span className="cp-count cp-count--active">
               <i />
-              {activeCount} Active
+              {counts.active} Active
             </span>
             <span className="cp-count-divider">|</span>
             <span className="cp-count cp-count--inactive">
               <i />
-              {inactiveCount} Inactive
+              {counts.inactive} Inactive
             </span>
           </div>
         </div>
+
+        {error && <div className="campaigns-api-message" role="alert">{error}</div>}
 
         {/* Table */}
         <div className="data-panel">
@@ -583,8 +762,8 @@ export function CancellationPoliciesPage() {
                 </tr>
               </thead>
               <tbody>
-                {filtered.length > 0 ? (
-                  filtered.map((policy) => (
+                {policies.length > 0 ? (
+                  policies.map((policy) => (
                     <tr key={policy.id} className="cp-table__row">
                       <td className="cp-table__td cp-table__td--name">
                         <div className="cp-name-cell">
@@ -614,12 +793,18 @@ export function CancellationPoliciesPage() {
                           <button
                             type="button"
                             className="text-action"
-                            onClick={() => openEdit(policy)}
+                            disabled={busyId === policy.id}
+                            onClick={() => void openEdit(policy)}
                           >
                             Edit
                           </button>
-                          <button type="button" className="campaign-more-button" aria-label="Aksi lainnya">
-                            <Icon name="more" width={18} height={18} />
+                          <button
+                            type="button"
+                            className="text-action"
+                            disabled={busyId === policy.id}
+                            onClick={() => void handleStatus(policy)}
+                          >
+                            {policy.status === "Active" ? "Disable" : "Enable"}
                           </button>
                         </div>
                       </td>
@@ -628,7 +813,7 @@ export function CancellationPoliciesPage() {
                 ) : (
                   <tr>
                     <td colSpan={7} className="campaigns-table__empty">
-                      Tidak ada kebijakan yang sesuai filter.
+                      {loading ? "Memuat kebijakan..." : "Tidak ada kebijakan yang sesuai filter."}
                     </td>
                   </tr>
                 )}
@@ -639,15 +824,15 @@ export function CancellationPoliciesPage() {
           {/* Pagination footer */}
           <div className="campaigns-pagination">
             <span className="campaigns-pagination__info">
-              Showing <strong>1–{filtered.length}</strong> of <strong>{filtered.length}</strong> policies
+              Showing <strong>{total > 0 ? (page - 1) * limit + 1 : 0}–{Math.min(page * limit, total)}</strong> of <strong>{total}</strong> policies
             </span>
             <div className="campaigns-pagination__controls">
-              <button type="button" className="campaigns-pagination__btn" disabled>
+              <button type="button" className="campaigns-pagination__btn" disabled={page <= 1 || loading} onClick={() => setPage((current) => current - 1)}>
                 <Icon name="chevronLeft" width={14} height={14} />
                 <span>Previous</span>
               </button>
-              <button type="button" className="campaigns-pagination__page campaigns-pagination__page--active">1</button>
-              <button type="button" className="campaigns-pagination__btn" disabled>
+              <button type="button" className="campaigns-pagination__page campaigns-pagination__page--active">{page}</button>
+              <button type="button" className="campaigns-pagination__btn" disabled={page * limit >= total || loading} onClick={() => setPage((current) => current + 1)}>
                 <span>Next</span>
                 <Icon name="chevronRight" width={14} height={14} />
               </button>
@@ -672,7 +857,10 @@ export function CancellationPoliciesPage() {
           state={modal}
           onClose={closeModal}
           onSave={handleSave}
-          onDelete={handleDelete}
+          policyTypes={policyTypes}
+          roomTypeOptions={roomTypeOptions}
+          saving={saving}
+          error={formError}
         />
       )}
     </AdminShell>

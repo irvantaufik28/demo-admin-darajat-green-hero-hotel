@@ -21,6 +21,7 @@ export type InventoryItem = {
 
 export type InventoryList = {
   roomType: { id: string; name: string; isActive: boolean };
+  totalRoomCount: number;
   stockLimit: number;
   operationalRoomCount: number;
   items: InventoryItem[];

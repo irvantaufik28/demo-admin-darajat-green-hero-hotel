@@ -2,12 +2,12 @@
 
 import { useEffect, useState, type FormEvent } from "react";
 import { AdminShell } from "../../../components/layout/AdminShell";
+import { getCurrentUser, restoreSession } from "../../../lib/auth";
 import {
   defaultReservationSettings,
-  readReservationSettings,
-  saveReservationSettings,
   type ReservationSettings,
 } from "../constants/reservation-settings";
+import { getReservationSettings, updateReservationSettings } from "../services/reservation-settings";
 
 function SettingToggle({
   label,
@@ -40,12 +40,31 @@ export function ReservationSettingsPage() {
   const [saved, setSaved] = useState<ReservationSettings>(defaultReservationSettings);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [canEdit, setCanEdit] = useState(false);
   const changed = JSON.stringify(settings) !== JSON.stringify(saved);
 
   useEffect(() => {
-    const current = readReservationSettings();
-    setSettings(current);
-    setSaved(current);
+    const controller = new AbortController();
+    async function load() {
+      try {
+        if (!(await restoreSession())) throw new Error("Sesi login tidak tersedia.");
+        const result = await getReservationSettings(controller.signal);
+        if (controller.signal.aborted) return;
+        setSettings(result.settings);
+        setSaved(result.settings);
+        setCanEdit(getCurrentUser()?.permissions.includes("master.edit") ?? false);
+      } catch (cause) {
+        if (!controller.signal.aborted) {
+          setError(cause instanceof Error ? cause.message : "Pengaturan reservasi gagal dimuat.");
+        }
+      } finally {
+        if (!controller.signal.aborted) setLoading(false);
+      }
+    }
+    void load();
+    return () => controller.abort();
   }, []);
 
   function change<Key extends keyof ReservationSettings>(key: Key, value: ReservationSettings[Key]) {
@@ -54,7 +73,7 @@ export function ReservationSettingsPage() {
     setNotice("");
   }
 
-  function save(event: FormEvent<HTMLFormElement>) {
+  async function save(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!settings.checkInTime || !settings.checkOutTime) {
       setError("Check-in and check-out times are required.");
@@ -65,9 +84,18 @@ export function ReservationSettingsPage() {
       setError("Website payment expiry must be between 1 and 1,440 minutes.");
       return;
     }
-    saveReservationSettings(settings);
-    setSaved({ ...settings });
-    setNotice("Reservation settings saved for this demo session.");
+    setSaving(true);
+    setError("");
+    try {
+      const result = await updateReservationSettings(settings);
+      setSettings(result.settings);
+      setSaved(result.settings);
+      setNotice("Reservation settings saved.");
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Pengaturan reservasi gagal disimpan.");
+    } finally {
+      setSaving(false);
+    }
   }
 
   return (
@@ -78,7 +106,8 @@ export function ReservationSettingsPage() {
           <p>Configure the main reservation and stay rules.</p>
         </header>
 
-        <form className="reservation-settings-panel" onSubmit={save}>
+        <form className="reservation-settings-panel" onSubmit={(event) => void save(event)}>
+          {loading && <p className="reservation-setting-help" role="status">Memuat pengaturan...</p>}
           <section className="reservation-settings-section">
             <h2>Stay Time</h2>
             <div className="reservation-setting-times">
@@ -98,8 +127,8 @@ export function ReservationSettingsPage() {
             <SettingToggle
               label="Auto Confirm Website Booking After Payment"
               description="Website reservations are automatically confirmed after successful full payment."
-              checked={settings.autoConfirmWebsite}
-              onChange={(value) => change("autoConfirmWebsite", value)}
+              checked={settings.autoConfirmWebsiteAfterPayment}
+              onChange={(value) => change("autoConfirmWebsiteAfterPayment", value)}
             />
             <SettingToggle
               label="Allow Partial / Unpaid Check-in"
@@ -141,10 +170,10 @@ export function ReservationSettingsPage() {
           {error && <p className="reservation-settings-error" role="alert">{error}</p>}
           {notice && <p className="reservation-settings-notice" role="status">{notice}</p>}
           <footer className="reservation-settings-actions">
-            <button type="button" onClick={() => {
+            <button type="button" disabled={loading || saving} onClick={() => {
               setSettings({ ...saved }); setError(""); setNotice("");
             }}>Cancel</button>
-            <button type="submit" disabled={!changed}>Save Changes</button>
+            <button type="submit" disabled={!changed || loading || saving || !canEdit}>{saving ? "Saving..." : "Save Changes"}</button>
           </footer>
         </form>
       </main>

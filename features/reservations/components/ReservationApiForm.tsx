@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { AdminShell } from "../../../components/layout/AdminShell";
+import { DateRangePicker } from "../../campaigns/components/DateRangePicker";
 import { QuantityControl } from "./QuantityControl";
 import { ReservationField } from "./ReservationField";
 import { SaveReservationConfirmation } from "./SaveReservationConfirmation";
@@ -13,26 +14,32 @@ import {
   formatStayDate,
 } from "../constants/walk-in-data";
 import { restoreSession } from "../../../lib/auth";
+import { listPolicies, type PolicyRecord, type PolicyRuleRecord } from "../../cancellation-policies/services/cancellation-policies";
 import { nextStayDate, todayJakarta } from "../utils/stay-dates";
+import { autoAllocateRooms, roomAllocationError } from "../utils/room-allocation";
 import {
-  createWalkIn,
-  getWalkInAvailability,
-  getWalkInExperiences,
-  getWalkInPaymentMethods,
-  quoteWalkIn,
+  createReservation,
+  getReservationAvailability,
+  getReservationExperiences,
+  getReservationPaymentMethods,
+  getCreateCheckInContext,
+  quoteReservation,
   type AvailableRoom,
   type ExperienceOption,
   type PaymentMethod,
   type ReservationQuote,
   type SelectedExperience,
   type SelectedRoom,
+  type ReservationSource,
 } from "../services/create";
+import type { CheckInContext, EarlyCheckInInput } from "../services/api";
 
 type RoomEntry = SelectedRoom & { key: string };
 type PaymentStatus = "Paid" | "Partial" | "Unpaid";
 
 const unavailableReasonLabels: Record<string, string> = {
   capacity_mismatch: "Kapasitas tamu tidak sesuai",
+  capacity_not_configured: "Pola kapasitas kamar belum diatur",
   not_configured: "Harga atau stok belum diatur",
   stop_sell: "Penjualan dihentikan",
   minimum_nights: "Minimum malam belum terpenuhi",
@@ -44,7 +51,30 @@ function money(value: string) {
   return Number(value.replace(/\D/g, "")) || 0;
 }
 
-export function WalkInApiForm() {
+function describeCancellationRule(rule: PolicyRuleRecord) {
+  const timing = rule.timingType === "more_than"
+    ? `Lebih dari ${rule.daysBefore} hari sebelum check-in`
+    : `Dalam ${rule.daysBefore} hari sebelum check-in`;
+  const charge = rule.chargeType === "percentage"
+    ? rule.chargeValue === 0 ? "Gratis" : `Biaya ${rule.chargeValue}% dari nilai reservasi`
+    : rule.chargeType === "fixed"
+      ? `Biaya ${formatRupiah(rule.chargeValue)}`
+      : `Biaya ${rule.chargeValue} malam`;
+  return `${timing}: ${charge}`;
+}
+
+function describeNoShow(policy: PolicyRecord) {
+  if (!policy.noShowChargeType) return null;
+  const charge = policy.noShowChargeType === "first_night"
+    ? "biaya malam pertama"
+    : policy.noShowChargeType === "full_stay"
+      ? "biaya seluruh masa inap"
+      : `${policy.noShowChargeValue}% dari nilai reservasi`;
+  return `No-show: ${charge}`;
+}
+
+export function ReservationApiForm({ source }: { source: ReservationSource }) {
+  const isPhone = source === "phone";
   const [initialDate, setInitialDate] = useState("");
   const [checkIn, setCheckIn] = useState("");
   const [checkOut, setCheckOut] = useState("");
@@ -53,6 +83,7 @@ export function WalkInApiForm() {
   const [available, setAvailable] = useState<AvailableRoom[]>([]);
   const [experiences, setExperiences] = useState<ExperienceOption[]>([]);
   const [methods, setMethods] = useState<PaymentMethod[]>([]);
+  const [policies, setPolicies] = useState<PolicyRecord[]>([]);
   const [rooms, setRooms] = useState<RoomEntry[]>([]);
   const [selectedExperiences, setSelectedExperiences] = useState<
     SelectedExperience[]
@@ -62,6 +93,7 @@ export function WalkInApiForm() {
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
   const [notes, setNotes] = useState("");
+  const [roomPolicySelections, setRoomPolicySelections] = useState<Record<string, string>>({});
   const [paymentStatus, setPaymentStatus] = useState<PaymentStatus>("Unpaid");
   const [paymentMethodId, setPaymentMethodId] = useState("");
   const [partialAmount, setPartialAmount] = useState(0);
@@ -79,6 +111,8 @@ export function WalkInApiForm() {
     "save" | "check-in" | null
   >(null);
   const [acknowledged, setAcknowledged] = useState(false);
+  const [checkInContext, setCheckInContext] = useState<CheckInContext | null>(null);
+  const [earlyCheckIn, setEarlyCheckIn] = useState<EarlyCheckInInput>({ acknowledged: false, chargeAmount: 0, paymentTiming: "later" });
   const [saved, setSaved] = useState<{
     bookingId: string;
     checkedIn: boolean;
@@ -86,6 +120,11 @@ export function WalkInApiForm() {
   const requestKey = useRef<{ body: string; key: string } | null>(null);
   const nights = calculateNights(checkIn, checkOut);
   const selectedRooms = rooms.length;
+  const allocationError = rooms.length
+    ? roomAllocationError(rooms, available, searchAdults, searchChildren)
+    : "";
+  const allocatedAdults = rooms.reduce((sum, room) => sum + room.adults, 0);
+  const allocatedChildren = rooms.reduce((sum, room) => sum + room.children, 0);
   const roomAssignmentLabel =
     initialDate && checkIn > initialDate
       ? "nomor kamar dapat ditetapkan"
@@ -98,9 +137,24 @@ export function WalkInApiForm() {
         ? partialAmount
         : 0;
   const balance = Math.max(0, total - amountPaid);
+  const lastStayDate = checkOut
+    ? new Date(Date.parse(`${checkOut}T00:00:00Z`) - 86_400_000).toISOString().slice(0, 10)
+    : "";
+  const stayPolicies = policies.filter((policy) => nights > 0 &&
+    (!policy.stayStart || policy.stayStart <= checkIn) &&
+    (!policy.stayEnd || policy.stayEnd >= lastStayDate),
+  );
+  const policiesForRoom = (room: RoomEntry) => stayPolicies.filter((policy) =>
+    policy.roomTypes.length === 0 || policy.roomTypes.some((linked) => linked.id === room.roomTypeId));
+  const selectedPolicyForRoom = (room: RoomEntry) => {
+    const options = policiesForRoom(room);
+    return options.find((policy) => policy.id === roomPolicySelections[room.key]) ?? options[0];
+  };
   const currentQuoteInput = JSON.stringify({
     checkIn,
     checkOut,
+    totalAdults: searchAdults,
+    totalChildren: searchChildren,
     rooms,
     selectedExperiences,
   });
@@ -128,10 +182,9 @@ export function WalkInApiForm() {
     setAvailabilityLoading(true);
     try {
       if (!(await restoreSession())) return;
-      const result = await getWalkInAvailability(
+      const result = await getReservationAvailability(
         checkIn,
         checkOut,
-        { adults: searchAdults, children: searchChildren },
         signal,
       );
       if (!signal?.aborted) {
@@ -154,9 +207,9 @@ export function WalkInApiForm() {
     const controller = new AbortController();
     void refreshAvailability(controller.signal);
     return () => controller.abort();
-    // Availability is refreshed when stay dates or guest capacity change.
+    // Availability depends on dates. Guest capacity is validated per selected room.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [checkIn, checkOut, searchAdults, searchChildren]);
+  }, [checkIn, checkOut]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -164,8 +217,8 @@ export function WalkInApiForm() {
       try {
         if (!(await restoreSession())) return;
         const [experienceResult, methodResult] = await Promise.all([
-          getWalkInExperiences(controller.signal),
-          getWalkInPaymentMethods(controller.signal),
+          getReservationExperiences(controller.signal),
+          getReservationPaymentMethods(controller.signal),
         ]);
         if (controller.signal.aborted) return;
         setExperiences(experienceResult.items);
@@ -189,9 +242,32 @@ export function WalkInApiForm() {
   }, []);
 
   useEffect(() => {
+    if (!isPhone) return;
+    const controller = new AbortController();
+    const query = new URLSearchParams({ source: "phone", isActive: "true", limit: "100" });
+    listPolicies(query, controller.signal)
+      .then(async (result) => {
+        const pages = await Promise.all(
+          Array.from({ length: Math.ceil(result.total / result.limit) - 1 }, (_, index) => {
+            const pageQuery = new URLSearchParams(query);
+            pageQuery.set("page", String(index + 2));
+            return listPolicies(pageQuery, controller.signal);
+          }),
+        );
+        if (!controller.signal.aborted) setPolicies([result, ...pages].flatMap((page) => page.items));
+      })
+      .catch((error) => {
+        if (!controller.signal.aborted) setFeedback(
+          error instanceof Error ? error.message : "Kebijakan pembatalan gagal dimuat.",
+        );
+      });
+    return () => controller.abort();
+  }, [isPhone]);
+
+  useEffect(() => {
     setQuote(null);
     setQuotedInput("");
-    if (nights < 1 || rooms.length === 0) {
+    if (nights < 1 || rooms.length === 0 || allocationError) {
       setQuoteLoading(false);
       return;
     }
@@ -199,10 +275,13 @@ export function WalkInApiForm() {
     const timer = window.setTimeout(async () => {
       setQuoteLoading(true);
       try {
-        const result = await quoteWalkIn(
+        const result = await quoteReservation(
+          source,
           {
             checkInDate: checkIn,
             checkOutDate: checkOut,
+            totalAdults: searchAdults,
+            totalChildren: searchChildren,
             rooms: rooms.map(({ key: _key, ...room }) => room),
             experiences: selectedExperiences,
           },
@@ -235,6 +314,8 @@ export function WalkInApiForm() {
     selectedExperiences,
     nights,
     currentQuoteInput,
+    allocationError,
+    source,
   ]);
 
   function setRoomCount(option: AvailableRoom, count: number) {
@@ -243,19 +324,24 @@ export function WalkInApiForm() {
     );
     const difference = count - current.length;
     if (difference > 0) {
-      setRooms((previous) => [
+      setRooms((previous) => autoAllocateRooms([
         ...previous,
         ...Array.from({ length: difference }, () => ({
           key: crypto.randomUUID(),
           roomTypeId: option.roomType.id,
-          adults: searchAdults,
-          children: searchChildren,
+          adults: 0,
+          children: 0,
           extraBeds: 0,
         })),
-      ]);
+      ], available, searchAdults, searchChildren));
     } else if (difference < 0) {
       const removed = new Set(current.slice(count).map((room) => room.key));
-      setRooms((previous) => previous.filter((room) => !removed.has(room.key)));
+      setRooms((previous) => autoAllocateRooms(
+        previous.filter((room) => !removed.has(room.key)),
+        available,
+        searchAdults,
+        searchChildren,
+      ));
     }
   }
 
@@ -268,6 +354,8 @@ export function WalkInApiForm() {
   function validate(checkInGuest: boolean) {
     if (!checkIn || (initialDate && checkIn < initialDate))
       return "Tanggal check-in tidak boleh sebelum hari ini.";
+    if (!isPhone && checkIn !== todayJakarta())
+      return "Tanggal check-in Walk-in harus hari ini.";
     if (checkInGuest && checkIn !== todayJakarta())
       return "Save & Check-in hanya tersedia untuk check-in hari ini. Gunakan Save Reservation untuk tanggal mendatang.";
     if (nights < 1) return "Tanggal check-out harus setelah check-in.";
@@ -276,6 +364,7 @@ export function WalkInApiForm() {
     if (rooms.some((room) => !available.find(
       (option) => option.roomType.id === room.roomTypeId && option.bookable,
     ))) return "Kamar yang dipilih tidak tersedia untuk kapasitas atau tanggal ini.";
+    if (allocationError) return allocationError;
     if (!quote || quoteLoading || quotedInput !== currentQuoteInput)
       return "Tunggu perhitungan harga dari API selesai.";
     if (!guestName.trim() || !phone.trim())
@@ -299,7 +388,7 @@ export function WalkInApiForm() {
     return "";
   }
 
-  function requestSave(checkInGuest: boolean) {
+  async function requestSave(checkInGuest: boolean) {
     if (checkInGuest && checkIn !== todayJakarta()) {
       setFeedback("Save & Check-in hanya tersedia untuk check-in hari ini. Gunakan Save Reservation untuk tanggal mendatang.");
       return;
@@ -315,6 +404,16 @@ export function WalkInApiForm() {
     }
     setAcknowledged(false);
     setFeedback("");
+    setCheckInContext(null);
+    setEarlyCheckIn({ acknowledged: false, chargeAmount: 0, paymentTiming: "later" });
+    if (checkInGuest) {
+      try {
+        setCheckInContext(await getCreateCheckInContext(checkIn));
+      } catch (cause) {
+        setFeedback(cause instanceof Error ? cause.message : "Jam check-in gagal dimuat.");
+        return;
+      }
+    }
     setSaveConfirmation(checkInGuest ? "check-in" : "save");
   }
 
@@ -332,12 +431,19 @@ export function WalkInApiForm() {
       },
       checkInDate: checkIn,
       checkOutDate: checkOut,
-      rooms: rooms.map(({ key: _key, ...room }) => room),
+      totalAdults: searchAdults,
+      totalChildren: searchChildren,
+      rooms: rooms.map(({ key, ...room }) => ({
+        ...room,
+        ...(isPhone ? { cancellationPolicyId: selectedPolicyForRoom({ key, ...room })?.id ?? null } : {}),
+      })),
       experiences: selectedExperiences,
       ...(notes.trim() ? { specialRequests: notes.trim() } : {}),
+      ...(isPhone ? { cancellationPolicyId: null } : {}),
       confirm: checkInGuest,
       checkIn: checkInGuest,
       acknowledgeOutstanding: checkInGuest && balance > 0,
+      ...(checkInGuest && checkInContext?.required ? { earlyCheckIn } : {}),
       ...(amountPaid > 0
         ? { payment: { methodId: paymentMethodId, amount: amountPaid } }
         : {}),
@@ -351,13 +457,13 @@ export function WalkInApiForm() {
           }
         : {}),
     };
-    const body = JSON.stringify(payload);
+    const body = JSON.stringify({ source, ...payload });
     if (requestKey.current?.body !== body)
       requestKey.current = { body, key: crypto.randomUUID() };
     setSaving(true);
     setFeedback("");
     try {
-      const response = await createWalkIn({
+      const response = await createReservation(source, {
         idempotencyKey: requestKey.current.key,
         ...payload,
       });
@@ -380,12 +486,12 @@ export function WalkInApiForm() {
     <AdminShell
       title="Reservations"
       context="New Reservation"
-      badge="WALK-IN MODE"
+      badge={isPhone ? "PHONE MODE" : "WALK-IN MODE"}
     >
       <div className="walkin-page">
         <div className="walkin-heading">
           <div>
-            <h1>Create Reservation – Walk In</h1>
+            <h1>Create Reservation – {isPhone ? "Phone" : "Walk In"}</h1>
             <p>Buat reservasi baru untuk tamu</p>
           </div>
           <button
@@ -402,6 +508,7 @@ export function WalkInApiForm() {
               setPhone("");
               setEmail("");
               setNotes("");
+              setRoomPolicySelections({});
               setPaymentStatus("Unpaid");
               setPartialAmount(0);
               setRequireDeposit(false);
@@ -437,14 +544,15 @@ export function WalkInApiForm() {
               >
                 <Link
                   href="/reservations/create-reservation-walkin"
-                  className="source-tab source-tab--active"
-                  aria-current="page"
+                  className={isPhone ? "source-tab" : "source-tab source-tab--active"}
+                  aria-current={isPhone ? undefined : "page"}
                 >
                   Walk-in
                 </Link>
                 <Link
                   href="/reservations/create-reservation-phone"
-                  className="source-tab"
+                  className={isPhone ? "source-tab source-tab--active" : "source-tab"}
+                  aria-current={isPhone ? "page" : undefined}
                 >
                   Phone
                 </Link>
@@ -463,31 +571,19 @@ export function WalkInApiForm() {
                   {nights} {nights === 1 ? "night" : "nights"}
                 </span>
               </div>
-              <div className="stay-fields">
-                <ReservationField label="Check-in" htmlFor="check-in">
-                  <input
-                    id="check-in"
-                    type="date"
-                    min={initialDate || undefined}
-                    value={checkIn}
-                    onChange={(event) => {
-                      const date = event.target.value;
-                      if (initialDate && date < initialDate) return;
-                      setCheckIn(date);
-                      setRooms([]);
-                      if (date >= checkOut)
-                        setCheckOut(nextStayDate(date));
-                    }}
-                  />
-                </ReservationField>
-                <ReservationField label="Check-out" htmlFor="check-out">
-                  <input
-                    id="check-out"
-                    type="date"
-                    min={checkIn ? nextStayDate(checkIn) : undefined}
-                    value={checkOut}
-                    onChange={(event) => {
-                      setCheckOut(event.target.value);
+              <div className="stay-fields stay-fields--date-range">
+                <ReservationField label="Check-in — Check-out" htmlFor="stay-date-range">
+                  <DateRangePicker
+                    id="stay-date-range"
+                    label="Stay date range"
+                    start={checkIn}
+                    end={checkOut}
+                    minDate={initialDate || undefined}
+                    minNights={1}
+                    fixedStart={!isPhone}
+                    onChange={(start, end) => {
+                      setCheckIn(start);
+                      setCheckOut(end);
                       setRooms([]);
                     }}
                   />
@@ -496,9 +592,11 @@ export function WalkInApiForm() {
                   <select
                     id="adults"
                     value={searchAdults}
-                    onChange={(event) =>
-                      setSearchAdults(Number(event.target.value))
-                    }
+                    onChange={(event) => {
+                      const adults = Number(event.target.value);
+                      setSearchAdults(adults);
+                      setRooms((previous) => autoAllocateRooms(previous, available, adults, searchChildren));
+                    }}
                   >
                     {Array.from({ length: 20 }, (_, index) => index + 1).map(
                       (value) => (
@@ -513,9 +611,11 @@ export function WalkInApiForm() {
                   <select
                     id="children"
                     value={searchChildren}
-                    onChange={(event) =>
-                      setSearchChildren(Number(event.target.value))
-                    }
+                    onChange={(event) => {
+                      const children = Number(event.target.value);
+                      setSearchChildren(children);
+                      setRooms((previous) => autoAllocateRooms(previous, available, searchAdults, children));
+                    }}
                   >
                     {Array.from({ length: 21 }, (_, index) => index).map(
                       (value) => (
@@ -544,6 +644,9 @@ export function WalkInApiForm() {
                 </span>
               </div>
               <div className="available-rooms">
+                <p className="room-allocation-guidance">
+                  Total {searchAdults} dewasa dan {searchChildren} anak dibagi otomatis ke kamar terpilih. Staf dapat mengoreksi pembagian per kamar.
+                </p>
                 {available.map((option) => {
                   const count = rooms.filter(
                     (room) => room.roomTypeId === option.roomType.id,
@@ -553,6 +656,8 @@ export function WalkInApiForm() {
                     bookableCount,
                     option.assignableRoomUnits.length,
                   );
+                  const maxAdults = Math.max(0, ...option.capacityPatterns.map((pattern) => pattern.adults));
+                  const maxChildren = Math.max(0, ...option.capacityPatterns.map((pattern) => pattern.children));
                   return (
                     <div
                       className={`room-option${count ? " room-option--selected" : ""}${option.bookable ? "" : " room-option--unavailable"}`}
@@ -586,7 +691,7 @@ export function WalkInApiForm() {
                         </div>
                         <small className={option.bookable ? undefined : "room-option__reason"}>
                           {option.bookable
-                            ? `${option.roomType.maxExtraBeds} extra bed max`
+                            ? `Per kamar: hingga ${maxAdults} dewasa${maxChildren ? ` + ${maxChildren} anak` : ""} · ${option.roomType.maxExtraBeds} extra bed max`
                             : option.unavailableReasons
                                 .map((reason) => unavailableReasonLabels[reason] ?? reason)
                                 .join(" · ") || "Tidak tersedia untuk pencarian ini"}
@@ -632,6 +737,12 @@ export function WalkInApiForm() {
             </section>
             <section className="reservation-panel">
               <h2>Assign Rooms</h2>
+              {rooms.length > 0 && (
+                <p className={allocationError ? "room-allocation-status room-allocation-status--error" : "room-allocation-status"}>
+                  Pembagian tamu: {allocatedAdults}/{searchAdults} dewasa · {allocatedChildren}/{searchChildren} anak.
+                  {allocationError ? ` ${allocationError}` : " Semua tamu sudah mendapat kamar."}
+                </p>
+              )}
               {rooms.some(
                 (room) =>
                   !room.roomUnitId &&
@@ -801,6 +912,70 @@ export function WalkInApiForm() {
                 </ReservationField>
               </div>
             </section>
+            {isPhone && (
+              <section className="reservation-panel">
+                <h2>Cancellation Policy</h2>
+                {rooms.length === 0 ? (
+                  <p className="reservation-policy-empty">
+                    Pilih kamar untuk melihat kebijakan pembatalan yang berlaku.
+                  </p>
+                ) : (
+                  <div className="reservation-policy-rooms">
+                      {rooms.map((room, index) => {
+                        const roomType = available.find((option) => option.roomType.id === room.roomTypeId);
+                        const roomIndex = rooms.slice(0, index + 1)
+                          .filter((item) => item.roomTypeId === room.roomTypeId).length;
+                        const roomNumber = roomType?.assignableRoomUnits.find((unit) => unit.id === room.roomUnitId)?.roomNumber;
+                        const roomPolicies = policiesForRoom(room);
+                        const selectedPolicy = selectedPolicyForRoom(room);
+                        return (
+                          <div className="reservation-policy-room" key={room.key}>
+                            <div className="reservation-policy-room__heading">
+                              <strong>{roomType?.roomType.name ?? "Room"} · Room {roomIndex}{roomNumber ? ` · No. ${roomNumber}` : ""}</strong>
+                              <span>{selectedPolicy ? "Policy berlaku" : "Default"}</span>
+                            </div>
+                            <div className="reservation-policy-options" role="group" aria-label={`Cancellation policy ${roomType?.roomType.name ?? "Room"} ${roomIndex}`}>
+                              {roomPolicies.length === 0 && (
+                                <div className="reservation-policy-option reservation-policy-option--fallback">
+                                  <input type="checkbox" checked readOnly aria-label="Kebijakan pembatalan default" />
+                                  <span className="reservation-policy-copy">
+                                    <strong>100% cancellation charge</strong>
+                                    <small>Non-refundable · Tidak ada kebijakan yang berlaku untuk kamar dan tanggal ini.</small>
+                                  </span>
+                                  <span className="reservation-policy-default">Default</span>
+                                </div>
+                              )}
+                              {roomPolicies.map((policy) => (
+                                <label className="reservation-policy-option" key={policy.id}>
+                                  <input
+                                    type="checkbox"
+                                    checked={selectedPolicy?.id === policy.id}
+                                    onChange={(event) => setRoomPolicySelections((current) => ({
+                                      ...current,
+                                      [room.key]: event.target.checked ? policy.id : "",
+                                    }))}
+                                  />
+                                  <span className="reservation-policy-copy">
+                                    <strong>{policy.name}</strong>
+                                    {policy.rules.length ? [...policy.rules]
+                                      .sort((first, second) => first.sortOrder - second.sortOrder)
+                                      .map((rule) => <small key={rule.id}>{describeCancellationRule(rule)}</small>)
+                                      : <small>Aturan pembatalan belum ditentukan.</small>}
+                                    {describeNoShow(policy) && <small>{describeNoShow(policy)}</small>}
+                                  </span>
+                                  {selectedPolicy?.id === policy.id && !roomPolicySelections[room.key] && (
+                                    <span className="reservation-policy-default">Otomatis dipilih</span>
+                                  )}
+                                </label>
+                              ))}
+                            </div>
+                          </div>
+                        );
+                      })}
+                  </div>
+                )}
+              </section>
+            )}
             <section className="reservation-panel">
               <div className="reservation-panel__heading">
                 <h2>Experiences &amp; Add-ons</h2>
@@ -1011,7 +1186,7 @@ export function WalkInApiForm() {
           <aside className="booking-summary">
             <div className="booking-summary__header">
               <h2>Booking Summary</h2>
-              <span>Walk-in</span>
+              <span>{isPhone ? "Phone" : "Walk-in"}</span>
             </div>
             <div className="booking-summary__stay">
               <span>Stay</span>
@@ -1149,6 +1324,16 @@ export function WalkInApiForm() {
               >
                 Save Reservation
               </button>
+              {isPhone && (
+                <button
+                  type="button"
+                  className="reservation-secondary-button"
+                  disabled
+                  title="Draft reservation belum tersedia di API"
+                >
+                  Save as Draft
+                </button>
+              )}
             </div>
           </aside>
         </div>
@@ -1165,6 +1350,11 @@ export function WalkInApiForm() {
           outstandingBalance={balance}
           acknowledged={acknowledged}
           onAcknowledgedChange={setAcknowledged}
+          checkInContext={checkInContext}
+          earlyCheckIn={earlyCheckIn}
+          onEarlyCheckInChange={setEarlyCheckIn}
+          paymentMethods={methods}
+          error={feedback}
           busy={saving}
         />
       )}

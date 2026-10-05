@@ -10,6 +10,10 @@ type DateRangePickerProps = {
   end: string;
   onChange: (start: string, end: string) => void;
   disabled?: boolean;
+  id?: string;
+  minDate?: string;
+  minNights?: number;
+  fixedStart?: boolean;
 };
 
 const WEEKDAYS = ["Sen", "Sel", "Rab", "Kam", "Jum", "Sab", "Min"];
@@ -39,7 +43,7 @@ function monthDates(value: string) {
   });
 }
 
-export function DateRangePicker({ label, start, end, onChange, disabled = false }: DateRangePickerProps) {
+export function DateRangePicker({ label, start, end, onChange, disabled = false, id, minDate, minNights = 0, fixedStart = false }: DateRangePickerProps) {
   const triggerRef = useRef<HTMLButtonElement>(null);
   const popoverRef = useRef<HTMLDivElement>(null);
   const [open, setOpen] = useState(false);
@@ -84,9 +88,22 @@ export function DateRangePicker({ label, start, end, onChange, disabled = false 
   }
 
   function select(date: string) {
+    if (minDate && date < minDate) return;
+    if (fixedStart) {
+      if (date > start) {
+        onChange(start, date);
+        setOpen(false);
+      }
+      return;
+    }
     if (!start || end) {
       onChange(date, "");
     } else {
+      if (minNights > 0 && date === start) return;
+      if (minNights > 0 && date < start) {
+        onChange(date, "");
+        return;
+      }
       onChange(date < start ? date : start, date < start ? start : date);
       setOpen(false);
     }
@@ -99,6 +116,7 @@ export function DateRangePicker({ label, start, end, onChange, disabled = false 
   return (
     <>
       <button
+        id={id}
         ref={triggerRef}
         type="button"
         className="cf-range-trigger"
@@ -113,7 +131,7 @@ export function DateRangePicker({ label, start, end, onChange, disabled = false 
       {open && createPortal(
         <div ref={popoverRef} className="cf-range-popover" style={position} role="dialog" aria-label={`${label} date range`}>
           <div className="cf-range-heading">
-            <button type="button" aria-label="Previous month" onClick={() => setMonth(shiftMonth(month, -1))}>‹</button>
+            <button type="button" aria-label="Previous month" disabled={Boolean(minDate && shiftMonth(month, -1) < minDate.slice(0, 7))} onClick={() => setMonth(shiftMonth(month, -1))}>‹</button>
             <strong>{monthLabel}</strong>
             <button type="button" aria-label="Next month" onClick={() => setMonth(shiftMonth(month, 1))}>›</button>
           </div>
@@ -124,6 +142,7 @@ export function DateRangePicker({ label, start, end, onChange, disabled = false 
                 type="button"
                 key={date}
                 className={`cf-range-day${date === start || date === end ? " cf-range-day--edge" : start && end && date > start && date < end ? " cf-range-day--inside" : ""}`}
+                disabled={Boolean((minDate && date < minDate) || (fixedStart && date <= start))}
                 aria-pressed={date === start || date === end || Boolean(start && end && date > start && date < end)}
                 onClick={() => select(date)}
               >
@@ -132,8 +151,8 @@ export function DateRangePicker({ label, start, end, onChange, disabled = false 
             ) : <span key={`empty-${index}`} />)}
           </div>
           <div className="cf-range-footer">
-            <span>{start && !end ? "Select end date" : "Select start and end date"}</span>
-            <button type="button" onClick={() => { onChange("", ""); setOpen(false); }}>Clear</button>
+            <span>{fixedStart ? "Select a new check-out date" : start && !end ? "Select end date" : "Select start and end date"}</span>
+            {!fixedStart && <button type="button" onClick={() => { onChange("", ""); setOpen(false); }}>Clear</button>}
           </div>
         </div>,
         document.body,

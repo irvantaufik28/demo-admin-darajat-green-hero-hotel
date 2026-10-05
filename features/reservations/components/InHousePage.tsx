@@ -6,6 +6,7 @@ import { AdminShell } from "../../../components/layout/AdminShell";
 import { formatRupiah, formatStayDate } from "../constants/walk-in-data";
 import { restoreSession } from "../../../lib/auth";
 import { getInHouse, type InHouseItem } from "../services/api";
+import { useOperationalRefresh } from "../hooks/useOperationalRefresh";
 
 const pageSize = 20;
 
@@ -20,6 +21,7 @@ function paymentTone(status: string) {
 }
 
 export function InHousePage() {
+  const operationalRefresh = useOperationalRefresh();
   const [guests, setGuests] = useState<InHouseItem[]>([]);
   const [summary, setSummary] = useState({ guestsInHouse: 0, roomsOccupied: 0 });
   const [total, setTotal] = useState(0);
@@ -56,7 +58,7 @@ export function InHousePage() {
       }
     }, search ? 300 : 0);
     return () => { window.clearTimeout(timer); controller.abort(); };
-  }, [page, search, checkOut, payment]);
+  }, [page, search, checkOut, payment, operationalRefresh]);
 
   return (
     <AdminShell title="Reservations" context="In House">

@@ -6,6 +6,7 @@ import { AdminShell } from "../../../components/layout/AdminShell";
 import { Icon } from "../../../components/ui/Icon";
 import { getDashboard, type DashboardResponse } from "../services/api";
 import { restoreSession } from "../../../lib/auth";
+import { useOperationalRefresh } from "../../reservations/hooks/useOperationalRefresh";
 
 type SummaryCardItem = {
   label: string;
@@ -106,6 +107,7 @@ function SummaryCard({ item }: { item: SummaryCardItem }) {
 }
 
 export function DashboardContent() {
+  const operationalRefresh = useOperationalRefresh();
   const [dashboard, setDashboard] = useState<DashboardResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -134,7 +136,7 @@ export function DashboardContent() {
       active = false;
       controller.abort();
     };
-  }, [requestKey]);
+  }, [requestKey, operationalRefresh]);
 
   function retry() {
     setError("");

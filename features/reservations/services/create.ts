@@ -1,4 +1,5 @@
 import { apiRequest } from "../../../lib/api/client";
+import type { EarlyCheckInInput, CheckInContext } from "./api";
 
 export type AvailableRoom = {
   roomType: {
@@ -9,6 +10,7 @@ export type AvailableRoom = {
     extraBedPricePerNight: number;
   };
   availableRooms: number;
+  capacityPatterns: { adults: number; children: number; extraBeds: number }[];
   bookable: boolean;
   unavailableReasons: string[];
   totalPrice: number | null;
@@ -21,6 +23,7 @@ export type SelectedRoom = {
   adults: number;
   children: number;
   extraBeds: number;
+  cancellationPolicyId?: string | null;
 };
 
 export type SelectedExperience = { variantId: string; quantity: number };
@@ -32,6 +35,7 @@ export type ExperienceOption = {
 };
 
 export type PaymentMethod = { id: string; name: string; isActive: boolean };
+export type ReservationSource = "walk_in" | "phone";
 
 export type ReservationQuote = {
   bookingTotal: number;
@@ -61,58 +65,66 @@ export type ReservationQuote = {
   };
 };
 
-export function getWalkInAvailability(
+export function getReservationAvailability(
   checkInDate: string,
   checkOutDate: string,
-  guests: { adults: number; children: number },
   signal?: AbortSignal,
 ) {
   const query = new URLSearchParams({
     checkInDate,
     checkOutDate,
-    adults: String(guests.adults),
-    children: String(guests.children),
   });
   return apiRequest<{ items: AvailableRoom[] }>(`reservations/availability?${query}`, { signal });
 }
 
-export function getWalkInExperiences(signal?: AbortSignal) {
+export function getReservationExperiences(signal?: AbortSignal) {
   return apiRequest<{ items: ExperienceOption[] }>("experiences?isActive=true&limit=100", { signal });
 }
 
-export function getWalkInPaymentMethods(signal?: AbortSignal) {
+export function getReservationPaymentMethods(signal?: AbortSignal) {
   return apiRequest<{ items: PaymentMethod[] }>("master/payment-methods", { signal });
 }
 
-export function quoteWalkIn(input: {
+export function quoteReservation(source: ReservationSource, input: {
   checkInDate: string;
   checkOutDate: string;
+  totalAdults: number;
+  totalChildren: number;
   rooms: SelectedRoom[];
   experiences: SelectedExperience[];
 }, signal?: AbortSignal) {
   return apiRequest<ReservationQuote>("reservations/quote", {
     method: "POST",
-    body: { source: "walk_in", ...input },
+    body: { source, ...input },
     signal,
   });
 }
 
-export function createWalkIn(input: {
+export function createReservation(source: ReservationSource, input: {
   idempotencyKey: string;
   guest: { fullName: string; phone: string; email?: string };
   checkInDate: string;
   checkOutDate: string;
+  totalAdults: number;
+  totalChildren: number;
   rooms: SelectedRoom[];
   experiences: SelectedExperience[];
   specialRequests?: string;
+  cancellationPolicyId?: string | null;
   confirm: boolean;
   checkIn: boolean;
   acknowledgeOutstanding?: boolean;
+  earlyCheckIn?: EarlyCheckInInput;
   payment?: { methodId: string; amount: number };
   deposit?: { methodId: string; amount: number; notes?: string };
 }) {
   return apiRequest<{ reservation: { id: string; bookingCode: string; reservationStatus: string } }>(
     "reservations",
-    { method: "POST", body: { source: "walk_in", ...input } },
+    { method: "POST", body: { source, ...input } },
   );
+}
+
+export function getCreateCheckInContext(checkInDate: string) {
+  const query = new URLSearchParams({ checkInDate });
+  return apiRequest<CheckInContext>(`reservations/check-in-context?${query}`);
 }

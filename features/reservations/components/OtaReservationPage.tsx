@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { AdminShell } from "../../../components/layout/AdminShell";
 import { QuantityControl } from "./QuantityControl";
@@ -9,31 +9,30 @@ import { SaveReservationConfirmation } from "./SaveReservationConfirmation";
 import { ReservationSuccessTransition } from "./ReservationSuccessTransition";
 import {
   calculateNights,
-  extras,
   formatRupiah,
   formatStayDate,
-  getExtraCost,
-  roomTypes,
-  type RoomType,
 } from "../constants/walk-in-data";
-import { resolveReservationStatus } from "../constants/reservation-list-data";
 import { nextStayDate, todayJakarta } from "../utils/stay-dates";
+import {
+  createOtaReservation,
+  getOtaFormOptions,
+  quoteOtaReservation,
+  type OtaChannel,
+  type OtaExperience,
+  type OtaRoom,
+} from "../services/ota";
+import type { ReservationQuote } from "../services/create";
+import type { RoomTypeRecord } from "../../rooms/services/room-types";
 
-type RoomRow = { id: number; type: RoomType; quantity: number; rate: number };
+type RoomConfiguration = { adults: number; children: number; extraBeds: number };
+type RoomRow = {
+  id: number;
+  type: string;
+  quantity: number;
+  rate: number;
+  configurations: RoomConfiguration[];
+};
 type Feedback = { kind: "success" | "error" | "info"; text: string };
-
-const initialRooms: RoomRow[] = [
-  { id: 1, type: "deluxe", quantity: 2, rate: 400000 },
-  { id: 2, type: "family", quantity: 1, rate: 650000 },
-];
-const initialExtraQuantities: Record<string, number> = { "family-grill": 1 };
-const channels = [
-  "Agoda",
-  "Traveloka",
-  "Booking.com",
-  "Tiket.com",
-  "Other OTA",
-];
 
 function parseCurrency(value: string) {
   return Number(value.replace(/\D/g, "")) || 0;
@@ -41,42 +40,72 @@ function parseCurrency(value: string) {
 
 export function OtaReservationPage() {
   const [minimumCheckIn, setMinimumCheckIn] = useState("");
-  const [channel, setChannel] = useState("Agoda");
-  const [reference, setReference] = useState("AGD-849215763");
-  const [checkIn, setCheckIn] = useState("2026-10-05");
-  const [checkOut, setCheckOut] = useState("2026-10-07");
+  const [channels, setChannels] = useState<OtaChannel[]>([]);
+  const [roomTypeOptions, setRoomTypeOptions] = useState<RoomTypeRecord[]>([]);
+  const [experienceOptions, setExperienceOptions] = useState<{
+    id: string; label: string; price: number; unit: string;
+  }[]>([]);
+  const [channel, setChannel] = useState("");
+  const [reference, setReference] = useState("");
+  const [checkIn, setCheckIn] = useState("");
+  const [checkOut, setCheckOut] = useState("");
   const [adults, setAdults] = useState(2);
   const [children, setChildren] = useState(0);
-  const [rooms, setRooms] = useState<RoomRow[]>(initialRooms);
-  const [nextRoomId, setNextRoomId] = useState(3);
-  const [guestName, setGuestName] = useState("Andi Pratama");
-  const [whatsapp, setWhatsapp] = useState("+62 812 3456 7890");
-  const [email, setEmail] = useState("andi@email.com");
-  const [notes, setNotes] = useState(
-    "Guest requested early arrival via Agoda message.",
-  );
-  const [selectedExtras, setSelectedExtras] = useState<string[]>([
-    "family-grill",
-  ]);
+  const [rooms, setRooms] = useState<RoomRow[]>([]);
+  const [nextRoomId, setNextRoomId] = useState(2);
+  const [guestName, setGuestName] = useState("");
+  const [whatsapp, setWhatsapp] = useState("");
+  const [email, setEmail] = useState("");
+  const [notes, setNotes] = useState("");
+  const [selectedExtras, setSelectedExtras] = useState<string[]>([]);
   const [extraQuantities, setExtraQuantities] = useState<
     Record<string, number>
-  >(initialExtraQuantities);
+  >({});
   const [addingExtra, setAddingExtra] = useState(false);
   const [feedback, setFeedback] = useState<Feedback | null>(null);
   const [saveConfirmationOpen, setSaveConfirmationOpen] = useState(false);
   const [savedBookingId, setSavedBookingId] = useState<string | null>(null);
+  const [saveBusy, setSaveBusy] = useState(false);
+  const [quoteState, setQuoteState] = useState<{ key: string; value: ReservationQuote } | null>(null);
+  const [quoteError, setQuoteError] = useState("");
+  const [quoteBusy, setQuoteBusy] = useState(false);
+  const idempotency = useRef<{ key: string; value: string } | null>(null);
 
   const nights = calculateNights(checkIn, checkOut);
   const selectedRooms = rooms.reduce((sum, room) => sum + room.quantity, 0);
+  const channelName = channels.find((item) => item.id === channel)?.name ?? "OTA";
+  const getExtraCost = (id: string, quantity: number) =>
+    (experienceOptions.find((item) => item.id === id)?.price ?? 0) * quantity;
+  const roomSelections: OtaRoom[] = rooms.flatMap((room) =>
+    room.configurations.slice(0, room.quantity).map((configuration) => ({
+      roomTypeId: room.type,
+      otaRatePerNight: room.rate,
+      adults: configuration.adults,
+      children: configuration.children,
+      extraBeds: configuration.extraBeds,
+    })),
+  );
+  const experienceSelections: OtaExperience[] = selectedExtras.map((variantId) => ({
+    variantId,
+    quantity: extraQuantities[variantId] ?? 1,
+  }));
+  const quoteKey = JSON.stringify({ checkIn, checkOut, roomSelections, experienceSelections });
+  const requestKey = JSON.stringify({ quoteKey, channel, reference, guestName, whatsapp, email, notes });
+  const quote = quoteState?.key === quoteKey ? quoteState.value : null;
   const roomsTotal = rooms.reduce(
     (sum, room) => sum + room.rate * room.quantity * nights,
     0,
   );
   const extrasTotal = selectedExtras.reduce(
-    (sum, id) => sum + getExtraCost(id, extraQuantities[id] ?? 1, nights),
+    (sum, id) => sum + getExtraCost(id, extraQuantities[id] ?? 1),
     0,
   );
-  const total = roomsTotal + extrasTotal;
+  const extraBedsTotal = rooms.reduce((sum, room) => {
+    const roomType = roomTypeOptions.find((item) => item.id === room.type);
+    const beds = room.configurations.reduce((total, configuration) => total + configuration.extraBeds, 0);
+    return sum + (roomType?.extraBedPricePerNight ?? 0) * beds * nights;
+  }, 0);
+  const total = quote?.bookingTotal ?? roomsTotal + extraBedsTotal + extrasTotal;
   const paymentStatus = "Paid";
   const amountPaid = total;
   const remainingBalance = 0;
@@ -84,21 +113,86 @@ export function OtaReservationPage() {
   useEffect(() => {
     const today = todayJakarta();
     setMinimumCheckIn(today);
-    if (checkIn < today) {
-      setCheckIn(today);
-      setCheckOut(nextStayDate(today));
-    }
+    setCheckIn(today);
+    setCheckOut(nextStayDate(today));
   }, []);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    getOtaFormOptions(controller.signal).then((result) => {
+      setChannels(result.channels);
+      setRoomTypeOptions(result.roomTypes);
+      setExperienceOptions(result.experiences.flatMap((experience) =>
+        experience.variants.map((variant) => ({
+          id: variant.id,
+          label: `${experience.name} – ${variant.subName}`,
+          price: variant.price,
+          unit: "/ paket",
+        })),
+      ));
+      setChannel((current) => current || result.channels[0]?.id || "");
+      setRooms((current) => current.length ? current : result.roomTypes[0]
+        ? [{ id: 1, type: result.roomTypes[0].id, quantity: 1, rate: 0, configurations: [{ adults: 2, children: 0, extraBeds: 0 }] }]
+        : []);
+    }).catch((cause) => {
+      if (!controller.signal.aborted) setFeedback({ kind: "error", text: cause instanceof Error ? cause.message : "Pilihan OTA gagal dimuat." });
+    });
+    return () => controller.abort();
+  }, []);
+
+  useEffect(() => {
+    if (!checkIn || nights < 1 || roomSelections.length < 1 ||
+      roomSelections.some((room) => !room.roomTypeId || room.otaRatePerNight < 1)) {
+      setQuoteBusy(false);
+      setQuoteError("");
+      return;
+    }
+    const controller = new AbortController();
+    setQuoteBusy(true);
+    setQuoteError("");
+    const timer = window.setTimeout(() => {
+      quoteOtaReservation({
+        checkInDate: checkIn,
+        checkOutDate: checkOut,
+        rooms: roomSelections,
+        experiences: experienceSelections,
+      }, controller.signal).then((value) => setQuoteState({ key: quoteKey, value }))
+        .catch((cause) => {
+          if (!controller.signal.aborted) setQuoteError(cause instanceof Error ? cause.message : "Quote OTA gagal dimuat.");
+        }).finally(() => { if (!controller.signal.aborted) setQuoteBusy(false); });
+    }, 300);
+    return () => { window.clearTimeout(timer); controller.abort(); };
+  }, [quoteKey, checkIn, checkOut, nights]);
 
   function updateRoom(id: number, changes: Partial<RoomRow>) {
     setRooms((current) =>
-      current.map((room) => (room.id === id ? { ...room, ...changes } : room)),
+      current.map((room) => {
+        if (room.id !== id) return room;
+        const quantity = changes.quantity ?? room.quantity;
+        const configurations = changes.type && changes.type !== room.type
+          ? room.configurations.map((configuration) => ({ ...configuration, extraBeds: 0 }))
+          : room.configurations;
+        return {
+          ...room,
+          ...changes,
+          configurations: Array.from({ length: quantity }, (_, index) =>
+            configurations[index] ?? { adults, children, extraBeds: 0 },
+          ),
+        };
+      }),
     );
     setFeedback(null);
   }
 
+  function updateRoomConfiguration(id: number, index: number, changes: Partial<RoomConfiguration>) {
+    setRooms((current) => current.map((room) => room.id === id
+      ? { ...room, configurations: room.configurations.map((configuration, position) =>
+          position === index ? { ...configuration, ...changes } : configuration) }
+      : room));
+  }
+
   function addRoomType() {
-    const nextType = roomTypes.find(
+    const nextType = roomTypeOptions.find(
       (type) => !rooms.some((room) => room.type === type.id),
     );
     if (!nextType) {
@@ -110,35 +204,39 @@ export function OtaReservationPage() {
     }
     setRooms((current) => [
       ...current,
-      { id: nextRoomId, type: nextType.id, quantity: 1, rate: nextType.rate },
+      { id: nextRoomId, type: nextType.id, quantity: 1, rate: 0, configurations: [{ adults, children, extraBeds: 0 }] },
     ]);
     setNextRoomId((current) => current + 1);
     setFeedback(null);
   }
 
   function resetForm() {
-    setChannel("Agoda");
-    setReference("AGD-849215763");
-    const resetCheckIn = minimumCheckIn > "2026-10-05" ? minimumCheckIn : "2026-10-05";
+    setChannel(channels[0]?.id ?? "");
+    setReference("");
+    const resetCheckIn = minimumCheckIn || todayJakarta();
     setCheckIn(resetCheckIn);
-    setCheckOut(resetCheckIn === "2026-10-05" ? "2026-10-07" : nextStayDate(resetCheckIn));
+    setCheckOut(nextStayDate(resetCheckIn));
     setAdults(2);
     setChildren(0);
-    setRooms(initialRooms);
-    setNextRoomId(3);
-    setGuestName("Andi Pratama");
-    setWhatsapp("+62 812 3456 7890");
-    setEmail("andi@email.com");
-    setNotes("Guest requested early arrival via Agoda message.");
-    setSelectedExtras(["family-grill"]);
-    setExtraQuantities(initialExtraQuantities);
+    setRooms(roomTypeOptions[0]
+      ? [{ id: 1, type: roomTypeOptions[0].id, quantity: 1, rate: 0, configurations: [{ adults: 2, children: 0, extraBeds: 0 }] }]
+      : []);
+    setNextRoomId(2);
+    setGuestName("");
+    setWhatsapp("");
+    setEmail("");
+    setNotes("");
+    setSelectedExtras([]);
+    setExtraQuantities({});
     setAddingExtra(false);
     setFeedback(null);
     setSaveConfirmationOpen(false);
     setSavedBookingId(null);
+    setQuoteState(null);
+    idempotency.current = null;
   }
 
-  function saveReservation(draft = false) {
+  async function saveReservation() {
     if (minimumCheckIn && checkIn < minimumCheckIn)
       return setFeedback({ kind: "error", text: "Tanggal check-in tidak boleh sebelum hari ini." });
     if (nights < 1)
@@ -151,88 +249,56 @@ export function OtaReservationPage() {
         kind: "error",
         text: "Tambahkan minimal satu kamar dari voucher OTA.",
       });
+    if (selectedRooms > 20)
+      return setFeedback({ kind: "error", text: "Maksimal 20 kamar dalam satu reservasi." });
     if (rooms.some((room) => room.rate < 1))
       return setFeedback({
         kind: "error",
         text: "Tarif voucher per malam wajib lebih dari Rp0.",
       });
-    if (!draft && !reference.trim())
+    if (!channel)
+      return setFeedback({ kind: "error", text: "Pilih channel OTA yang aktif." });
+    if (!reference.trim())
       return setFeedback({
         kind: "error",
         text: "Nomor referensi OTA wajib diisi.",
       });
-    if (!draft && (!guestName.trim() || !whatsapp.trim()))
+    if (!guestName.trim() || !whatsapp.trim())
       return setFeedback({
         kind: "error",
         text: "Nama tamu dan nomor WhatsApp wajib diisi.",
       });
-    if (
-      (extraQuantities["extra-bed"] ?? 0) > selectedRooms ||
-      (extraQuantities.breakfast ?? 0) > adults + children
-    ) {
-      return setFeedback({
-        kind: "error",
-        text: "Jumlah Extra Bed atau Breakfast melebihi kamar atau jumlah tamu.",
-      });
+    if (!quote || quoteBusy || quoteError)
+      return setFeedback({ kind: "error", text: quoteError || "Tunggu hingga total voucher selesai dihitung oleh API." });
+    if (!idempotency.current || idempotency.current.key !== requestKey) {
+      idempotency.current = { key: requestKey, value: crypto.randomUUID() };
     }
-    const bookingId = "GH-OTA-" + Date.now().toString().slice(-8);
-    const quantities = { deluxe: 0, family: 0, suite: 0 };
-    rooms.forEach((room) => {
-      quantities[room.type] += room.quantity;
-    });
-    const reservation = {
-      bookingId,
-      source: "OTA",
-      channel,
-      reference: reference.trim(),
-      checkIn,
-      checkOut,
-      adults,
-      children,
-      quantities,
-      rooms: rooms.map(({ type, quantity, rate }) => ({
-        type,
-        quantity,
-        rate,
-      })),
-      assignments: null,
-      selectedExtras,
-      extraQuantities,
-      guestName: guestName.trim(),
-      whatsapp: whatsapp.trim(),
-      email: email.trim(),
-      notes: notes.trim(),
-      paymentMethod: "Prepaid by OTA",
-      paymentStatus,
-      amountPaid,
-      requireDeposit: false,
-      depositAmount: 0,
-      depositMethod: null,
-      depositNote: "",
-      total,
-      status: draft
-        ? "Draft"
-        : resolveReservationStatus(paymentStatus, "Pending", "OTA"),
-    };
+    setSaveBusy(true);
+    setFeedback(null);
     try {
-      const stored = JSON.parse(
-        localStorage.getItem("green-hero-reservations") || "[]",
-      );
-      localStorage.setItem(
-        "green-hero-reservations",
-        JSON.stringify([reservation, ...(Array.isArray(stored) ? stored : [])]),
-      );
-      if (draft) {
-        setFeedback({ kind: "success", text: `Reservasi ${bookingId} disimpan sebagai draft.` });
-      } else {
-        setFeedback(null);
-        setSavedBookingId(bookingId);
-      }
-    } catch {
+      const result = await createOtaReservation({
+        idempotencyKey: idempotency.current.value,
+        otaChannelId: channel,
+        externalReference: reference.trim(),
+        guest: {
+          fullName: guestName.trim(),
+          phone: whatsapp.trim(),
+          ...(email.trim() ? { email: email.trim() } : {}),
+        },
+        checkInDate: checkIn,
+        checkOutDate: checkOut,
+        rooms: roomSelections,
+        experiences: experienceSelections,
+        ...(notes.trim() ? { specialRequests: notes.trim() } : {}),
+      });
+      setSavedBookingId(result.reservation.bookingCode);
+    } catch (cause) {
       setFeedback({
         kind: "error",
-        text: "Reservasi tidak dapat disimpan di browser ini.",
+        text: cause instanceof Error ? cause.message : "Reservasi OTA gagal disimpan.",
       });
+    } finally {
+      setSaveBusy(false);
     }
   }
 
@@ -272,6 +338,7 @@ export function OtaReservationPage() {
             </button>
           </div>
         )}
+        {quoteError && <div className="reservation-feedback reservation-feedback--error" role="alert">{quoteError}</div>}
         <div className="walkin-columns">
           <div className="walkin-form-column">
             <section className="reservation-panel ota-source-panel">
@@ -314,8 +381,9 @@ export function OtaReservationPage() {
                     value={channel}
                     onChange={(event) => setChannel(event.target.value)}
                   >
+                    <option value="">Pilih OTA channel</option>
                     {channels.map((item) => (
-                      <option key={item}>{item}</option>
+                      <option key={item.id} value={item.id}>{item.name}</option>
                     ))}
                   </select>
                 </ReservationField>
@@ -367,24 +435,36 @@ export function OtaReservationPage() {
                     onChange={(event) => setCheckOut(event.target.value)}
                   />
                 </ReservationField>
-                <ReservationField label="Adults" htmlFor="ota-adults">
+                <ReservationField label="Default Adults / Room" htmlFor="ota-adults">
                   <select
                     id="ota-adults"
                     value={adults}
-                    onChange={(event) => setAdults(Number(event.target.value))}
+                    onChange={(event) => {
+                      const value = Number(event.target.value);
+                      setAdults(value);
+                      setRooms((current) => current.map((room) => ({
+                        ...room,
+                        configurations: room.configurations.map((configuration) => ({ ...configuration, adults: value })),
+                      })));
+                    }}
                   >
                     {[1, 2, 3, 4, 5, 6, 7, 8].map((value) => (
                       <option key={value}>{value}</option>
                     ))}
                   </select>
                 </ReservationField>
-                <ReservationField label="Children" htmlFor="ota-children">
+                <ReservationField label="Default Children / Room" htmlFor="ota-children">
                   <select
                     id="ota-children"
                     value={children}
-                    onChange={(event) =>
-                      setChildren(Number(event.target.value))
-                    }
+                    onChange={(event) => {
+                      const value = Number(event.target.value);
+                      setChildren(value);
+                      setRooms((current) => current.map((room) => ({
+                        ...room,
+                        configurations: room.configurations.map((configuration) => ({ ...configuration, children: value })),
+                      })));
+                    }}
                   >
                     {[0, 1, 2, 3, 4].map((value) => (
                       <option key={value}>{value}</option>
@@ -431,7 +511,7 @@ export function OtaReservationPage() {
               </div>
               <div className="ota-room-list">
                 {rooms.map((room) => {
-                  const type = roomTypes.find((item) => item.id === room.type);
+                  const type = roomTypeOptions.find((item) => item.id === room.type);
                   return (
                     <div className="ota-room-row" key={room.id}>
                       <ReservationField
@@ -443,11 +523,11 @@ export function OtaReservationPage() {
                           value={room.type}
                           onChange={(event) =>
                             updateRoom(room.id, {
-                              type: event.target.value as RoomType,
+                              type: event.target.value,
                             })
                           }
                         >
-                          {roomTypes.map((item) => (
+                          {roomTypeOptions.map((item) => (
                             <option
                               key={item.id}
                               value={item.id}
@@ -480,7 +560,8 @@ export function OtaReservationPage() {
                         <input
                           id={"ota-rate-" + room.id}
                           inputMode="numeric"
-                          value={formatRupiah(room.rate)}
+                          value={room.rate > 0 ? formatRupiah(room.rate) : ""}
+                          placeholder="Rp"
                           onChange={(event) =>
                             updateRoom(room.id, {
                               rate: parseCurrency(event.target.value),
@@ -506,6 +587,35 @@ export function OtaReservationPage() {
                       >
                         ×
                       </button>
+                      <div className="ota-room-unit-configs">
+                        {room.configurations.map((configuration, index) => (
+                          <div className="ota-room-unit-config" key={`${room.id}-${index}`}>
+                            <strong>Room {index + 1}</strong>
+                            <label>Adults
+                              <select value={configuration.adults} onChange={(event) => updateRoomConfiguration(room.id, index, { adults: Number(event.target.value) })}>
+                                {[0, 1, 2, 3, 4, 5, 6, 7, 8].map((value) => <option key={value} value={value}>{value}</option>)}
+                              </select>
+                            </label>
+                            <label>Children
+                              <select value={configuration.children} onChange={(event) => updateRoomConfiguration(room.id, index, { children: Number(event.target.value) })}>
+                                {[0, 1, 2, 3, 4].map((value) => <option key={value} value={value}>{value}</option>)}
+                              </select>
+                            </label>
+                            {type?.extraBedEnabled && type.maxExtraBeds > 0 && (
+                              <div className="reservation-field">
+                                <label>Extra Bed · {formatRupiah(type.extraBedPricePerNight)} / night</label>
+                                <QuantityControl
+                                  label={`Extra bed room ${index + 1}`}
+                                  value={configuration.extraBeds}
+                                  min={0}
+                                  max={type.maxExtraBeds}
+                                  onChange={(value) => updateRoomConfiguration(room.id, index, { extraBeds: value })}
+                                />
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
                     </div>
                   );
                 })}
@@ -524,8 +634,8 @@ export function OtaReservationPage() {
                 </span>
               </div>
               <p className="ota-operational-note">
-                ⓘ &nbsp; OTA reservations record external bookings directly
-                without deducting or validating system inventory.
+                ⓘ &nbsp; Reservasi OTA dicatat dari voucher. Tarif voucher digunakan
+                untuk total booking dan reservasi ikut tercatat dalam kamar terjual.
               </p>
             </section>
             <section className="reservation-panel">
@@ -603,7 +713,7 @@ export function OtaReservationPage() {
                     }}
                   >
                     <option value="">Pilih paket</option>
-                    {extras
+                    {experienceOptions
                       .filter((extra) => !selectedExtras.includes(extra.id))
                       .map((extra) => (
                         <option key={extra.id} value={extra.id}>
@@ -616,40 +726,29 @@ export function OtaReservationPage() {
               )}
               <div className="selected-extras">
                 {selectedExtras.map((id) => {
-                  const extra = extras.find((item) => item.id === id);
+                  const extra = experienceOptions.find((item) => item.id === id);
                   if (!extra) return null;
                   const count = extraQuantities[id] ?? 1;
-                  const adjustable = id === "extra-bed" || id === "breakfast";
-                  const limit =
-                    id === "extra-bed"
-                      ? Math.max(1, selectedRooms)
-                      : Math.max(1, adults + children);
                   return (
                     <div className="selected-extra" key={id}>
                       <div className="selected-extra__description">
                         <strong>{extra.label}</strong>
                         <small>
                           {formatRupiah(extra.price)} {extra.unit}
-                          {extra.perNight ? ` · ${nights} malam` : ""}
                         </small>
                       </div>
                       <div className="selected-extra__actions">
-                        {adjustable && (
-                          <QuantityControl
-                            label={extra.label}
-                            value={count}
-                            min={1}
-                            max={limit}
-                            onChange={(value) =>
-                              setExtraQuantities((current) => ({
-                                ...current,
-                                [id]: value,
-                              }))
-                            }
-                          />
-                        )}
+                        <QuantityControl
+                          label={extra.label}
+                          value={count}
+                          min={1}
+                          max={20}
+                          onChange={(value) =>
+                            setExtraQuantities((current) => ({ ...current, [id]: value }))
+                          }
+                        />
                         <strong>
-                          {formatRupiah(getExtraCost(id, count, nights))}
+                          {formatRupiah(getExtraCost(id, count))}
                         </strong>
                         <button
                           type="button"
@@ -703,7 +802,7 @@ export function OtaReservationPage() {
               </div>
               <p className="ota-settlement-note">
                 <strong>OTA Settlement Note:</strong> Pembayaran telah
-                diselesaikan melalui {channel}. Dana dicairkan sesuai jadwal
+                diselesaikan melalui {channelName}. Dana dicairkan sesuai jadwal
                 payout OTA.
               </p>
             </section>
@@ -711,7 +810,7 @@ export function OtaReservationPage() {
           <aside className="booking-summary">
             <div className="booking-summary__header">
               <h2>Booking Summary</h2>
-              <span>OTA · {channel}</span>
+              <span>OTA · {channelName}</span>
             </div>
             <div className="booking-summary__stay">
               <span>OTA Reference</span>
@@ -728,7 +827,7 @@ export function OtaReservationPage() {
               {rooms.map((room) => (
                 <div key={room.id}>
                   <span>
-                    {roomTypes.find((type) => type.id === room.type)?.name} ×{" "}
+                    {roomTypeOptions.find((type) => type.id === room.type)?.name} ×{" "}
                     {room.quantity} ({nights} nights × {formatRupiah(room.rate)}
                     )
                   </span>
@@ -741,8 +840,16 @@ export function OtaReservationPage() {
                 <span>Rooms Total</span>
                 <strong>{formatRupiah(roomsTotal)}</strong>
               </div>
+              {rooms.flatMap((room) => room.configurations.map((configuration, index) =>
+                configuration.extraBeds > 0 ? (
+                  <div key={`bed-${room.id}-${index}`}>
+                    <span>Extra Bed ({roomTypeOptions.find((type) => type.id === room.type)?.name}, Room {index + 1}) × {configuration.extraBeds} · {nights} nights</span>
+                    <strong>{formatRupiah((roomTypeOptions.find((type) => type.id === room.type)?.extraBedPricePerNight ?? 0) * configuration.extraBeds * nights)}</strong>
+                  </div>
+                ) : null,
+              ))}
               {selectedExtras.map((id) => {
-                const extra = extras.find((item) => item.id === id);
+                const extra = experienceOptions.find((item) => item.id === id);
                 return extra ? (
                   <div key={id}>
                     <span>
@@ -750,7 +857,7 @@ export function OtaReservationPage() {
                     </span>
                     <strong>
                       {formatRupiah(
-                        getExtraCost(id, extraQuantities[id] ?? 1, nights),
+                        getExtraCost(id, extraQuantities[id] ?? 1),
                       )}
                     </strong>
                   </div>
@@ -758,6 +865,7 @@ export function OtaReservationPage() {
               })}
             </div>
             <div className="booking-summary__totals">
+              {quoteBusy && <p role="status">Menghitung total OTA...</p>}
               <div>
                 <strong>Booking Total</strong>
                 <strong>{formatRupiah(total)}</strong>
@@ -790,6 +898,7 @@ export function OtaReservationPage() {
               <button
                 type="button"
                 className="action-button"
+                disabled={saveBusy || quoteBusy || !quote || Boolean(quoteError)}
                 onClick={() => setSaveConfirmationOpen(true)}
               >
                 Save Reservation
@@ -797,7 +906,8 @@ export function OtaReservationPage() {
               <button
                 type="button"
                 className="reservation-secondary-button"
-                onClick={() => saveReservation(true)}
+                disabled
+                title="Draft OTA belum tersedia di API"
               >
                 Save as Draft
               </button>
@@ -817,7 +927,8 @@ export function OtaReservationPage() {
           rooms={selectedRooms}
           nights={nights}
           onCancel={() => setSaveConfirmationOpen(false)}
-          onConfirm={() => { setSaveConfirmationOpen(false); saveReservation(); }}
+          onConfirm={() => { setSaveConfirmationOpen(false); void saveReservation(); }}
+          busy={saveBusy}
         />
       )}
       {savedBookingId && <ReservationSuccessTransition bookingId={savedBookingId} checkedIn={false} />}

@@ -6,6 +6,7 @@ import { AdminShell } from "../../../components/layout/AdminShell";
 import { formatStayDate } from "../constants/walk-in-data";
 import { restoreSession } from "../../../lib/auth";
 import { getDeparturesToday, type DepartureTodayItem } from "../services/api";
+import { useOperationalRefresh } from "../hooks/useOperationalRefresh";
 
 const pageSize = 20;
 
@@ -28,7 +29,8 @@ function paymentTone(status: string) {
 
 export function DeparturesTodayPage() {
   const [departures, setDepartures] = useState<DepartureTodayItem[]>([]);
-  const [summary, setSummary] = useState({ total: 0, dueOut: 0, checkedOut: 0 });
+  const [summary, setSummary] = useState({ total: 0, dueOut: 0, overdue: 0, checkedOut: 0 });
+  const operationalRefresh = useOperationalRefresh();
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
@@ -63,7 +65,7 @@ export function DeparturesTodayPage() {
       }
     }, search ? 300 : 0);
     return () => { window.clearTimeout(timer); controller.abort(); };
-  }, [page, search, status, payment]);
+  }, [page, search, status, payment, operationalRefresh]);
 
   return (
     <AdminShell title="Reservations" context="Departures Today">
@@ -73,8 +75,7 @@ export function DeparturesTodayPage() {
             <div className="departures-heading-title">
               <h1>Departures Today</h1>
               <span className="departures-count">
-                {summary.total} departures today · {summary.dueOut} belum
-                check-out
+                {summary.total} departures today · {summary.dueOut} Due Out · {summary.overdue} Overdue
               </span>
             </div>
             <p>Tamu yang dijadwalkan atau sudah check-out hari ini.</p>
@@ -101,6 +102,7 @@ export function DeparturesTodayPage() {
             >
               <option value="all">Status: All</option>
               <option value="due_out">Due Out</option>
+              <option value="overdue">Overdue</option>
               <option value="checked_out">Checked Out</option>
             </select>
             <select
@@ -195,9 +197,11 @@ export function DeparturesTodayPage() {
                       <span
                         className={
                           "reservations-badge reservations-badge--" +
-                          (item.operationalStatus.code === "due_out"
-                            ? "warning"
-                            : "neutral")
+                          (item.operationalStatus.code === "overdue"
+                            ? "danger"
+                            : item.operationalStatus.code === "due_out"
+                              ? "warning"
+                              : "neutral")
                         }
                       >
                         {item.operationalStatus.label}

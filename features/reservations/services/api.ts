@@ -96,7 +96,7 @@ export type DepartureTodayItem = {
 
 export type DeparturesTodayResponse = {
   date: string;
-  summary: { total: number; dueOut: number; checkedOut: number };
+  summary: { total: number; dueOut: number; overdue: number; checkedOut: number };
   items: DepartureTodayItem[];
   page: number;
   limit: number;
@@ -202,6 +202,7 @@ export type ApiReservationDetail = {
   }[];
   experiences: {
     id: string;
+    experienceId: string;
     nameSnapshot: string;
     descriptionSnapshot: string | null;
     quantity: number;
@@ -212,6 +213,7 @@ export type ApiReservationDetail = {
     kind: string;
     description: string;
     quantity: string;
+    unitAmount: number;
     amount: number;
   }[];
   payments: {
@@ -219,9 +221,18 @@ export type ApiReservationDetail = {
     amount: number;
     status: string;
     paidAt: string | null;
+    providerReference: string | null;
     method: { name: string } | null;
+    recordedBy: { id: string; name: string } | null;
   }[];
-  refunds: { id: string; amount: number; status: string }[];
+  refunds: {
+    id: string;
+    amount: number;
+    status: string;
+    processedAt: string | null;
+    providerReference: string | null;
+    processedBy: { id: string; name: string } | null;
+  }[];
   deposits: {
     id: string;
     amountHeld: number;
@@ -234,8 +245,9 @@ export type ApiReservationDetail = {
     roomCount: number;
     nights: number;
     bookingTotal: number;
-    paidAmount: number;
+    grossPaidAmount: number;
     refundedAmount: number;
+    paidAmount: number;
     remainingBalance: number;
     depositBalance: number;
   };
@@ -257,6 +269,7 @@ export type ReservationHistoryItem = {
   actor: { id: string; name: string } | null;
   reservationStatusAfter: ReservationStatus | null;
   paymentStatusAfter: PaymentStatus | null;
+  details?: Record<string, unknown>;
 };
 
 export function getReservationDetail(id: string, signal?: AbortSignal) {
@@ -292,9 +305,30 @@ export function checkInReservation(
     acknowledgeOutstanding?: boolean;
     rooms: { reservationRoomId: string; roomUnitId: string }[];
     deposit?: { amount: number; methodId: string; notes?: string };
+    earlyCheckIn?: EarlyCheckInInput;
   },
 ) {
   return apiRequest(`reservations/${encodeURIComponent(id)}/check-in`, { method: "POST", body: input });
+}
+
+export type EarlyCheckInInput = {
+  acknowledged: boolean;
+  chargeAmount: number;
+  paymentTiming: "now" | "later";
+  paymentMethodId?: string;
+};
+
+export type CheckInContext = {
+  checkInDate: string;
+  serverDate: string;
+  serverTime: string;
+  standardCheckInTime: string;
+  required: boolean;
+};
+
+export function getCheckInContext(checkInDate: string) {
+  const query = new URLSearchParams({ checkInDate });
+  return apiRequest<CheckInContext>(`reservations/check-in-context?${query}`);
 }
 
 export function checkOutReservation(
@@ -302,6 +336,8 @@ export function checkOutReservation(
   input: {
     acknowledgeOutstanding?: boolean;
     outstandingReason?: string;
+    acknowledgeEarlyDeparture?: boolean;
+    lateCheckOut?: LateCheckOutInput;
     deposits: {
       depositId: string;
       refundAmount?: number;
@@ -314,6 +350,179 @@ export function checkOutReservation(
   },
 ) {
   return apiRequest(`reservations/${encodeURIComponent(id)}/check-out`, { method: "POST", body: input });
+}
+
+export type ExtendStayQuote = {
+  reservationId: string;
+  oldCheckOutDate: string;
+  newCheckOutDate: string;
+  nights: number;
+  version: number;
+  rooms: {
+    reservationRoomId: string;
+    roomTypeName: string;
+    roomNumber: string | null;
+    roomAmount: number;
+    extraBeds: { quantity: number; unitPricePerNight: number; amount: number } | null;
+    breakfasts: { description: string; quantityPerNight: number; unitAmount: number }[];
+    breakfastAmount: number;
+    total: number;
+    nights: { stayDate: string; basePrice: number; discountAmount: number; finalPrice: number; campaignSnapshot: { name: string } | null }[];
+  }[];
+  discountTotal: number;
+  extensionTotal: number;
+  existingBalance: number;
+  projectedBalance: number;
+};
+
+export function getExtendStayQuote(id: string, newCheckOutDate: string) {
+  const query = new URLSearchParams({ newCheckOutDate });
+  return apiRequest<ExtendStayQuote>(`reservations/${encodeURIComponent(id)}/extend-stay/quote?${query}`);
+}
+
+export function extendReservationStay(id: string, input: {
+  newCheckOutDate: string;
+  expectedVersion: number;
+  payment?: { methodId: string; amount: number };
+}) {
+  return apiRequest(`reservations/${encodeURIComponent(id)}/extend-stay`, { method: "POST", body: input });
+}
+
+export type ChangeRoomOption = {
+  id: string;
+  roomNumber: string;
+  roomTypeId: string;
+  roomTypeName: string;
+  available: boolean;
+  reason: string | null;
+};
+
+export type ChangeRoomQuote = {
+  reservationRoomId: string;
+  oldRoomNumber: string | null;
+  oldRoomTypeName: string;
+  targetRoomUnitId: string;
+  targetRoomNumber: string;
+  targetRoomTypeName: string;
+  effectiveDate: string;
+  checkOutDate: string;
+  nights: number;
+  oldRoomAmount: number;
+  newRoomAmount: number;
+  roomDifference: number;
+  extraBedQuantity: number;
+  oldExtraBedAmount: number;
+  newExtraBedAmount: number;
+  extraBedDifference: number;
+  totalDifference: number;
+  version: number;
+  newNights: { stayDate: string; finalPrice: number; discountAmount: number; campaignSnapshot: { name: string } | null }[];
+};
+
+export type ExtraBedQuote = {
+  reservationRoomId: string;
+  roomTypeName: string;
+  effectiveDate: string;
+  checkOutDate: string;
+  nights: number;
+  previousQuantity: number;
+  quantity: number;
+  unitPricePerNight: number;
+  maxExtraBeds: number;
+  previousRemainingAmount: number;
+  newAmount: number;
+  difference: number;
+  version: number;
+};
+
+function roomOperationPath(id: string, roomId: string) {
+  return `reservations/${encodeURIComponent(id)}/rooms/${encodeURIComponent(roomId)}`;
+}
+
+export function getChangeRoomOptions(id: string, roomId: string) {
+  return apiRequest<{ options: ChangeRoomOption[]; effectiveDate: string; checkOutDate: string }>(`${roomOperationPath(id, roomId)}/change-options`);
+}
+
+export function getChangeRoomQuote(id: string, roomId: string, targetRoomUnitId: string) {
+  const query = new URLSearchParams({ targetRoomUnitId });
+  return apiRequest<ChangeRoomQuote>(`${roomOperationPath(id, roomId)}/change-room/quote?${query}`);
+}
+
+export function changeReservationRoom(id: string, roomId: string, input: { targetRoomUnitId: string; expectedVersion: number }) {
+  return apiRequest(`${roomOperationPath(id, roomId)}/change-room`, { method: "POST", body: input });
+}
+
+export function getExtraBedQuote(id: string, roomId: string, quantity: number) {
+  const query = new URLSearchParams({ quantity: String(quantity) });
+  return apiRequest<ExtraBedQuote>(`${roomOperationPath(id, roomId)}/extra-beds/quote?${query}`);
+}
+
+export function changeReservationExtraBeds(id: string, roomId: string, input: { quantity: number; expectedVersion: number }) {
+  return apiRequest(`${roomOperationPath(id, roomId)}/extra-beds`, { method: "POST", body: input });
+}
+
+export type ReservationExperienceOption = {
+  id: string;
+  name: string;
+  description: string | null;
+  maxQuantity: number;
+  isActive: boolean;
+  category: { id: string; name: string };
+  variants: {
+    id: string;
+    subName: string;
+    description: string | null;
+    price: number;
+  }[];
+};
+
+export type ExperienceBillItem = { variantId: string; quantity: number; serviceDate?: string };
+
+export type ExperienceBillQuote = {
+  version: number;
+  lines: { variantId: string; name: string; quantity: number; unitPrice: number; amount: number; serviceDate: string | null }[];
+  addedTotal: number;
+  bookingTotalBefore: number;
+  bookingTotalAfter: number;
+  paidAmount: number;
+  remainingBalanceAfter: number;
+};
+
+export async function getReservationExperienceOptions() {
+  const result = await apiRequest<{ items: ReservationExperienceOption[] }>("experiences?isActive=true&limit=100");
+  return result.items.filter((item) => item.isActive && item.variants.length > 0);
+}
+
+export function quoteReservationExperienceBill(id: string, items: ExperienceBillItem[]) {
+  return apiRequest<ExperienceBillQuote>(`reservations/${encodeURIComponent(id)}/experience-bill/quote`, {
+    method: "POST", body: { items },
+  });
+}
+
+export function saveReservationExperienceBill(id: string, input: { expectedVersion: number; expectedAddedTotal: number; items: ExperienceBillItem[] }) {
+  return apiRequest(`reservations/${encodeURIComponent(id)}/experience-bill`, {
+    method: "POST", body: input,
+  });
+}
+
+export type LateCheckOutInput = {
+  acknowledged: boolean;
+  chargeAmount: number;
+  paymentTiming: "now" | "later";
+  paymentMethodId?: string;
+};
+
+export type CheckOutContext = {
+  checkOutDate: string;
+  serverDate: string;
+  serverTime: string;
+  standardCheckOutTime: string;
+  kind: "normal" | "early_departure" | "late_checkout";
+};
+
+export function getCheckOutContext(checkOutDate: string) {
+  const query = new URLSearchParams({ checkOutDate });
+  return apiRequest<CheckOutContext>(`reservations/check-out-context?${query}`);
 }
 
 export function recordReservationPayment(

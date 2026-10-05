@@ -6,6 +6,7 @@ import { AdminShell } from "../../../components/layout/AdminShell";
 import { calculateNights, formatStayDate } from "../constants/walk-in-data";
 import { getReservations, type ReservationListItem } from "../services/api";
 import { restoreSession } from "../../../lib/auth";
+import { useOperationalRefresh } from "../hooks/useOperationalRefresh";
 
 const pageSize = 8;
 
@@ -90,6 +91,7 @@ function csvCell(value: string | number | undefined) {
 }
 
 export function ReservationsListPage() {
+  const operationalRefresh = useOperationalRefresh();
   const [reservations, setReservations] = useState<ListRow[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -146,7 +148,7 @@ export function ReservationsListPage() {
       }
     }, search ? 300 : 0);
     return () => { window.clearTimeout(timer); controller.abort(); };
-  }, [page, search, stayFilter, customDate, sourceFilter, statusFilter, paymentFilter, sortDirection]);
+  }, [page, search, stayFilter, customDate, sourceFilter, statusFilter, paymentFilter, sortDirection, operationalRefresh]);
 
   const filtered = reservations;
   const pageCount = Math.max(1, Math.ceil(total / pageSize));

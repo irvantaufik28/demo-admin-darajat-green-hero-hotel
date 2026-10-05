@@ -35,16 +35,19 @@ const items: Item[] = [
   { label: "Cancellation Policies", icon: "policy" },
   { label: "Campaigns & Promotions", icon: "campaign" },
   { label: "Experiences", icon: "experiences" },
-  { label: "Payments", icon: "payments" },
+  { label: "Payments", icon: "payments", children: ["All Transactions", "Refunds", "Outstanding Balance"] },
   { label: "Guests", icon: "guests" },
   { label: "Master", icon: "rooms", children: [
-    "Amenities", "Bed Types", "Meal Types", "Room View Types", "Floor",
+    "Amenities", "Bed Types", "Meal Types", "Room View Types", "Floor", "Capacity Patterns",
     "Experience Categories", "OTA Channels", "Payment Methods", "Cancellation Policy Types",
   ] },
   { label: "Reports", icon: "reports", children: ["Reservation Report", "Room Performance", "Revenue"] },
   { label: "Settings", icon: "settings", children: ["Reservation Settings", "Users", "Roles & Permissions"] },
 ];
 const reservationRoutes: Record<string, string> = {
+  "All Transactions": "/payments/transactions",
+  "Refunds": "/payments/refunds",
+  "Outstanding Balance": "/payments/outstanding",
   "New Reservation": "/reservations/create-reservation-walkin",
   "Phone Reservation": "/reservations/create-reservation-phone",
   "OTA Reservation": "/reservations/create-reservation-ota",
@@ -65,6 +68,7 @@ const reservationRoutes: Record<string, string> = {
   "Meal Types": "/master/meal-types",
   "Room View Types": "/master/room-view-types",
   "Floor": "/master/floor",
+  "Capacity Patterns": "/master/capacity-patterns",
   "Experience Categories": "/master/experience-categories",
   "OTA Channels": "/master/ota-channels",
   "Payment Methods": "/master/payment-methods",
@@ -78,7 +82,6 @@ const topLevelRoutes: Record<string, string> = {
   "Cancellation Policies": "/cancellation-policies",
   "Campaigns & Promotions": "/campaigns",
   "Experiences": "/experiences",
-  "Payments": "/payments",
   "Guests": "/guests",
 };
 
@@ -108,7 +111,9 @@ export function Sidebar({
   const pathname = usePathname();
   const [hovered, setHovered] = useState(false);
   const currentGroup =
-    pathname.startsWith("/reservations")
+    pathname.startsWith("/payments")
+      ? "Payments"
+      : pathname.startsWith("/reservations")
       ? "Reservations"
       : pathname.startsWith("/rooms")
         ? "Rooms"
@@ -218,6 +223,7 @@ export function Sidebar({
                         ((item.label === "Reservations" &&
                           pathname.startsWith("/reservations")) ||
                           (item.label === "Rooms" && pathname.startsWith("/rooms")) ||
+                          (item.label === "Payments" && pathname.startsWith("/payments")) ||
                           (item.label === "Master" && pathname.startsWith("/master")) ||
                           (item.label === "Settings" && pathname.startsWith("/settings")))
                           ? "sidebar-link sidebar-link--active"
@@ -261,6 +267,8 @@ export function Sidebar({
                             <Link
                               className={
                                 (pathname === reservationRoutes[child] ||
+                                  (child === "All Transactions" && pathname === "/payments") ||
+                                  (child === "All Transactions" && /^\/payments\/[^/]+$/.test(pathname) && !["refunds", "outstanding", "transactions"].includes(pathname.split("/")[2])) ||
                                   (child === "Room Types" && pathname.startsWith("/rooms") && !pathname.startsWith("/rooms/numbers")))
                                   ? "sidebar-submenu__active"
                                   : ""

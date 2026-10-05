@@ -1,4 +1,4 @@
-import { ReservationsListPage } from "../../components/reservations/ReservationsListPage";
+import { ReservationsListPage } from "../../features/reservations/components/ReservationsListPage";
 
 export default function AllReservationsPage() {
   return <ReservationsListPage />;

@@ -1,4 +1,4 @@
-import { RoomPerformancePage } from "../../../components/reports/RoomPerformancePage";
+import { RoomPerformancePage } from "../../../features/reports/components/RoomPerformancePage";
 
 export default function Page() {
   return <RoomPerformancePage />;

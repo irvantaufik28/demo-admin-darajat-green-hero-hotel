@@ -1,6 +1,4 @@
-import { notFound } from "next/navigation";
-import { CampaignForm } from "../../../../components/campaigns/CampaignForm";
-import { getCampaignById } from "../../../../lib/campaigns-data";
+import { CampaignForm } from "../../../../features/campaigns/components/CampaignForm";
 
 type Props = {
   params: Promise<{ id: string }>;
@@ -8,11 +6,5 @@ type Props = {
 
 export default async function EditCampaignPage({ params }: Props) {
   const { id } = await params;
-  const campaign = getCampaignById(id);
-
-  if (!campaign) {
-    notFound();
-  }
-
-  return <CampaignForm mode="edit" initialData={campaign} />;
+  return <CampaignForm mode="edit" campaignId={id} />;
 }

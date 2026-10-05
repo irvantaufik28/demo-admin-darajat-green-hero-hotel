@@ -2,7 +2,7 @@
 
 import { useEffect, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
-import { clearSession, getSessionRemainingMs, hasSession } from "../../lib/auth";
+import { getCurrentUser, getSessionRemainingMs, logout, restoreSession, type AuthUser } from "../../lib/auth";
 import { Navbar } from "./Navbar";
 import { Sidebar, hydrateSidebarOpenGroups } from "./Sidebar";
 
@@ -19,29 +19,34 @@ type Props = {
 export function AdminShell({ title, context, badge, children }: Props) {
   const router = useRouter();
   const [authorized, setAuthorized] = useState(authorizedInTab);
+  const [user, setUser] = useState<AuthUser | null>(getCurrentUser);
   const [pinned, setPinned] = useState(pinnedInTab ?? true);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [notice, setNotice] = useState("");
   const [demoNoticeOpen, setDemoNoticeOpen] = useState(false);
 
   useEffect(() => {
-    if (!hasSession()) {
-      authorizedInTab = false;
-      setAuthorized(false);
-      router.replace("/");
-      return;
-    }
-    localStorage.removeItem("green-hero-reservation-operations");
-    localStorage.removeItem("green-hero-reservation-statuses");
-    hydrateSidebarOpenGroups();
-    pinnedInTab = sessionStorage.getItem("green-hero-sidebar-pinned") !== "false";
-    setPinned(pinnedInTab);
-    if (sessionStorage.getItem("green-hero-demo-notice-pending") === "true") {
-      sessionStorage.removeItem("green-hero-demo-notice-pending");
-      setDemoNoticeOpen(true);
-    }
-    authorizedInTab = true;
-    setAuthorized(true);
+    let active = true;
+    void restoreSession().then((restored) => {
+      if (!active) return;
+      if (!restored) {
+        authorizedInTab = false;
+        setAuthorized(false);
+        router.replace("/");
+        return;
+      }
+      hydrateSidebarOpenGroups();
+      pinnedInTab = sessionStorage.getItem("green-hero-sidebar-pinned") !== "false";
+      setPinned(pinnedInTab);
+      if (sessionStorage.getItem("green-hero-demo-notice-pending") === "true") {
+        sessionStorage.removeItem("green-hero-demo-notice-pending");
+        setDemoNoticeOpen(true);
+      }
+      setUser(getCurrentUser());
+      authorizedInTab = true;
+      setAuthorized(true);
+    });
+    return () => { active = false; };
   }, [router]);
 
   useEffect(() => {
@@ -72,9 +77,14 @@ export function AdminShell({ title, context, badge, children }: Props) {
     });
   }
 
-  function signOut() {
+  async function signOut() {
     authorizedInTab = false;
-    clearSession();
+    setAuthorized(false);
+    try {
+      await logout();
+    } catch {
+      // Local session is cleared even if the API cannot be reached.
+    }
     router.replace("/");
   }
 
@@ -96,6 +106,7 @@ export function AdminShell({ title, context, badge, children }: Props) {
         onUnavailable={showUnavailable}
       />
       <Navbar
+        user={user}
         title={title}
         context={context}
         badge={badge}

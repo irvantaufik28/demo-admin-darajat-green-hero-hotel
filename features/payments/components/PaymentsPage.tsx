@@ -1,5 +1,6 @@
 "use client";
 
+import { LoadingSkeleton } from "../../../components/ui/LoadingSkeleton";
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { AdminShell } from "../../../components/layout/AdminShell";
@@ -167,7 +168,7 @@ export function PaymentsPage() {
           <div className="payments-table-scroll">
             <table className="payments-table">
               <thead><tr><th>Booking</th><th>Guest</th><th>Source</th><th>Reservation Status</th><th>Booking Total</th><th>Paid</th><th>Refunded</th><th>Remaining</th><th>Payment Status</th><th>Method</th><th>Action</th></tr></thead>
-              <tbody>{rows.map((row) => <tr key={row.id}>
+              <tbody>{!loading && rows.map((row) => <tr key={row.id}>
                 <td><strong className="payments-booking">{row.bookingCode}</strong><small>{dateLabel(row.checkInDate)} – {dateLabel(row.checkOutDate)}</small></td>
                 <td><strong>{row.guest.fullName}</strong><small>{row.guest.phone}</small></td>
                 <td>{row.source === "ota" && row.otaChannel ? `OTA · ${row.otaChannel}` : label(row.source)}</td>
@@ -181,7 +182,7 @@ export function PaymentsPage() {
                 <td><Link href={`/payments/${encodeURIComponent(row.id)}`}>View</Link></td>
               </tr>)}</tbody>
             </table>
-            {(loading || error || rows.length === 0) && <p className="payments-empty">{loading ? "Memuat pembayaran..." : error || "Tidak ada pembayaran yang sesuai filter."}</p>}
+            {(loading || error || rows.length === 0) && <div className="payments-empty">{loading ? <LoadingSkeleton /> : error || "Tidak ada pembayaran yang sesuai filter."}</div>}
           </div>
           <div className="payments-footer">
             Menampilkan <strong>{rows.length}</strong> dari <strong>{total}</strong> transaksi reservasi

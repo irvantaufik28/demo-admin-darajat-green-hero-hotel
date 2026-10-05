@@ -1,5 +1,6 @@
 "use client";
 
+import { LoadingSkeleton } from "../../../components/ui/LoadingSkeleton";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { AdminShell } from "../../../components/layout/AdminShell";
@@ -142,12 +143,12 @@ export function PaymentQueuesPage({ mode }: { mode: Mode }) {
           <div className="payments-table-scroll">
             <table className="payments-table">
               <thead><tr>{headings[mode].map((heading) => <th key={heading}>{heading}</th>)}</tr></thead>
-              <tbody>{rows.map((row) => mode === "refunds"
+              <tbody>{!loading && rows.map((row) => mode === "refunds"
                 ? <RefundRow key={(row as RefundListItem).reservationId} row={row as RefundListItem} />
                 : <OutstandingRow key={(row as OutstandingListItem).id} row={row as OutstandingListItem} />
               )}</tbody>
             </table>
-            {(loading || error || rows.length === 0) && <p className="payments-empty">{loading ? "Memuat data..." : error || "Tidak ada data yang sesuai filter."}</p>}
+            {(loading || error || rows.length === 0) && <div className="payments-empty">{loading ? <LoadingSkeleton /> : error || "Tidak ada data yang sesuai filter."}</div>}
           </div>
           <div className="payments-footer">
             Menampilkan <strong>{rows.length}</strong> dari <strong>{total}</strong> data

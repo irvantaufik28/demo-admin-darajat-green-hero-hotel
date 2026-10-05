@@ -1,5 +1,6 @@
 "use client";
 
+import { LoadingSkeleton } from "../../../components/ui/LoadingSkeleton";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { AdminShell } from "../../../components/layout/AdminShell";
@@ -144,7 +145,7 @@ export function InHousePage() {
                 </tr>
               </thead>
               <tbody>
-                {guests.map((item, index) => (
+                {!loading && guests.map((item, index) => (
                   <tr key={item.id}>
                     <td className="reservations-no">{(page - 1) * pageSize + index + 1}</td>
                     <td>
@@ -217,7 +218,7 @@ export function InHousePage() {
                 {(loading || error || guests.length === 0) && (
                   <tr>
                     <td className="in-house-empty" colSpan={10}>
-                      {loading ? "Memuat tamu menginap..." : error || "Tidak ada tamu yang cocok dengan filter."}
+                      {loading ? <LoadingSkeleton /> : error || "Tidak ada tamu yang cocok dengan filter."}
                     </td>
                   </tr>
                 )}

@@ -1,5 +1,6 @@
 "use client";
 
+import { LoadingSkeleton } from "../../../components/ui/LoadingSkeleton";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { AdminShell } from "../../../components/layout/AdminShell";
@@ -79,7 +80,7 @@ export function RoleDetailPage({ slug }: { slug: string }) {
   }
 
   if (!role) return <AdminShell title="Settings" context="Roles & Permissions">
-    <main className="roles-page"><h1>{loading ? "Loading role..." : error || "Role not found"}</h1>
+    <main className="roles-page">{loading ? <LoadingSkeleton variant="detail" /> : <h1>{error || "Role not found"}</h1>}
       <Link href="/settings/roles-permissions">← Back to Roles</Link>
       {!loading && <button type="button" onClick={() => setReloadKey((value) => value + 1)}>Retry</button>}
     </main>
@@ -139,7 +140,7 @@ export function RoleDetailPage({ slug }: { slug: string }) {
                   ];
                 })}
                 {!visible.length && <tr><td colSpan={2} className="roles-empty">
-                  {loading ? "Loading permissions..." : "No permissions found."}
+                  {loading ? <LoadingSkeleton /> : "No permissions found."}
                 </td></tr>}
               </tbody>
             </table>

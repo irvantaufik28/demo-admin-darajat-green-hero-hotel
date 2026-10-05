@@ -1,5 +1,6 @@
 "use client";
 
+import { LoadingSkeleton } from "../../../components/ui/LoadingSkeleton";
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { AdminShell } from "../../../components/layout/AdminShell";
@@ -366,7 +367,7 @@ export function ReservationsListPage() {
                 </tr>
               </thead>
               <tbody>
-                {visible.map((item, index) => {
+                {!loading && visible.map((item, index) => {
                   const nights = calculateNights(item.checkIn, item.checkOut);
                   return (
                     <tr key={item.id}>
@@ -464,10 +465,10 @@ export function ReservationsListPage() {
                     </tr>
                   );
                 })}
-                {visible.length === 0 && (
+                {(loading || visible.length === 0) && (
                   <tr>
                     <td colSpan={10} className="reservations-empty">
-                      {loading ? "Memuat reservasi..." : "Tidak ada reservasi yang cocok dengan filter."}
+                      {loading ? <LoadingSkeleton /> : "Tidak ada reservasi yang cocok dengan filter."}
                     </td>
                   </tr>
                 )}

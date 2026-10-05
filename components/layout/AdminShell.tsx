@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { getCurrentUser, getSessionRemainingMs, logout, restoreSession, type AuthUser } from "../../lib/auth";
 import { Navbar } from "./Navbar";
 import { Sidebar, hydrateSidebarOpenGroups } from "./Sidebar";
+import { LoadingSkeleton } from "../ui/LoadingSkeleton";
 
 let authorizedInTab = false;
 let pinnedInTab: boolean | null = null;
@@ -94,7 +95,7 @@ export function AdminShell({ title, context, badge, children }: Props) {
   }
 
   if (!authorized)
-    return <main className="dashboard-loading">Memuat area admin...</main>;
+    return <main className="dashboard-loading dashboard-loading--skeleton"><LoadingSkeleton variant="dashboard" /></main>;
 
   return (
     <div className={pinned ? "admin-shell admin-shell--pinned" : "admin-shell"}>

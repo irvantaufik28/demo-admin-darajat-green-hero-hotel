@@ -1,5 +1,6 @@
 "use client";
 
+import { LoadingSkeleton } from "../../../components/ui/LoadingSkeleton";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { AdminShell } from "../../../components/layout/AdminShell";
@@ -470,7 +471,7 @@ export function CampaignsPage() {
                 </tr>
               </thead>
               <tbody>
-                {items.length > 0 ? (
+                {!loading && items.length > 0 ? (
                   items.map((campaign) => (
                     <CampaignRow
                       key={campaign.id}
@@ -488,7 +489,7 @@ export function CampaignsPage() {
                       colSpan={10}
                       className="campaigns-table__empty"
                     >
-                      {loading ? "Memuat campaign..." : "Tidak ada campaign yang sesuai filter."}
+                      {loading ? <LoadingSkeleton /> : "Tidak ada campaign yang sesuai filter."}
                     </td>
                   </tr>
                 )}

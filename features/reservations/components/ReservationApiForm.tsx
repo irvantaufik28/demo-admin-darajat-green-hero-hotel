@@ -1,5 +1,6 @@
 "use client";
 
+import { LoadingSkeleton } from "../../../components/ui/LoadingSkeleton";
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { AdminShell } from "../../../components/layout/AdminShell";
@@ -647,7 +648,8 @@ export function ReservationApiForm({ source }: { source: ReservationSource }) {
                 <p className="room-allocation-guidance">
                   Total {searchAdults} dewasa dan {searchChildren} anak dibagi otomatis ke kamar terpilih. Staf dapat mengoreksi pembagian per kamar.
                 </p>
-                {available.map((option) => {
+                {availabilityLoading && <LoadingSkeleton rows={3} />}
+                {!availabilityLoading && available.map((option) => {
                   const count = rooms.filter(
                     (room) => room.roomTypeId === option.roomType.id,
                   ).length;
@@ -1281,7 +1283,7 @@ export function ReservationApiForm({ source }: { source: ReservationSource }) {
                 <strong>Booking Total</strong>
                 <strong>
                   {quoteLoading
-                    ? "Menghitung..."
+                    ? <LoadingSkeleton variant="inline" />
                     : quote
                       ? formatRupiah(total)
                       : "—"}

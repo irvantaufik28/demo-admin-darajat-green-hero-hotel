@@ -1,5 +1,6 @@
 "use client";
 
+import { LoadingSkeleton } from "../../../components/ui/LoadingSkeleton";
 import Link from "next/link";
 import { useEffect, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
@@ -87,7 +88,7 @@ export function RolesPermissionsPage() {
         </p>}
         <section className="roles-list" aria-label="Roles">
           <header><h2>Roles</h2><span>{roles.length} roles</span></header>
-          {roles.map((role) => <div className="roles-list-row" key={role.id}>
+          {!loading && roles.map((role) => <div className="roles-list-row" key={role.id}>
             <div className="roles-avatar" aria-hidden="true">{role.name.slice(0, 1).toUpperCase()}</div>
             <div className="roles-list-name">
               <strong>{role.name}</strong>
@@ -95,9 +96,9 @@ export function RolesPermissionsPage() {
             </div>
             <Link href={`/settings/roles-permissions/${role.id}`}>Edit</Link>
           </div>)}
-          {!roles.length && <p className="roles-empty">
-            {loading ? "Loading roles..." : loadError ? "Unable to load roles." : "No roles found."}
-          </p>}
+          {(loading || !roles.length) && <div className="roles-empty">
+            {loading ? <LoadingSkeleton variant="cards" rows={4} /> : loadError ? "Unable to load roles." : "No roles found."}
+          </div>}
         </section>
         {adding && <div className="roles-modal-backdrop" onMouseDown={() => { if (!saving) setAdding(false); }}>
           <form className="roles-modal" onMouseDown={(event) => event.stopPropagation()} onSubmit={(event) => void addRole(event)}>

@@ -1,5 +1,6 @@
 "use client";
 
+import { LoadingSkeleton } from "../../../components/ui/LoadingSkeleton";
 import { useEffect, useState, type FormEvent } from "react";
 import { AdminShell } from "../../../components/layout/AdminShell";
 import { getCurrentUser, restoreSession } from "../../../lib/auth";
@@ -106,8 +107,7 @@ export function ReservationSettingsPage() {
           <p>Configure the main reservation and stay rules.</p>
         </header>
 
-        <form className="reservation-settings-panel" onSubmit={(event) => void save(event)}>
-          {loading && <p className="reservation-setting-help" role="status">Memuat pengaturan...</p>}
+        {loading ? <LoadingSkeleton variant="form" rows={8} /> : <form className="reservation-settings-panel" onSubmit={(event) => void save(event)}>
           <section className="reservation-settings-section">
             <h2>Stay Time</h2>
             <div className="reservation-setting-times">
@@ -175,7 +175,7 @@ export function ReservationSettingsPage() {
             }}>Cancel</button>
             <button type="submit" disabled={!changed || loading || saving || !canEdit}>{saving ? "Saving..." : "Save Changes"}</button>
           </footer>
-        </form>
+        </form>}
       </main>
     </AdminShell>
   );

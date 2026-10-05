@@ -1,5 +1,6 @@
 "use client";
 
+import { LoadingSkeleton } from "../../../components/ui/LoadingSkeleton";
 import { useEffect, useState, type FormEvent } from "react";
 import { AdminShell } from "../../../components/layout/AdminShell";
 import { restoreSession } from "../../../lib/auth";
@@ -312,7 +313,7 @@ export function RoomNumbersPage() {
                 </tr>
               </thead>
               <tbody>
-                {rooms.map((room) => (
+                {!loading && rooms.map((room) => (
                   <tr key={room.id}>
                     <td className="room-numbers-number">{room.roomNumber}</td>
                     <td>{room.roomTypeName}</td>
@@ -354,7 +355,7 @@ export function RoomNumbersPage() {
                 {loading && (
                   <tr>
                     <td colSpan={6} className="room-types-empty">
-                      Memuat nomor kamar...
+                      <LoadingSkeleton />
                     </td>
                   </tr>
                 )}

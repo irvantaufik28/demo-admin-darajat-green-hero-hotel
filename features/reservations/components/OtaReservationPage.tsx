@@ -1,5 +1,6 @@
 "use client";
 
+import { LoadingSkeleton } from "../../../components/ui/LoadingSkeleton";
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { AdminShell } from "../../../components/layout/AdminShell";
@@ -69,6 +70,7 @@ export function OtaReservationPage() {
   const [quoteState, setQuoteState] = useState<{ key: string; value: ReservationQuote } | null>(null);
   const [quoteError, setQuoteError] = useState("");
   const [quoteBusy, setQuoteBusy] = useState(false);
+  const [optionsLoading, setOptionsLoading] = useState(true);
   const idempotency = useRef<{ key: string; value: string } | null>(null);
 
   const nights = calculateNights(checkIn, checkOut);
@@ -136,7 +138,7 @@ export function OtaReservationPage() {
         : []);
     }).catch((cause) => {
       if (!controller.signal.aborted) setFeedback({ kind: "error", text: cause instanceof Error ? cause.message : "Pilihan OTA gagal dimuat." });
-    });
+    }).finally(() => { if (!controller.signal.aborted) setOptionsLoading(false); });
     return () => controller.abort();
   }, []);
 
@@ -339,7 +341,7 @@ export function OtaReservationPage() {
           </div>
         )}
         {quoteError && <div className="reservation-feedback reservation-feedback--error" role="alert">{quoteError}</div>}
-        <div className="walkin-columns">
+        {optionsLoading ? <LoadingSkeleton variant="form" rows={8} /> : <div className="walkin-columns">
           <div className="walkin-form-column">
             <section className="reservation-panel ota-source-panel">
               <div className="reservation-panel__heading">
@@ -865,7 +867,7 @@ export function OtaReservationPage() {
               })}
             </div>
             <div className="booking-summary__totals">
-              {quoteBusy && <p role="status">Menghitung total OTA...</p>}
+              {quoteBusy && <LoadingSkeleton variant="inline" />}
               <div>
                 <strong>Booking Total</strong>
                 <strong>{formatRupiah(total)}</strong>
@@ -917,7 +919,7 @@ export function OtaReservationPage() {
               saat tamu hadir dan melakukan check-in di hotel.
             </p>
           </aside>
-        </div>
+        </div>}
       </div>
       {saveConfirmationOpen && (
         <SaveReservationConfirmation

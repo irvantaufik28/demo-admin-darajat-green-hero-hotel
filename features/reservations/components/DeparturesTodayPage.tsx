@@ -1,5 +1,6 @@
 "use client";
 
+import { LoadingSkeleton } from "../../../components/ui/LoadingSkeleton";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { AdminShell } from "../../../components/layout/AdminShell";
@@ -149,7 +150,7 @@ export function DeparturesTodayPage() {
                 </tr>
               </thead>
               <tbody>
-                {departures.map((item, index) => (
+                {!loading && departures.map((item, index) => (
                   <tr
                     key={item.id}
                     className={
@@ -238,7 +239,7 @@ export function DeparturesTodayPage() {
                 {(loading || error || departures.length === 0) && (
                   <tr>
                     <td colSpan={10} className="departures-empty">
-                      {loading ? "Memuat keberangkatan..." : error || "Tidak ada tamu yang cocok dengan filter."}
+                      {loading ? <LoadingSkeleton /> : error || "Tidak ada tamu yang cocok dengan filter."}
                     </td>
                   </tr>
                 )}

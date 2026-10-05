@@ -1,5 +1,6 @@
 "use client";
 
+import { LoadingSkeleton } from "../../../components/ui/LoadingSkeleton";
 import { useEffect, useRef, useState } from "react";
 import { AdminShell } from "../../../components/layout/AdminShell";
 import { Icon } from "../../../components/ui/Icon";
@@ -762,7 +763,7 @@ export function CancellationPoliciesPage() {
                 </tr>
               </thead>
               <tbody>
-                {policies.length > 0 ? (
+                {!loading && policies.length > 0 ? (
                   policies.map((policy) => (
                     <tr key={policy.id} className="cp-table__row">
                       <td className="cp-table__td cp-table__td--name">
@@ -813,7 +814,7 @@ export function CancellationPoliciesPage() {
                 ) : (
                   <tr>
                     <td colSpan={7} className="campaigns-table__empty">
-                      {loading ? "Memuat kebijakan..." : "Tidak ada kebijakan yang sesuai filter."}
+                      {loading ? <LoadingSkeleton /> : "Tidak ada kebijakan yang sesuai filter."}
                     </td>
                   </tr>
                 )}

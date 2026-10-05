@@ -1,5 +1,6 @@
 "use client";
 
+import { LoadingSkeleton } from "../../../components/ui/LoadingSkeleton";
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { AdminShell } from "../../../components/layout/AdminShell";
 import { restoreSession } from "../../../lib/auth";
@@ -151,7 +152,7 @@ export function MasterListPage({ categorySlug }: { categorySlug: string }) {
             <table className="master-table">
               <thead><tr><th>No.</th><th>Name</th><th>Action</th></tr></thead>
               <tbody>
-                {visible.map((item, index) => <tr key={item.id}>
+                {!loading && visible.map((item, index) => <tr key={item.id}>
                   <td>{index + 1}</td><td><strong>{item.name}</strong>{!item.isActive && <span className="master-inactive">Inactive</span>}</td>
                   <td><div className="master-row-actions">
                     <button type="button" onClick={() => openEdit(item)}>Edit</button>
@@ -160,8 +161,8 @@ export function MasterListPage({ categorySlug }: { categorySlug: string }) {
                     </button>
                   </div></td>
                 </tr>)}
-                {visible.length === 0 && <tr><td colSpan={3} className="master-empty">
-                  {loading ? "Loading items..." : loadError ? "Unable to load items." : "No items found."}
+                {(loading || visible.length === 0) && <tr><td colSpan={3} className="master-empty">
+                  {loading ? <LoadingSkeleton /> : loadError ? "Unable to load items." : "No items found."}
                 </td></tr>}
               </tbody>
             </table>

@@ -1,5 +1,6 @@
 "use client";
 
+import { LoadingSkeleton } from "../../../components/ui/LoadingSkeleton";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { AdminShell } from "../../../components/layout/AdminShell";
@@ -101,7 +102,7 @@ export function GuestDetailPage({ guestKey }: { guestKey: string }) {
   if (!guest) return (
     <AdminShell title="Guests" context="Guest Profile">
       <main className="guests-page">
-        <h1>{loading ? "Loading guest..." : error || "Guest not found"}</h1>
+        {loading ? <LoadingSkeleton variant="detail" /> : <h1>{error || "Guest not found"}</h1>}
         <Link href="/guests">← All Guests</Link>
       </main>
     </AdminShell>
@@ -150,14 +151,14 @@ export function GuestDetailPage({ guestKey }: { guestKey: string }) {
                 <th>Reservation Status</th><th>Booking Total</th>
               </tr></thead>
               <tbody>
-                {history.map((row) => <tr key={row.id}>
+                {!historyLoading && history.map((row) => <tr key={row.id}>
                   <td><Link href={`/reservations/${row.id}`}>{row.bookingCode}</Link></td>
                   <td>{guestDate(row.checkInDate)} – {guestDate(row.checkOutDate)}</td>
                   <td>{row.roomTypes || "—"}</td><td>{guestSource(row.source)}</td>
                   <td>{reservationStatus(row.reservationStatus)}</td><td>{guestMoney(row.bookingTotal)}</td>
                 </tr>)}
-                {!history.length && <tr><td colSpan={6} className="guests-empty">
-                  {historyLoading ? "Loading reservations..." : historyError || "No reservations found."}
+                {(historyLoading || !history.length) && <tr><td colSpan={6} className="guests-empty">
+                  {historyLoading ? <LoadingSkeleton /> : historyError || "No reservations found."}
                 </td></tr>}
               </tbody>
             </table>

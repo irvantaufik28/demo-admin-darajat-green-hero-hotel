@@ -1,5 +1,6 @@
 "use client";
 
+import { LoadingSkeleton } from "../../../components/ui/LoadingSkeleton";
 import { Fragment, useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
@@ -228,11 +229,7 @@ export function ReservationDetailPage() {
           </Link>
         </header>
 
-        {loading && (
-          <div className="reservation-detail-missing" role="status">
-            Memuat detail reservasi...
-          </div>
-        )}
+        {loading && <LoadingSkeleton variant="detail" />}
         {error && !loading && (
           <div className="reservation-detail-missing" role="alert">
             {error}

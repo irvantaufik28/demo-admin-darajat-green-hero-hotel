@@ -1,5 +1,6 @@
 "use client";
 
+import { LoadingSkeleton } from "../../../components/ui/LoadingSkeleton";
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { AdminShell } from "../../../components/layout/AdminShell";
 import { restoreSession } from "../../../lib/auth";
@@ -174,7 +175,7 @@ export function CapacityPatternsPage() {
             <table className="master-table">
               <thead><tr><th>No.</th><th>Capacity</th><th>Sort Order</th><th>Status</th><th>Action</th></tr></thead>
               <tbody>
-                {visible.map((item, index) => <tr key={item.id}>
+                {!loading && visible.map((item, index) => <tr key={item.id}>
                   <td>{index + 1}</td>
                   <td><strong>{patternLabel(item)}</strong></td>
                   <td>{item.sortOrder}</td>
@@ -188,8 +189,8 @@ export function CapacityPatternsPage() {
                     </button>
                   </div></td>
                 </tr>)}
-                {!visible.length && <tr><td colSpan={5} className="master-empty">
-                  {loading ? "Loading items..." : loadError ? "Unable to load items." : "No capacity patterns found."}
+                {(loading || !visible.length) && <tr><td colSpan={5} className="master-empty">
+                  {loading ? <LoadingSkeleton /> : loadError ? "Unable to load items." : "No capacity patterns found."}
                 </td></tr>}
               </tbody>
             </table>

@@ -1,5 +1,6 @@
 "use client";
 
+import { LoadingSkeleton } from "../../../components/ui/LoadingSkeleton";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { AdminShell } from "../../../components/layout/AdminShell";
@@ -93,7 +94,7 @@ export function GuestsPage() {
                 <th>Guest Status</th><th>Action</th>
               </tr></thead>
               <tbody>
-                {guests.map((guest) => <tr key={guest.id}>
+                {!loading && guests.map((guest) => <tr key={guest.id}>
                   <td><strong>{guest.fullName}</strong></td>
                   <td>{guest.phone || "—"}</td><td>{guest.email || "—"}</td>
                   <td>{guest.totalStays}</td><td>{guestDate(guest.lastStay)}</td>
@@ -101,8 +102,8 @@ export function GuestsPage() {
                   <td><span className={`guests-status guests-status--${guest.status}`}>{guestStatus(guest.status)}</span></td>
                   <td><Link href={`/guests/${guest.id}`}>View</Link></td>
                 </tr>)}
-                {!guests.length && <tr><td colSpan={9} className="guests-empty">
-                  {loading ? "Loading guests..." : error ? "Unable to load guests." : "No guests found."}
+                {(loading || !guests.length) && <tr><td colSpan={9} className="guests-empty">
+                  {loading ? <LoadingSkeleton /> : error ? "Unable to load guests." : "No guests found."}
                 </td></tr>}
               </tbody>
             </table>

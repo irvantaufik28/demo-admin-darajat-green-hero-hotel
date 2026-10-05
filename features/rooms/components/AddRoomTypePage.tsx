@@ -1,5 +1,6 @@
 "use client";
 
+import { LoadingSkeleton } from "../../../components/ui/LoadingSkeleton";
 import { useEffect, useRef, useState, type ChangeEvent } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -933,7 +934,7 @@ export function AddRoomTypePage({ roomId }: { roomId?: string }) {
     return (
       <AdminShell title="Rooms" context={title}>
         <div className="room-wizard-page">
-          {error || "Memuat tipe kamar..."}
+          {error || <LoadingSkeleton variant="form" rows={8} />}
         </div>
       </AdminShell>
     );

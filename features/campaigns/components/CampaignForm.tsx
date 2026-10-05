@@ -1,5 +1,6 @@
 "use client";
 
+import { LoadingSkeleton } from "../../../components/ui/LoadingSkeleton";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { AdminShell } from "../../../components/layout/AdminShell";
@@ -334,7 +335,7 @@ export function CampaignForm({ mode, campaignId }: Props) {
 
         {error && <div className="campaigns-api-message" role="alert">{error}</div>}
         {loading ? (
-          <div className="campaigns-api-message" role="status">Memuat data campaign...</div>
+          <LoadingSkeleton variant="form" rows={8} />
         ) : hasLoadedCampaign ? (
         <form className="cf-form" onSubmit={handleSubmit} noValidate>
           <div className="cf-card">

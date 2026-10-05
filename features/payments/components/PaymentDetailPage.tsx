@@ -1,5 +1,6 @@
 "use client";
 
+import { LoadingSkeleton } from "../../../components/ui/LoadingSkeleton";
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
@@ -139,7 +140,7 @@ export function PaymentDetailPage() {
     }
   }
 
-  if (loading) return <AdminShell title="Payments" context="Payment Detail"><div className="payment-detail-loading">Memuat detail pembayaran...</div></AdminShell>;
+  if (loading) return <AdminShell title="Payments" context="Payment Detail"><LoadingSkeleton variant="detail" /></AdminShell>;
   if (!detail) return <AdminShell title="Payments" context="Payment Detail"><div className="payment-detail-loading">{error || "Data pembayaran tidak ditemukan."} <Link href="/payments">Kembali ke Payments</Link></div></AdminShell>;
 
   const { reservation, guest, summary } = detail;

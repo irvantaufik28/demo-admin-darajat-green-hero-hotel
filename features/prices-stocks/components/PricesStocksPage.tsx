@@ -1,5 +1,6 @@
 "use client";
 
+import { LoadingSkeleton } from "../../../components/ui/LoadingSkeleton";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { AdminShell } from "../../../components/layout/AdminShell";
 import { Icon } from "../../../components/ui/Icon";
@@ -519,7 +520,7 @@ export function PricesStocksPage() {
       )}
 
       {dates.length === 0 ? <div className="ps-empty">Pilih rentang tanggal valid hingga 366 hari.</div> : <>
-        {loading && <div className="ps-empty">Memuat harga dan stok...</div>}
+        {loading ? <LoadingSkeleton rows={8} /> : <>
         <div className="ps-table-scroll"><table className="ps-table">
           <thead><tr><th>Day</th><th>Date</th><th>Sellable Stock</th><th title="Menghitung kamar pada reservasi Pending, Confirmed, dan Checked-in">Sold</th><th>Remaining Stock</th><th>Available Rooms</th><th>Price (IDR)</th><th>Website Promo</th><th>Web Price</th><th>Front Desk Promo</th><th>Front Desk Price</th><th>Min. Night</th><th>Stop Sell</th></tr></thead>
           <tbody>
@@ -559,6 +560,7 @@ export function PricesStocksPage() {
           </tbody>
         </table></div>
         <div className="ps-pagination"><span>Showing {(page - 1) * pageSize + 1}–{Math.min(page * pageSize, dates.length)} of {dates.length} dates</span><div><button type="button" disabled={page === 1} onClick={() => setPage((value) => value - 1)}>‹ Previous</button><span>Page {page} of {pageCount}</span><button type="button" disabled={page === pageCount} onClick={() => setPage((value) => value + 1)}>Next ›</button></div></div>
+        </>}
       </>}
 
       <div className="ps-helper"><Icon name="info" width={18} height={18} /><p>Untuk satu tanggal, ubah langsung Price, Sellable Stock, Min. Night, atau Stop Sell pada baris tanggal itu lalu klik Save Changes. Tanggal yang belum disetel membutuhkan Price dan Sellable Stock terlebih dahulu. <strong>Kapasitas {room.name}:</strong> batas Sellable Stock mengikuti {stockLimit} kamar aktif. Kamar occupied dan cleaning masih termasuk hitungan operasional API. Terjual menghitung kamar yang dipesan pada status Pending, Confirmed, atau Checked-in. Remaining Stock dan Available Rooms dihitung oleh API berdasarkan reservasi serta status kamar. Promo Website dan Front Desk mengikuti Campaigns &amp; Promotions. {bulkPending && "Simpan Bulk Update sebelum mengedit baris individual."}</p></div>

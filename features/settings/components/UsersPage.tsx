@@ -1,5 +1,6 @@
 "use client";
 
+import { LoadingSkeleton } from "../../../components/ui/LoadingSkeleton";
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { AdminShell } from "../../../components/layout/AdminShell";
 import { getCurrentUser, restoreSession } from "../../../lib/auth";
@@ -132,7 +133,7 @@ export function UsersPage() {
             <thead><tr><th>Name</th><th>Email / Username</th><th>Phone</th><th>Role</th>
               <th>Status</th><th>Last Login</th><th>Action</th></tr></thead>
             <tbody>
-              {visible.map((user) => <tr key={user.id}>
+              {!loading && visible.map((user) => <tr key={user.id}>
                 <td><strong>{user.name}</strong></td>
                 <td>{user.email}{user.username && <small className="users-username">@{user.username}</small>}</td>
                 <td>{user.phone || "—"}</td><td><span className="users-role">{user.roleName}</span></td>
@@ -145,8 +146,8 @@ export function UsersPage() {
                   {changingId === user.id ? "Saving..." : user.id === getCurrentUser()?.id ? "Current User" : user.isActive ? "Disable" : "Enable"}
                 </button></div></td>
               </tr>)}
-              {!visible.length && <tr><td colSpan={7} className="users-empty">
-                {loading ? "Loading users..." : loadError ? "Unable to load users." : "No users found."}
+              {(loading || !visible.length) && <tr><td colSpan={7} className="users-empty">
+                {loading ? <LoadingSkeleton /> : loadError ? "Unable to load users." : "No users found."}
               </td></tr>}
             </tbody>
           </table></div>

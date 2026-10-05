@@ -1,5 +1,6 @@
 "use client";
 
+import { LoadingSkeleton } from "../../../components/ui/LoadingSkeleton";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { AdminShell } from "../../../components/layout/AdminShell";
@@ -140,7 +141,7 @@ export function RoomTypesPage() {
                 </tr>
               </thead>
               <tbody>
-                {catalog.map((room, index) => (
+                {!loading && catalog.map((room, index) => (
                   <tr key={room.id}>
                     <td className="room-types-no">
                       {(page - 1) * 20 + index + 1}
@@ -196,7 +197,7 @@ export function RoomTypesPage() {
                 {loading && (
                   <tr>
                     <td colSpan={8} className="room-types-empty">
-                      Memuat tipe kamar...
+                      <LoadingSkeleton />
                     </td>
                   </tr>
                 )}

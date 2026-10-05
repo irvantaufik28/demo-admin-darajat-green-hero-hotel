@@ -1,5 +1,6 @@
 "use client";
 
+import { LoadingSkeleton } from "../../../components/ui/LoadingSkeleton";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { AdminShell } from "../../../components/layout/AdminShell";
@@ -164,7 +165,7 @@ export function DashboardContent() {
           </div>
         )}
 
-        {loading && <div className="data-panel dashboard-state" role="status">Memuat dashboard...</div>}
+        {loading && <LoadingSkeleton variant="dashboard" />}
 
         {dashboard && !loading && (
           <>

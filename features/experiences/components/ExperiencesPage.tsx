@@ -1,5 +1,6 @@
 "use client";
 
+import { LoadingSkeleton } from "../../../components/ui/LoadingSkeleton";
 import { useEffect, useState } from "react";
 import { AdminShell } from "../../../components/layout/AdminShell";
 import { Icon } from "../../../components/ui/Icon";
@@ -195,7 +196,7 @@ export function ExperiencesPage() {
                 <th className="exp-table__th exp-table__th--right">Action</th>
               </tr></thead>
               <tbody>
-                {items.length > 0 ? items.map((experience) => (
+                {!loading && items.length > 0 ? items.map((experience) => (
                   <tr key={experience.id} className="exp-table__row">
                     <td className="exp-table__td">
                       <div className="exp-name-cell">
@@ -232,7 +233,7 @@ export function ExperiencesPage() {
                     </td>
                   </tr>
                 )) : <tr><td colSpan={7} className="campaigns-table__empty">
-                  {loading ? "Memuat experiences..." : "Tidak ada experience yang sesuai filter."}
+                  {loading ? <LoadingSkeleton /> : "Tidak ada experience yang sesuai filter."}
                 </td></tr>}
               </tbody>
             </table>

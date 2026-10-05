@@ -8,8 +8,8 @@ import { hasSession, login, restoreSession } from "../../../lib/auth";
 
 export function LoginForm() {
   const router = useRouter();
-  const [username, setUsername] = useState("");
-  const [password, setPassword] = useState("");
+  const [username, setUsername] = useState("owner");
+  const [password, setPassword] = useState("admin123");
   const [visible, setVisible] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -47,7 +47,7 @@ export function LoginForm() {
       <FormField id="password" label="Password" name="password" type={visible ? "text" : "password"} autoComplete="current-password" required value={password} onChange={event => setPassword(event.target.value)} trailing={
         <button type="button" className="password-toggle" aria-label={visible ? "Sembunyikan password" : "Tampilkan password"} aria-pressed={visible} onClick={() => setVisible(value => !value)}>{visible ? "◉" : "◎"}</button>
       } />
-      <div className="login-form__options"><span className="access-caption">Staff access</span></div>
+      <div className="login-form__options"><span className="access-caption">Demo Owner · Password default: admin123</span></div>
       <PrimaryButton type="submit" loading={loading}>{loading ? "Signing in..." : "Sign In"}</PrimaryButton>
     </form>
   );

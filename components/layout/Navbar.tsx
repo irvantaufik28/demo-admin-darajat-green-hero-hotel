@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Icon } from "../ui/Icon";
 import type { AuthUser } from "../../lib/auth";
@@ -23,6 +23,22 @@ export function Navbar({
   onSignOut,
 }: Props) {
   const [menu, setMenu] = useState<"notifications" | "profile" | null>(null);
+  const [currentDate, setCurrentDate] = useState("");
+
+  useEffect(() => {
+    const formatter = new Intl.DateTimeFormat("en-GB", {
+      day: "numeric",
+      month: "short",
+      year: "numeric",
+      timeZone: "Asia/Jakarta",
+    });
+    const updateDate = () => setCurrentDate(formatter.format(new Date()));
+
+    updateDate();
+    const interval = window.setInterval(updateDate, 60_000);
+    return () => window.clearInterval(interval);
+  }, []);
+
   return (
     <header className="admin-navbar">
       <div className="navbar-location">
@@ -42,7 +58,7 @@ export function Navbar({
       <div className="navbar-actions">
         <div className="navbar-date">
           <Icon name="calendar" width={16} height={16} />
-          <span>29 Sep 2026</span>
+          <span>{currentDate || "—"}</span>
         </div>
         {badge && (
           <span className="navbar-shift">

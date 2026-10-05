@@ -1,4 +1,5 @@
-const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/+$/, "");
+// Keep refresh cookies on the admin origin; Next proxies these requests to the API.
+const apiBaseUrl = "/api/v1/admin";
 
 type ApiErrorPayload = {
   error?: { code?: string; message?: string };
@@ -34,13 +35,6 @@ export function clearAccessToken(): void {
   accessToken = null;
 }
 
-function getApiBaseUrl(): string {
-  if (!apiBaseUrl) {
-    throw new Error("NEXT_PUBLIC_API_BASE_URL belum dikonfigurasi.");
-  }
-  return apiBaseUrl;
-}
-
 async function readResponse<T>(response: Response): Promise<T> {
   if (response.status === 204) return undefined as T;
 
@@ -68,7 +62,7 @@ async function refreshAccessToken(): Promise<string | null> {
   if (!refreshPromise) {
     refreshPromise = (async () => {
       try {
-        const response = await fetch(`${getApiBaseUrl()}/auth/refresh`, {
+        const response = await fetch(`${apiBaseUrl}/auth/refresh`, {
           method: "POST",
           credentials: "include",
           cache: "no-store",
@@ -101,7 +95,7 @@ export async function apiRequest<T>(path: string, options: ApiRequestOptions = {
 
   const requestBody =
     body === undefined ? undefined : isFormData ? body : JSON.stringify(body);
-  const url = `${getApiBaseUrl()}/${path.replace(/^\/+/, "")}`;
+  const url = `${apiBaseUrl}/${path.replace(/^\/+/, "")}`;
 
   async function send(token: string | null): Promise<Response> {
     const requestHeaders = new Headers(headers);

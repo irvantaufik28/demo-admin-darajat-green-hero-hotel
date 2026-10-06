@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { AdminShell } from "../../../components/layout/AdminShell";
 import { ReservationDetailActions } from "./ReservationDetailActions";
+import { ReservationAuditTrail } from "./ReservationAuditTrail";
 import { ReservationRoomOperations } from "./ReservationRoomOperations";
 import {
   getReservationDetail,
@@ -601,43 +602,6 @@ export function ReservationDetailPage() {
 
                 <section>
                   <div className="reservation-detail-section-title">
-                    <h2>Audit Trail</h2>
-                  </div>
-                  <div className="reservation-detail-timeline">
-                    {history.map((event) => (
-                      <div key={event.id}>
-                        <strong>
-                          {event.eventType
-                            .replaceAll(".", " · ")
-                            .replaceAll("_", " ")}
-                        </strong>
-                        <span>
-                          {event.actor?.name ?? "System"} ·{" "}
-                          {timeLabel(event.occurredAt)}
-                        </span>
-                        {event.eventType === "reservation.room_changed" && (
-                          <span>
-                            {String(event.details?.oldRoomTypeName ?? "Room")} {String(event.details?.oldRoomNumber ?? "")} →{" "}
-                            {String(event.details?.targetRoomTypeName ?? "Room")} {String(event.details?.targetRoomNumber ?? "")}
-                            {" · "}Selisih {rupiah(Number(event.details?.totalDifference ?? 0))}
-                          </span>
-                        )}
-                        {event.eventType === "reservation.extra_bed_changed" && (
-                          <span>
-                            {String(event.details?.previousQuantity ?? 0)} → {String(event.details?.quantity ?? 0)} bed
-                            {" · "}Selisih {rupiah(Number(event.details?.difference ?? 0))}
-                          </span>
-                        )}
-                      </div>
-                    ))}
-                    {history.length === 0 && (
-                      <p className="cell-muted">Belum ada riwayat.</p>
-                    )}
-                  </div>
-                </section>
-
-                <section>
-                  <div className="reservation-detail-section-title">
                     <h2>Internal Notes</h2>
                   </div>
                   <p className="pending-detail-internal-note">
@@ -708,6 +672,7 @@ export function ReservationDetailPage() {
                 />
               </aside>
             </div>
+            <ReservationAuditTrail history={history} />
           </>
         )}
       </div>

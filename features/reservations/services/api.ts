@@ -266,8 +266,11 @@ export type ReservationHistoryItem = {
   sequence: number;
   eventType: string;
   occurredAt: string;
+  actorType: "user" | "system" | "gateway";
   actor: { id: string; name: string } | null;
+  reservationStatusBefore: ReservationStatus | null;
   reservationStatusAfter: ReservationStatus | null;
+  paymentStatusBefore: PaymentStatus | null;
   paymentStatusAfter: PaymentStatus | null;
   details?: Record<string, unknown>;
 };

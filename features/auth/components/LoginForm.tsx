@@ -16,12 +16,12 @@ export function LoginForm() {
 
   useEffect(() => {
     if (hasSession()) {
-      router.replace("/dashboard");
+      router.replace("/reservations/room-rack");
       return;
     }
     let active = true;
     void restoreSession().then((restored) => {
-      if (active && restored) router.replace("/dashboard");
+      if (active && restored) router.replace("/reservations/room-rack");
     });
     return () => { active = false; };
   }, [router]);
@@ -33,7 +33,7 @@ export function LoginForm() {
     try {
       await login(username, password);
       sessionStorage.setItem("green-hero-demo-notice-pending", "true");
-      router.replace("/dashboard");
+      router.replace("/reservations/room-rack");
     } catch (error) {
       setError(error instanceof Error ? error.message : "Login gagal. Silakan coba lagi.");
       setLoading(false);

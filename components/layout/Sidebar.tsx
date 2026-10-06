@@ -21,6 +21,7 @@ const items: Item[] = [
     label: "Reservations",
     icon: "calendar",
     children: [
+      "Room Rack",
       "New Reservation",
       "Phone Reservation",
       "OTA Reservation",
@@ -48,6 +49,7 @@ const reservationRoutes: Record<string, string> = {
   "All Transactions": "/payments/transactions",
   "Refunds": "/payments/refunds",
   "Outstanding Balance": "/payments/outstanding",
+  "Room Rack": "/reservations/room-rack",
   "New Reservation": "/reservations/create-reservation-walkin",
   "Phone Reservation": "/reservations/create-reservation-phone",
   "OTA Reservation": "/reservations/create-reservation-ota",

@@ -18,6 +18,7 @@ import {
   getRoomType,
   getRoomTypeOptions,
   updateRoomType,
+  uploadRoomPhoto,
   type MasterOption,
   type RoomTypeImage,
   type RoomTypeOptions,
@@ -63,6 +64,14 @@ function mapRoomType(
       pattern.extraBeds,
     ]),
   );
+  const photos = (record.images ?? []).map((image, index): RoomPhoto => ({
+    id: `${image.url}-${index}`,
+    name: image.altText || `Room photo ${index + 1}`,
+    url: image.url,
+    size: "",
+    altText: image.altText,
+  }));
+  const coverIndex = (record.images ?? []).findIndex((image) => image.isCover);
   return {
     id: record.id,
     name: record.name,
@@ -77,8 +86,8 @@ function mapRoomType(
     extraBedEnabled: record.extraBedEnabled,
     extraBedPrice: record.extraBedPricePerNight,
     maxExtraBeds: record.maxExtraBeds,
-    cover: null,
-    gallery: [],
+    cover: coverIndex >= 0 ? photos[coverIndex] : null,
+    gallery: photos.filter((_, index) => index !== coverIndex),
     amenities: (record.amenities ?? []).map((item) => item.id),
     capacityPatterns: options.capacities.map((pattern) => ({
       id: pattern.id,
@@ -93,6 +102,7 @@ function mapRoomType(
 function toInput(
   room: RoomTypeEntry,
   original: RoomTypeRecord | null,
+  images: RoomTypeImage[],
 ): RoomTypeInput {
   return {
     name: room.name.trim(),
@@ -116,20 +126,38 @@ function toInput(
           ? Math.min(pattern.extraBeds, room.maxExtraBeds)
           : 0,
       })),
-    // The photo step is a local preview until an upload endpoint is available.
-    // Retain existing persisted image URLs when editing so PUT does not delete them.
-    images: (original?.images ?? []).map(
-      (image): RoomTypeImage => ({
-        url: image.url,
-        altText: image.altText,
-        isCover: image.isCover,
-        sortOrder: image.sortOrder,
-      }),
-    ),
+    images,
     ...(original === null || room.active !== original.isActive
       ? { isActive: room.active }
       : {}),
   };
+}
+
+async function prepareRoomImages(
+  room: RoomTypeEntry,
+  uploadedUrls: Map<string, string>,
+): Promise<RoomTypeImage[]> {
+  const photos = [room.cover, ...room.gallery].filter(
+    (photo): photo is RoomPhoto => photo !== null,
+  );
+  const uniquePhotos = photos.filter(
+    (photo, index) => photos.findIndex((item) => item.id === photo.id) === index,
+  );
+  return Promise.all(
+    uniquePhotos.map(async (photo, index) => {
+      let url = uploadedUrls.get(photo.id) ?? photo.url;
+      if (photo.file && !uploadedUrls.has(photo.id)) {
+        url = await uploadRoomPhoto(photo.file);
+        uploadedUrls.set(photo.id, url);
+      }
+      return {
+        url,
+        altText: photo.altText ?? photo.name,
+        isCover: photo.id === room.cover?.id,
+        sortOrder: index,
+      };
+    }),
+  );
 }
 
 function Field({
@@ -363,20 +391,25 @@ function BasicInfo({
 function Photos({
   room,
   update,
+  trackPreview,
 }: {
   room: RoomTypeEntry;
   update: (values: Partial<RoomTypeEntry>) => void;
+  trackPreview: (url: string) => void;
 }) {
   const coverInput = useRef<HTMLInputElement>(null);
   const galleryInput = useRef<HTMLInputElement>(null);
   const [photoError, setPhotoError] = useState("");
 
   function toPhoto(file: File): RoomPhoto {
+    const url = URL.createObjectURL(file);
+    trackPreview(url);
     return {
       id: crypto.randomUUID(),
       name: file.name,
-      url: URL.createObjectURL(file),
+      url,
       size: `${(file.size / 1024 / 1024).toFixed(1)} MB`,
+      file,
     };
   }
 
@@ -386,11 +419,13 @@ function Photos({
   ) {
     const files = Array.from(event.target.files ?? []);
     const invalid = files.find(
-      (file) => !file.type.startsWith("image/") || file.size > 10 * 1024 * 1024,
+      (file) =>
+        !["image/png", "image/jpeg", "image/webp"].includes(file.type) ||
+        file.size > 4_000_000,
     );
     if (invalid) {
       setPhotoError(
-        "Gunakan foto PNG, JPG, atau WebP dengan ukuran maksimal 10 MB.",
+        "Gunakan foto PNG, JPG, atau WebP dengan ukuran maksimal 4 MB.",
       );
       event.target.value = "";
       return;
@@ -421,10 +456,7 @@ function Photos({
         <div className="room-wizard-section-head">
           <div>
             <h2>Cover Photo</h2>
-            <p>
-              Pratinjau foto lokal untuk demo. Foto belum dikirim atau disimpan
-              ke server.
-            </p>
+            <p>Foto baru akan diunggah saat tipe kamar disimpan.</p>
           </div>
           <span className="room-wizard-count">
             {room.cover ? "Preview" : "No preview"}
@@ -457,7 +489,7 @@ function Photos({
           >
             <span>▧</span>
             <strong>Upload Cover Photo</strong>
-            <small>PNG, JPG, WebP up to 10 MB · 16:9 recommended</small>
+            <small>PNG, JPG, WebP up to 4 MB · 16:9 recommended</small>
           </button>
         )}
         <input
@@ -505,7 +537,18 @@ function Photos({
                 >
                   →
                 </button>
-                <button type="button" onClick={() => update({ cover: photo })}>
+                <button
+                  type="button"
+                  onClick={() =>
+                    update({
+                      cover: photo,
+                      gallery: [
+                        ...room.gallery.filter((item) => item.id !== photo.id),
+                        ...(room.cover ? [room.cover] : []),
+                      ],
+                    })
+                  }
+                >
                   Set Cover
                 </button>
                 <button
@@ -531,7 +574,7 @@ function Photos({
             >
               <span>＋</span>
               <strong>Upload Photos</strong>
-              <small>PNG, JPG, WebP · up to 10 MB</small>
+              <small>PNG, JPG, WebP · up to 4 MB</small>
             </button>
           )}
         </div>
@@ -793,6 +836,8 @@ function Capacity({
 
 export function AddRoomTypePage({ roomId }: { roomId?: string }) {
   const router = useRouter();
+  const previewUrls = useRef<string[]>([]);
+  const uploadedPhotoUrls = useRef(new Map<string, string>());
   const [step, setStep] = useState(0);
   const [visitedSteps, setVisitedSteps] = useState<number[]>([0]);
   const [room, setRoom] = useState<RoomTypeEntry>(initialRoom);
@@ -803,6 +848,10 @@ export function AddRoomTypePage({ roomId }: { roomId?: string }) {
   const [missing, setMissing] = useState(false);
   const [saving, setSaving] = useState(false);
   const title = roomId ? "Edit Room Type" : "Add Room Type";
+
+  useEffect(() => {
+    return () => previewUrls.current.forEach((url) => URL.revokeObjectURL(url));
+  }, []);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -904,7 +953,8 @@ export function AddRoomTypePage({ roomId }: { roomId?: string }) {
     setSaving(true);
     setError("");
     try {
-      const body = toInput(room, original);
+      const images = await prepareRoomImages(room, uploadedPhotoUrls.current);
+      const body = toInput(room, original, images);
       if (roomId) await updateRoomType(roomId, body);
       else await createRoomType(body);
       router.push("/rooms");
@@ -991,7 +1041,13 @@ export function AddRoomTypePage({ roomId }: { roomId?: string }) {
           {step === 0 && (
             <BasicInfo room={room} update={update} options={options} />
           )}
-          {step === 1 && <Photos room={room} update={update} />}
+          {step === 1 && (
+            <Photos
+              room={room}
+              update={update}
+              trackPreview={(url) => previewUrls.current.push(url)}
+            />
+          )}
           {step === 2 && (
             <Amenities room={room} update={update} items={options.amenities} />
           )}

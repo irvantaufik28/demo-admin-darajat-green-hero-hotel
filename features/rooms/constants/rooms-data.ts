@@ -5,6 +5,8 @@ export type RoomPhoto = {
   name: string;
   url: string;
   size: string;
+  file?: File;
+  altText?: string | null;
 };
 
 export type CapacityPattern = {

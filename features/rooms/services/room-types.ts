@@ -99,3 +99,13 @@ export function updateRoomType(id: string, body: RoomTypeInput) {
     body,
   });
 }
+
+export async function uploadRoomPhoto(file: File): Promise<string> {
+  const formData = new FormData();
+  formData.set("file", file);
+  const result = await apiRequest<{ file: { url: string } }>("uploads", {
+    method: "POST",
+    body: formData,
+  });
+  return result.file.url;
+}

@@ -11,8 +11,20 @@
       "ownerRole": "Owner · Green Hero Darajat",
       "upload": "Upload Photo",
       "remove": "Remove",
-      "hint": "JPG, PNG, or WebP · max. 2 MB. Photo is only shown while this page is open.",
-      "error": "Choose a JPG, PNG, or WebP image up to 2 MB."
+      "hint": "JPG, PNG, or WebP · max. 2 MB.",
+      "error": "Choose a JPG, PNG, or WebP image up to 2 MB.",
+      "uploading": "Uploading...",
+      "uploadFailed": "Failed to upload photo.",
+      "removeFailed": "Failed to remove photo."
+    },
+    "states": {
+      "loadFailed": "Failed to load profile.",
+      "retry": "Retry",
+      "empty": "—"
+    },
+    "status": {
+      "active": "Active",
+      "inactive": "Inactive"
     },
     "personalInformation": {
       "title": "Personal Information",

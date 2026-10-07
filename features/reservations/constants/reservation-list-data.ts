@@ -61,7 +61,6 @@ export function resolveReservationStatus(
   return status;
 }
 
-export const reservationReferenceDate = "2026-09-30";
 
 // Fixed reservation/payment combinations plus four multi-room examples.
 // Arrivals, departures, and in-house lists keep their own static records.

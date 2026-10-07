@@ -1,0 +1,61 @@
+{
+  "brand": {
+    "name": "Green Hero Darajat",
+    "subtitle": "Admin System"
+  },
+  "newReservation": "New Reservation",
+  "footer": {
+    "shift": "Shift A (07:00 - 15:00)",
+    "help": "Help & Documentation"
+  },
+  "aria": {
+    "nav": "Admin navigation",
+    "mainMenu": "Main menu",
+    "closeNav": "Close navigation",
+    "pin": "Pin sidebar",
+    "collapse": "Collapse sidebar"
+  },
+  "items": {
+    "Dashboard": "Dashboard",
+    "Reservation Calendar": "Reservation Calendar",
+    "Reservations": "Reservations",
+    "Rooms": "Rooms",
+    "Prices & Stocks": "Prices & Stocks",
+    "Cancellation Policies": "Cancellation Policies",
+    "Campaigns & Promotions": "Campaigns & Promotions",
+    "Experiences": "Experiences",
+    "Payments": "Payments",
+    "Guests": "Guests",
+    "Master": "Master",
+    "Reports": "Reports",
+    "Settings": "Settings",
+    "New Reservation": "New Reservation",
+    "Phone Reservation": "Phone Reservation",
+    "OTA Reservation": "OTA Reservation",
+    "All Reservations": "All Reservations",
+    "Arrivals Today": "Arrivals Today",
+    "Departures Today": "Departures Today",
+    "In House": "In House",
+    "Room Types": "Room Types",
+    "Room Numbers": "Room Numbers",
+    "All Transactions": "All Transactions",
+    "Refunds": "Refunds",
+    "Outstanding Balance": "Outstanding Balance",
+    "Amenities": "Amenities",
+    "Bed Types": "Bed Types",
+    "Meal Types": "Meal Types",
+    "Room View Types": "Room View Types",
+    "Floor": "Floor",
+    "Capacity Patterns": "Capacity Patterns",
+    "Experience Categories": "Experience Categories",
+    "OTA Channels": "OTA Channels",
+    "Payment Methods": "Payment Methods",
+    "Cancellation Policy Types": "Cancellation Policy Types",
+    "Reservation Report": "Reservation Report",
+    "Room Performance": "Room Performance",
+    "Revenue": "Revenue",
+    "Reservation Settings": "Reservation Settings",
+    "Users": "Users",
+    "Roles & Permissions": "Roles & Permissions"
+  }
+}

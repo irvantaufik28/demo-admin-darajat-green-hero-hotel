@@ -101,12 +101,16 @@ export function Navbar({
             }
           >
             <span className="navbar-avatar">
-              {user?.name
-                .split(" ")
-                .map((part) => part[0])
-                .slice(0, 2)
-                .join("")
-                .toUpperCase() || "GH"}
+              {user?.photoUrl ? (
+                <img src={user.photoUrl} alt={user.name} />
+              ) : (
+                user?.name
+                  .split(" ")
+                  .map((part) => part[0])
+                  .slice(0, 2)
+                  .join("")
+                  .toUpperCase() || "GH"
+              )}
             </span>
             <span className="navbar-profile__text">
               <strong>{user?.name ?? "User"}</strong>

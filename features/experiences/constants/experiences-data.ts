@@ -136,7 +136,3 @@ export const experiences: Experience[] = [
 export function formatPrice(price: number): string {
   return "Rp" + new Intl.NumberFormat("id-ID").format(price);
 }
-
-export function formatLeadTime(lead: LeadTime): string {
-  return lead;
-}

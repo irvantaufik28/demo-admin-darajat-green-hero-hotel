@@ -1,0 +1,61 @@
+{
+  "brand": {
+    "name": "Green Hero Darajat",
+    "subtitle": "Sistem Admin"
+  },
+  "newReservation": "Reservasi Baru",
+  "footer": {
+    "shift": "Shift A (07:00 - 15:00)",
+    "help": "Bantuan & Dokumentasi"
+  },
+  "aria": {
+    "nav": "Navigasi admin",
+    "mainMenu": "Menu utama",
+    "closeNav": "Tutup navigasi",
+    "pin": "Sematkan sidebar",
+    "collapse": "Ciutkan sidebar"
+  },
+  "items": {
+    "Dashboard": "Dashboard",
+    "Reservation Calendar": "Kalender Reservasi",
+    "Reservations": "Reservasi",
+    "Rooms": "Kamar",
+    "Prices & Stocks": "Harga & Stok",
+    "Cancellation Policies": "Kebijakan Pembatalan",
+    "Campaigns & Promotions": "Kampanye & Promosi",
+    "Experiences": "Pengalaman",
+    "Payments": "Pembayaran",
+    "Guests": "Tamu",
+    "Master": "Master",
+    "Reports": "Laporan",
+    "Settings": "Pengaturan",
+    "New Reservation": "Reservasi Baru",
+    "Phone Reservation": "Reservasi Telepon",
+    "OTA Reservation": "Reservasi OTA",
+    "All Reservations": "Semua Reservasi",
+    "Arrivals Today": "Kedatangan Hari Ini",
+    "Departures Today": "Keberangkatan Hari Ini",
+    "In House": "Sedang Menginap",
+    "Room Types": "Tipe Kamar",
+    "Room Numbers": "Nomor Kamar",
+    "All Transactions": "Semua Transaksi",
+    "Refunds": "Pengembalian Dana",
+    "Outstanding Balance": "Sisa Tagihan",
+    "Amenities": "Fasilitas",
+    "Bed Types": "Tipe Tempat Tidur",
+    "Meal Types": "Tipe Makanan",
+    "Room View Types": "Tipe Pemandangan Kamar",
+    "Floor": "Lantai",
+    "Capacity Patterns": "Pola Kapasitas",
+    "Experience Categories": "Kategori Pengalaman",
+    "OTA Channels": "Kanal OTA",
+    "Payment Methods": "Metode Pembayaran",
+    "Cancellation Policy Types": "Tipe Kebijakan Pembatalan",
+    "Reservation Report": "Laporan Reservasi",
+    "Room Performance": "Performa Kamar",
+    "Revenue": "Pendapatan",
+    "Reservation Settings": "Pengaturan Reservasi",
+    "Users": "Pengguna",
+    "Roles & Permissions": "Peran & Izin"
+  }
+}

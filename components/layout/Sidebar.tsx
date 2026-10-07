@@ -5,6 +5,9 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { BrandMark } from "../ui/BrandMark";
 import { Icon, type IconName } from "../ui/Icon";
+import { useTranslations } from "../../lib/i18n";
+import en from "./locales/en.json";
+import id from "./locales/id.json";
 
 type Props = {
   pinned: boolean;
@@ -17,11 +20,11 @@ type Props = {
 type Item = { label: string; icon: IconName; children?: string[] };
 const items: Item[] = [
   { label: "Dashboard", icon: "dashboard" },
+  { label: "Reservation Calendar", icon: "rooms" },
   {
     label: "Reservations",
     icon: "calendar",
     children: [
-      "Room Rack",
       "New Reservation",
       "Phone Reservation",
       "OTA Reservation",
@@ -49,7 +52,6 @@ const reservationRoutes: Record<string, string> = {
   "All Transactions": "/payments/transactions",
   "Refunds": "/payments/refunds",
   "Outstanding Balance": "/payments/outstanding",
-  "Room Rack": "/reservations/room-rack",
   "New Reservation": "/reservations/create-reservation-walkin",
   "Phone Reservation": "/reservations/create-reservation-phone",
   "OTA Reservation": "/reservations/create-reservation-ota",
@@ -80,6 +82,7 @@ const reservationRoutes: Record<string, string> = {
 // Top-level items that have their own dedicated route
 const topLevelRoutes: Record<string, string> = {
   "Dashboard": "/dashboard",
+  "Reservation Calendar": "/reservations/room-rack",
   "Prices & Stocks": "/prices-stocks",
   "Cancellation Policies": "/cancellation-policies",
   "Campaigns & Promotions": "/campaigns",
@@ -111,11 +114,12 @@ export function Sidebar({
   onUnavailable,
 }: Props) {
   const pathname = usePathname();
+  const { t } = useTranslations({ en, id });
   const [hovered, setHovered] = useState(false);
   const currentGroup =
     pathname.startsWith("/payments")
       ? "Payments"
-      : pathname.startsWith("/reservations")
+      : pathname.startsWith("/reservations") && pathname !== "/reservations/room-rack"
       ? "Reservations"
       : pathname.startsWith("/rooms")
         ? "Rooms"
@@ -153,7 +157,7 @@ export function Sidebar({
         <button
           className="sidebar-backdrop"
           type="button"
-          aria-label="Tutup navigasi"
+          aria-label={t("aria.closeNav")}
           onClick={onCloseMobile}
         />
       )}
@@ -166,21 +170,21 @@ export function Sidebar({
         ].join(" ")}
         onMouseEnter={() => setHovered(true)}
         onMouseLeave={() => setHovered(false)}
-        aria-label="Navigasi admin"
+        aria-label={t("aria.nav")}
       >
         <div className="sidebar-main">
           <div className="sidebar-brand">
             <BrandMark />
             <div className="sidebar-brand__text">
-              <strong>Green Hero Darajat</strong>
-              <span>Admin System</span>
+              <strong>{t("brand.name")}</strong>
+              <span>{t("brand.subtitle")}</span>
             </div>
             <button
               type="button"
               className="sidebar-pin"
               onClick={onTogglePin}
-              aria-label={pinned ? "Ciutkan sidebar" : "Sematkan sidebar"}
-              title={pinned ? "Ciutkan sidebar" : "Sematkan sidebar"}
+              aria-label={pinned ? t("aria.collapse") : t("aria.pin")}
+              title={pinned ? t("aria.collapse") : t("aria.pin")}
             >
               <Icon name="pin" width={15} height={15} />
             </button>
@@ -190,13 +194,13 @@ export function Sidebar({
               className="sidebar-new-button"
               href="/reservations/create-reservation-walkin"
               onClick={onCloseMobile}
-              title="New Reservation"
+              title={t("newReservation")}
             >
               <Icon name="plus" />
-              <span>New Reservation</span>
+              <span>{t("newReservation")}</span>
             </Link>
           </div>
-          <nav className="sidebar-navigation" aria-label="Menu utama">
+          <nav className="sidebar-navigation" aria-label={t("aria.mainMenu")}>
             {items.map((item) => (
               <div key={item.label}>
                 {item.label in topLevelRoutes ? (
@@ -215,7 +219,7 @@ export function Sidebar({
                     onClick={onCloseMobile}
                   >
                     <Icon name={item.icon} />
-                    <span className="sidebar-link__label">{item.label}</span>
+                    <span className="sidebar-link__label">{t("items." + item.label)}</span>
                   </Link>
                 ) : (
                   <>
@@ -223,7 +227,8 @@ export function Sidebar({
                       type="button"
                       className={
                         ((item.label === "Reservations" &&
-                          pathname.startsWith("/reservations")) ||
+                          pathname.startsWith("/reservations") &&
+                          pathname !== "/reservations/room-rack") ||
                           (item.label === "Rooms" && pathname.startsWith("/rooms")) ||
                           (item.label === "Payments" && pathname.startsWith("/payments")) ||
                           (item.label === "Master" && pathname.startsWith("/master")) ||
@@ -242,7 +247,7 @@ export function Sidebar({
                       }}
                     >
                       <Icon name={item.icon} />
-                      <span className="sidebar-link__label">{item.label}</span>
+                      <span className="sidebar-link__label">{t("items." + item.label)}</span>
                       {item.children && (
                         <Icon
                           name="chevron"
@@ -279,7 +284,7 @@ export function Sidebar({
                               key={child}
                               onClick={onCloseMobile}
                             >
-                              {child}
+                              {t("items." + child)}
                             </Link>
                           ) : (
                             <button
@@ -287,7 +292,7 @@ export function Sidebar({
                               key={child}
                               onClick={() => onUnavailable(child)}
                             >
-                              {child}
+                              {t("items." + child)}
                             </button>
                           ),
                         )}
@@ -301,12 +306,12 @@ export function Sidebar({
         </div>
         <div className="sidebar-footer">
           <span className="sidebar-shift-dot" />
-          <span className="sidebar-footer__text">Shift A (07:00 - 15:00)</span>
+          <span className="sidebar-footer__text">{t("footer.shift")}</span>
           <button
             type="button"
-            title="Help & Documentation"
-            aria-label="Help & Documentation"
-            onClick={() => onUnavailable("Help & Documentation")}
+            title={t("footer.help")}
+            aria-label={t("footer.help")}
+            onClick={() => onUnavailable(t("footer.help"))}
           >
             <Icon name="help" />
           </button>

@@ -85,21 +85,6 @@ export function loadReservationDetail(bookingId: string): ReservationDetail | nu
   return { ...base, roomNumbers: assigned, ...operation, status: resolveReservationStatus(paymentStatus, status, base.source) };
 }
 
-export function loadAllReservationDetails(): ReservationDetail[] {
-  const ids = new Set(initialReservations.map(item => item.bookingId));
-  try {
-    const stored: unknown = JSON.parse(localStorage.getItem(reservationsKey) || "[]");
-    if (Array.isArray(stored)) {
-      stored.forEach(item => {
-        if (item && typeof item === "object" && typeof item.bookingId === "string") ids.add(item.bookingId);
-      });
-    }
-  } catch {
-    // Keep the initial records available when stored data cannot be read.
-  }
-  return [...ids].map(loadReservationDetail).filter((item): item is ReservationDetail => item !== null);
-}
-
 export function saveReservationDetail(bookingId: string, status: string, operation: ReservationOperation): ReservationDetail | null {
   clearLegacyStorage();
   operations.set(bookingId, { ...operations.get(bookingId), ...operation, status });

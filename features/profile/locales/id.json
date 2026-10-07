@@ -11,8 +11,20 @@
       "ownerRole": "Owner · Green Hero Darajat",
       "upload": "Unggah Foto",
       "remove": "Hapus",
-      "hint": "JPG, PNG, atau WebP · maks. 2 MB. Foto hanya tampil selama halaman ini dibuka.",
-      "error": "Pilih gambar JPG, PNG, atau WebP maksimal 2 MB."
+      "hint": "JPG, PNG, atau WebP · maks. 2 MB.",
+      "error": "Pilih gambar JPG, PNG, atau WebP maksimal 2 MB.",
+      "uploading": "Mengunggah...",
+      "uploadFailed": "Gagal mengunggah foto.",
+      "removeFailed": "Gagal menghapus foto."
+    },
+    "states": {
+      "loadFailed": "Profil gagal dimuat.",
+      "retry": "Coba Lagi",
+      "empty": "—"
+    },
+    "status": {
+      "active": "Aktif",
+      "inactive": "Nonaktif"
     },
     "personalInformation": {
       "title": "Informasi Pribadi",

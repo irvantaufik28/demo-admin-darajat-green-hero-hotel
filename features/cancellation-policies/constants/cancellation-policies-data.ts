@@ -30,73 +30,6 @@ export type CancellationPolicy = {
   noShowChargeValue: number;
 };
 
-export const ALL_ROOM_TYPES = ["Deluxe Room", "Family Room", "Suite Room"] as const;
-
-export const cancellationPolicies: CancellationPolicy[] = [
-  {
-    id: "cp-001",
-    name: "Flexible Cancellation",
-    status: "Active",
-    sources: ["Website", "Phone"],
-    roomTypes: ["Deluxe Room", "Family Room"],
-    stayStart: "2026-09-29",
-    stayEnd: "2026-10-31",
-    applyToAllDates: false,
-    rules: [
-      { id: "r-001-1", timing: "More than", days: 3, chargeType: "Percentage", chargeValue: 0 },
-      { id: "r-001-2", timing: "Within",    days: 3, chargeType: "Percentage", chargeValue: 50 },
-    ],
-    noShowChargeType: "Percentage",
-    noShowChargeValue: 100,
-  },
-  {
-    id: "cp-002",
-    name: "High Season Policy",
-    status: "Active",
-    sources: ["Website"],
-    roomTypes: [], // all room types
-    stayStart: "2026-11-01",
-    stayEnd: "2026-12-31",
-    applyToAllDates: false,
-    rules: [
-      { id: "r-002-1", timing: "Within", days: 7, chargeType: "Percentage", chargeValue: 50 },
-    ],
-    noShowChargeType: "Percentage",
-    noShowChargeValue: 100,
-  },
-  {
-    id: "cp-003",
-    name: "Non Refundable",
-    status: "Inactive",
-    sources: ["Phone"],
-    roomTypes: ["Suite Room"],
-    stayStart: null,
-    stayEnd: null,
-    applyToAllDates: true,
-    rules: [
-      { id: "r-003-1", timing: "Within", days: 999, chargeType: "Percentage", chargeValue: 100 },
-    ],
-    noShowChargeType: "Full Stay Amount",
-    noShowChargeValue: 100,
-  },
-  {
-    id: "cp-004",
-    name: "Early Bird Special Policy",
-    status: "Active",
-    sources: ["Website", "Phone"],
-    roomTypes: ["Deluxe Room", "Suite Room"],
-    stayStart: "2027-01-05",
-    stayEnd: "2027-04-30",
-    applyToAllDates: false,
-    rules: [
-      { id: "r-004-1", timing: "More than", days: 14, chargeType: "Percentage",   chargeValue: 0 },
-      { id: "r-004-2", timing: "Within",    days: 7,  chargeType: "Nights Count", chargeValue: 1 },
-    ],
-    noShowChargeType: "First Night Charge",
-    noShowChargeValue: 1,
-  },
-];
-
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 export function formatStayPeriod(policy: CancellationPolicy): string {
@@ -141,8 +74,4 @@ export function getPolicySummary(policy: CancellationPolicy): { main: string; su
     : noShowText;
 
   return { main: mainText, sub };
-}
-
-export function getPolicyById(id: string): CancellationPolicy | undefined {
-  return cancellationPolicies.find((p) => p.id === id);
 }

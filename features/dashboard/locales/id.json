@@ -1,15 +1,15 @@
 {
   "shell": {
-    "title": "Dasbor",
+    "title": "Dashboard",
     "context": "Ringkasan Front Desk"
   },
   "header": {
-    "title": "Dasbor",
+    "title": "Dashboard",
     "description": "Ringkasan operasional hari ini",
     "newReservation": "Reservasi Baru"
   },
   "errors": {
-    "loadFailed": "Dasbor gagal dimuat.",
+    "loadFailed": "Dashboard gagal dimuat.",
     "retry": "Coba lagi"
   },
   "summary": {

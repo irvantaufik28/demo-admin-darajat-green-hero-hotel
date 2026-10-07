@@ -1,6 +1,9 @@
 "use client";
 
 import type { CheckOutContext, LateCheckOutInput } from "../services/api";
+import { useTranslations } from "../../../lib/i18n";
+import en from "../locales/en.json";
+import id from "../locales/id.json";
 
 export function CheckOutTimingFields({
   context,
@@ -17,20 +20,21 @@ export function CheckOutTimingFields({
   onLateCheckOutChange: (value: LateCheckOutInput) => void;
   methods: { id: string; name: string }[];
 }) {
+  const { t } = useTranslations({ en, id });
   if (context.kind === "normal") return null;
 
   if (context.kind === "early_departure") {
     return (
       <div className="reservation-operation-deposit">
-        <strong>Early departure</strong>
-        <p>Tamu keluar sebelum tanggal checkout {context.checkOutDate}. Tidak ada refund otomatis; tagihan reservasi tetap tercatat.</p>
+        <strong>{t("checkOutTiming.earlyDeparture.title")}</strong>
+        <p>{t("checkOutTiming.earlyDeparture.description", { checkOutDate: context.checkOutDate })}</p>
         <label className="partial-check-in-confirmation">
           <input
             type="checkbox"
             checked={earlyDepartureAcknowledged}
             onChange={(event) => onEarlyDepartureAcknowledgedChange(event.target.checked)}
           />
-          <span>Saya mengonfirmasi checkout lebih awal tanpa refund otomatis.</span>
+          <span>{t("checkOutTiming.earlyDeparture.acknowledge")}</span>
         </label>
       </div>
     );
@@ -39,12 +43,15 @@ export function CheckOutTimingFields({
   const overdue = context.serverDate > context.checkOutDate;
   return (
     <div className="reservation-operation-deposit">
-      <strong>{overdue ? "Overdue checkout" : "Late checkout"}</strong>
+      <strong>{overdue ? t("checkOutTiming.overdueTitle") : t("checkOutTiming.lateTitle")}</strong>
       <p>
         {overdue
-          ? `Tanggal checkout terjadwal ${context.checkOutDate} sudah lewat.`
-          : `Sekarang ${context.serverTime} WIB, melewati jam checkout standar ${context.standardCheckOutTime} WIB.`}
-        {" "}Biaya tambahan boleh Rp0.
+          ? t("checkOutTiming.overdueDescription", { checkOutDate: context.checkOutDate })
+          : t("checkOutTiming.lateDescription", {
+              serverTime: context.serverTime,
+              standardTime: context.standardCheckOutTime,
+            })}
+        {t("checkOutTiming.additionalChargeNote")}
       </p>
       <label className="partial-check-in-confirmation">
         <input
@@ -52,11 +59,11 @@ export function CheckOutTimingFields({
           checked={lateCheckOut.acknowledged}
           onChange={(event) => onLateCheckOutChange({ ...lateCheckOut, acknowledged: event.target.checked })}
         />
-        <span>Saya mengonfirmasi {overdue ? "checkout yang melewati tanggal" : "late checkout"} ini.</span>
+        <span>{overdue ? t("checkOutTiming.overdueAcknowledge") : t("checkOutTiming.lateAcknowledge")}</span>
       </label>
       <div className="reservation-operation-deposit-fields">
         <label>
-          Biaya late checkout (IDR)
+          {t("checkOutTiming.chargeLabel")}
           <input
             inputMode="numeric"
             value={lateCheckOut.chargeAmount === 0 ? "" : String(lateCheckOut.chargeAmount)}
@@ -67,23 +74,23 @@ export function CheckOutTimingFields({
         {lateCheckOut.chargeAmount > 0 && (
           <>
             <label>
-              Pembayaran biaya
+              {t("checkOutTiming.paymentLabel")}
               <select
                 value={lateCheckOut.paymentTiming}
                 onChange={(event) => onLateCheckOutChange({ ...lateCheckOut, paymentTiming: event.target.value as "now" | "later" })}
               >
-                <option value="later">Tagih nanti</option>
-                <option value="now">Bayar sekarang</option>
+                <option value="later">{t("checkOutTiming.payLater")}</option>
+                <option value="now">{t("checkOutTiming.payNow")}</option>
               </select>
             </label>
             {lateCheckOut.paymentTiming === "now" && (
               <label>
-                Metode pembayaran
+                {t("checkOutTiming.methodLabel")}
                 <select
                   value={lateCheckOut.paymentMethodId ?? ""}
                   onChange={(event) => onLateCheckOutChange({ ...lateCheckOut, paymentMethodId: event.target.value })}
                 >
-                  <option value="">Pilih metode</option>
+                  <option value="">{t("checkOutTiming.selectMethod")}</option>
                   {methods.map((method) => <option key={method.id} value={method.id}>{method.name}</option>)}
                 </select>
               </label>

@@ -2,6 +2,9 @@
 
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "../../../lib/i18n";
+import en from "../locales/en.json";
+import id from "../locales/id.json";
 
 export function ReservationSuccessTransition({
   bookingId,
@@ -10,6 +13,7 @@ export function ReservationSuccessTransition({
   bookingId: string;
   checkedIn: boolean;
 }) {
+  const { t } = useTranslations({ en, id });
   const router = useRouter();
 
   useEffect(() => {
@@ -32,18 +36,18 @@ export function ReservationSuccessTransition({
         </span>
         <h2>
           {checkedIn
-            ? "Reservasi & check-in berhasil"
-            : "Reservasi berhasil disimpan"}
+            ? t("successTransition.checkedInTitle")
+            : t("successTransition.savedTitle")}
         </h2>
         <p>
-          Booking ID <strong>{bookingId}</strong>
+          {t("successTransition.bookingIdLabel")}<strong>{bookingId}</strong>
         </p>
         <button
           type="button"
           className="action-button"
           onClick={() => router.push("/reservations")}
         >
-          Lihat daftar reservasi
+          {t("successTransition.viewList")}
         </button>
       </section>
     </div>

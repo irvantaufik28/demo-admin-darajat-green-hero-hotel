@@ -7,6 +7,9 @@ import {
   type ReservationDetail,
 } from "../constants/reservation-detail-data";
 import { isAutoConfirmedSource } from "../constants/reservation-list-data";
+import { useTranslations } from "../../../lib/i18n";
+import en from "../locales/en.json";
+import id from "../locales/id.json";
 
 type Props = {
   reservation: ReservationDetail;
@@ -14,6 +17,7 @@ type Props = {
 };
 
 export function ConfirmReservationAction({ reservation, onUpdate }: Props) {
+  const { t } = useTranslations({ en, id });
   const [open, setOpen] = useState(false);
   const [error, setError] = useState("");
   const balance = Math.max(
@@ -37,12 +41,12 @@ export function ConfirmReservationAction({ reservation, onUpdate }: Props) {
 
   function confirmReservation() {
     if (reservation.status !== "Pending") {
-      setError("Hanya reservasi Pending yang dapat dikonfirmasi.");
+      setError(t("detailActions.confirmAction.errors.onlyPending"));
       return;
     }
     if (isAutoConfirmedSource(reservation.source)) {
       setError(
-        "Reservasi Website dan OTA dikonfirmasi otomatis setelah pembayaran lunas.",
+        t("detailActions.confirmAction.errors.autoConfirmed"),
       );
       return;
     }
@@ -52,15 +56,13 @@ export function ConfirmReservationAction({ reservation, onUpdate }: Props) {
       {},
     );
     if (!updated || updated.status !== "Confirmed") {
-      setError("Konfirmasi reservasi tidak dapat disimpan.");
+      setError(t("detailActions.confirmAction.errors.saveFailed"));
       return;
     }
     setOpen(false);
     onUpdate(
       updated,
-      "Reservasi dikonfirmasi. Status pembayaran tetap " +
-        updated.paymentStatus +
-        ".",
+      t("detailActions.confirmAction.success", { status: updated.paymentStatus }),
     );
   }
 
@@ -74,7 +76,7 @@ export function ConfirmReservationAction({ reservation, onUpdate }: Props) {
           setOpen(true);
         }}
       >
-        Confirm Reservation
+        {t("detailActions.labels.confirm")}
       </button>
       {open && (
         <div
@@ -90,11 +92,11 @@ export function ConfirmReservationAction({ reservation, onUpdate }: Props) {
             aria-labelledby="confirm-reservation-title"
           >
             <div className="reservation-operation-header">
-              <h2 id="confirm-reservation-title">Confirm Reservation</h2>
+              <h2 id="confirm-reservation-title">{t("detailActions.labels.confirm")}</h2>
               <button
                 type="button"
                 onClick={() => setOpen(false)}
-                aria-label="Close modal"
+                aria-label={t("common.closeModal")}
               >
                 ×
               </button>
@@ -106,13 +108,14 @@ export function ConfirmReservationAction({ reservation, onUpdate }: Props) {
                   <span>{reservation.bookingId}</span>
                 </div>
                 <small>
-                  Payment: {reservation.paymentStatus} · Remaining balance:{" "}
-                  {formatRupiah(balance)}
+                  {t("detailActions.confirmAction.paymentRemaining", {
+                    status: reservation.paymentStatus,
+                    balance: formatRupiah(balance),
+                  })}
                 </small>
               </div>
               <p className="reservation-operation-hint">
-                Konfirmasi mengubah status reservasi menjadi Confirmed. Status
-                pembayaran dan sisa tagihan tetap tercatat.
+                {t("detailActions.confirmAction.hint")}
               </p>
               {error && (
                 <p className="reservation-operation-error" role="alert">
@@ -126,14 +129,14 @@ export function ConfirmReservationAction({ reservation, onUpdate }: Props) {
                 className="reservation-secondary-button"
                 onClick={() => setOpen(false)}
               >
-                Cancel
+                {t("common.cancel")}
               </button>
               <button
                 type="button"
                 className="action-button"
                 onClick={confirmReservation}
               >
-                Confirm Reservation
+                {t("detailActions.labels.confirm")}
               </button>
             </div>
           </section>

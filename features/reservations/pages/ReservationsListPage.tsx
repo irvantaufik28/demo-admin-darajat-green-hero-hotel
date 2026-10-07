@@ -10,6 +10,9 @@ import { calculateNights, formatStayDate } from "../constants/walk-in-data";
 import { getReservations, type ReservationListItem } from "../services/api";
 import { restoreSession } from "../../../lib/auth";
 import { useOperationalRefresh } from "../hooks/useOperationalRefresh";
+import { useTranslations } from "../../../lib/i18n";
+import en from "../locales/en.json";
+import id from "../locales/id.json";
 
 const pageSize = 8;
 
@@ -94,6 +97,7 @@ function csvCell(value: string | number | undefined) {
 }
 
 export function ReservationsListPage() {
+  const { t } = useTranslations({ en, id });
   const operationalRefresh = useOperationalRefresh();
   const [reservations, setReservations] = useState<ListRow[]>([]);
   const [total, setTotal] = useState(0);
@@ -145,7 +149,7 @@ export function ReservationsListPage() {
           setTotal(result.total);
         }
       } catch (cause) {
-        if (!controller.signal.aborted) setError(cause instanceof Error ? cause.message : "Reservasi gagal dimuat.");
+        if (!controller.signal.aborted) setError(cause instanceof Error ? cause.message : t("list.messages.loadError"));
       } finally {
         if (!controller.signal.aborted) setLoading(false);
       }
@@ -176,17 +180,17 @@ export function ReservationsListPage() {
 
   function exportCsv() {
     const header = [
-      "Booking ID",
-      "Guest",
-      "WhatsApp",
-      "Source",
-      "Check-in",
-      "Check-out",
-      "Room",
-      "Payment",
-      "Status",
-      "Operational Status",
-      "Total",
+      t("list.csv.bookingId"),
+      t("list.csv.guest"),
+      t("list.csv.whatsapp"),
+      t("list.csv.source"),
+      t("list.csv.checkIn"),
+      t("list.csv.checkOut"),
+      t("list.csv.room"),
+      t("list.csv.payment"),
+      t("list.csv.status"),
+      t("list.csv.operationalStatus"),
+      t("list.csv.total"),
     ];
     const rows = filtered.map((item) => [
       item.bookingId,
@@ -215,21 +219,21 @@ export function ReservationsListPage() {
   }
 
   return (
-    <AdminShell title="Reservations" context="All Reservations">
+    <AdminShell title={t("shell.title")} context={t("shell.allReservations")}>
       <div className="reservations-list-page">
         <div className="reservations-list-heading">
           <div>
             <div className="reservations-list-title">
-              <h1>Reservations</h1>
-              <span>{total} reservations</span>
+              <h1>{t("list.heading")}</h1>
+              <span>{t("list.count", { count: total })}</span>
             </div>
-            <p>Kelola seluruh reservasi online dan offline</p>
+            <p>{t("list.description")}</p>
           </div>
           <Link
             className="reservations-list-new"
             href="/reservations/create-reservation-walkin"
           >
-            ＋ New Reservation
+            ＋ {t("list.newReservation")}
           </Link>
         </div>
         <div className="reservations-list-search">
@@ -241,28 +245,28 @@ export function ReservationsListPage() {
               setSearch(event.target.value);
               setPage(1);
             }}
-            placeholder="Search booking ID, guest, or WhatsApp"
-            aria-label="Cari reservasi"
+            placeholder={t("list.searchPlaceholder")}
+            aria-label={t("list.searchAriaLabel")}
           />
           <kbd>⌘K</kbd>
         </div>
         <div className="reservations-list-toolbar">
           <div className="reservations-list-filters">
             <select
-              aria-label="Filter tanggal menginap"
+              aria-label={t("list.filters.stayDateAriaLabel")}
               value={stayFilter}
               onChange={(event) => {
                 setStayFilter(event.target.value);
                 setPage(1);
               }}
             >
-              <option value="all">Stay Date: All Dates</option>
-              <option value="custom">Stay Date: Specific Date</option>
+              <option value="all">{t("list.filters.stayDateAll")}</option>
+              <option value="custom">{t("list.filters.stayDateCustom")}</option>
             </select>
             {stayFilter === "custom" && (
               <input
                 type="date"
-                aria-label="Pilih tanggal menginap"
+                aria-label={t("list.filters.stayDatePickAriaLabel")}
                 value={customDate}
                 onChange={(event) => {
                   setCustomDate(event.target.value);
@@ -271,58 +275,62 @@ export function ReservationsListPage() {
               />
             )}
             <select
-              aria-label="Filter sumber"
+              aria-label={t("list.filters.sourceAriaLabel")}
               value={sourceFilter}
               onChange={(event) => {
                 setSourceFilter(event.target.value);
                 setPage(1);
               }}
             >
-              <option value="all">Source: All Sources</option>
-              <option value="website">Website</option>
-              <option value="walk-in">Walk-in</option>
-              <option value="phone">Phone</option>
-              <option value="ota">OTA</option>
+              <option value="all">{t("list.filters.sourceAll")}</option>
+              <option value="website">{t("source.website")}</option>
+              <option value="walk-in">{t("source.walkIn")}</option>
+              <option value="phone">{t("source.phone")}</option>
+              <option value="ota">{t("source.ota")}</option>
             </select>
             <select
-              aria-label="Filter status"
+              aria-label={t("list.filters.statusAriaLabel")}
               value={statusFilter}
               onChange={(event) => {
                 setStatusFilter(event.target.value);
                 setPage(1);
               }}
             >
-              <option value="all">Status: All Status</option>
-              {[
-                "Pending",
-                "Confirmed",
-                "Checked-in",
-                "Checked-out",
-                "Cancelled",
-                "Expired",
-                "Draft",
-              ].map((value) => (
+              <option value="all">{t("list.filters.statusAll")}</option>
+              {([
+                ["Pending", "status.pending"],
+                ["Confirmed", "status.confirmed"],
+                ["Checked-in", "status.checkedIn"],
+                ["Checked-out", "status.checkedOut"],
+                ["Cancelled", "status.cancelled"],
+                ["Expired", "status.expired"],
+                ["Draft", "status.draft"],
+              ] as const).map(([value, key]) => (
                 <option key={value} value={value.toLowerCase()}>
-                  {value}
+                  {t(key)}
                 </option>
               ))}
             </select>
             <select
-              aria-label="Filter pembayaran"
+              aria-label={t("list.filters.paymentAriaLabel")}
               value={paymentFilter}
               onChange={(event) => {
                 setPaymentFilter(event.target.value);
                 setPage(1);
               }}
             >
-              <option value="all">Payment: All Payments</option>
-              {["Unpaid", "Partial", "Paid", "Refunded", "Failed"].map(
-                (value) => (
-                  <option key={value} value={value.toLowerCase()}>
-                    {value}
-                  </option>
-                ),
-              )}
+              <option value="all">{t("list.filters.paymentAll")}</option>
+              {([
+                ["Unpaid", "status.unpaid"],
+                ["Partial", "status.partial"],
+                ["Paid", "status.paid"],
+                ["Refunded", "status.refunded"],
+                ["Failed", "status.failed"],
+              ] as const).map(([value, key]) => (
+                <option key={value} value={value.toLowerCase()}>
+                  {t(key)}
+                </option>
+              ))}
             </select>
             <button
               type="button"
@@ -330,12 +338,12 @@ export function ReservationsListPage() {
               disabled={!hasFilters}
               onClick={resetFilters}
             >
-              Reset
+              {t("list.filters.reset")}
             </button>
           </div>
           <div className="reservations-list-tools">
             <button type="button" onClick={exportCsv}>
-              ⇩ &nbsp; Export This Page
+              ⇩ &nbsp; {t("list.exportThisPage")}
             </button>
           </div>
         </div>
@@ -345,7 +353,7 @@ export function ReservationsListPage() {
             <table className="reservations-table">
               <thead>
                 <tr>
-                  <th>NO</th>
+                  <th>{t("list.table.no")}</th>
                   <th>
                     <button
                       type="button"
@@ -355,17 +363,17 @@ export function ReservationsListPage() {
                         )
                       }
                     >
-                      BOOKING ↕
+                      {t("list.table.booking")} ↕
                     </button>
                   </th>
-                  <th>GUEST</th>
-                  <th>SOURCE</th>
-                  <th>STAY</th>
-                  <th>ROOM</th>
-                  <th>PAYMENT</th>
-                  <th>STATUS</th>
-                  <th>OPERATIONAL STATUS</th>
-                  <th>ACTION</th>
+                  <th>{t("list.table.guest")}</th>
+                  <th>{t("list.table.source")}</th>
+                  <th>{t("list.table.stay")}</th>
+                  <th>{t("list.table.room")}</th>
+                  <th>{t("list.table.payment")}</th>
+                  <th>{t("list.table.status")}</th>
+                  <th>{t("list.table.operationalStatus")}</th>
+                  <th>{t("list.table.action")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -393,7 +401,7 @@ export function ReservationsListPage() {
                             {formatStayDate(item.checkOut)}
                           </strong>
                           <small>
-                            {nights} {nights === 1 ? "Night" : "Nights"}
+                            {nights} {nights === 1 ? t("common.night") : t("common.nights")}
                           </small>
                         </span>
                       </td>
@@ -426,7 +434,7 @@ export function ReservationsListPage() {
                             statusClass(item.operationalStatus ?? "")
                           }
                         >
-                          {item.operationalStatus ?? "—"}
+                          {item.operationalStatus ?? t("common.emptyDash")}
                         </span>
                       </td>
                       <td>
@@ -438,12 +446,12 @@ export function ReservationsListPage() {
                               encodeURIComponent(item.id)
                             }
                           >
-                            View
+                            {t("common.view")}
                           </Link>
                           <div className="reservations-menu-anchor">
                             <button
                               type="button"
-                              aria-label={"Opsi " + item.bookingId}
+                              aria-label={t("list.table.optionsAriaLabel", { bookingId: item.bookingId })}
                               aria-expanded={openMenu === item.id}
                               onClick={(event) => {
                                 const rect =
@@ -470,7 +478,7 @@ export function ReservationsListPage() {
                 {(loading || visible.length === 0) && (
                   <tr>
                     <td colSpan={10} className="reservations-empty">
-                      {loading ? <LoadingSkeleton /> : "Tidak ada reservasi yang cocok dengan filter."}
+                      {loading ? <LoadingSkeleton /> : t("list.messages.empty")}
                     </td>
                   </tr>
                 )}
@@ -479,12 +487,11 @@ export function ReservationsListPage() {
           </div>
           <div className="reservations-pagination">
             <span>
-              Showing{" "}
-              <strong>
-                {total ? (currentPage - 1) * pageSize + 1 : 0}–
-                {Math.min(currentPage * pageSize, total)}
-              </strong>{" "}
-              of <strong>{total}</strong> reservations
+              {t("list.pagination.showing", {
+                from: total ? (currentPage - 1) * pageSize + 1 : 0,
+                to: Math.min(currentPage * pageSize, total),
+                total,
+              })}
             </span>
             <div>
               <button
@@ -492,7 +499,7 @@ export function ReservationsListPage() {
                 disabled={currentPage === 1}
                 onClick={() => setPage(currentPage - 1)}
               >
-                ‹ Previous
+                ‹ {t("list.pagination.previous")}
               </button>
               {Array.from({ length: pageCount }, (_, index) => index + 1).map(
                 (number) => (
@@ -514,7 +521,7 @@ export function ReservationsListPage() {
                 disabled={currentPage === pageCount}
                 onClick={() => setPage(currentPage + 1)}
               >
-                Next ›
+                {t("list.pagination.next")} ›
               </button>
             </div>
           </div>
@@ -525,7 +532,7 @@ export function ReservationsListPage() {
             style={{ top: menuPosition.top, right: menuPosition.right }}
           >
             <Link href={"/reservations/" + encodeURIComponent(openMenu)}>
-              View details
+              {t("common.viewDetails")}
             </Link>
           </div>
         )}

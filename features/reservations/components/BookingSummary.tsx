@@ -1,3 +1,4 @@
+"use client";
 import {
   formatRupiah,
   formatStayDate,
@@ -7,6 +8,9 @@ import {
   getExtraCost,
   type RoomType,
 } from "../constants/walk-in-data";
+import { useTranslations } from "../../../lib/i18n";
+import en from "../locales/en.json";
+import id from "../locales/id.json";
 
 type Props = {
   mode: "walk-in" | "phone";
@@ -43,6 +47,7 @@ export function BookingSummary({
   onSave,
   onSaveDraft,
 }: Props) {
+  const { t } = useTranslations({ en, id });
   const isPhone = mode === "phone";
   const remainingBalance = Math.max(0, total - amountPaid);
 
@@ -50,16 +55,16 @@ export function BookingSummary({
     <aside className="booking-summary">
       {/* Header */}
       <div className="booking-summary__header">
-        <h2>Booking Summary</h2>
+        <h2>{t("form.summary.title")}</h2>
         <span>{source}</span>
       </div>
 
       {/* Stay dates */}
       <div className="booking-summary__stay">
-        <span>Stay</span>
+        <span>{t("form.summary.stay")}</span>
         <strong>
           {formatStayDate(checkIn)} → {formatStayDate(checkOut)} · {nights}{" "}
-          {nights === 1 ? "night" : "nights"}
+          {nights === 1 ? t("common.nightLower") : t("common.nightsLower")}
         </strong>
       </div>
 
@@ -82,7 +87,7 @@ export function BookingSummary({
           Array.from({ length: quantities[room.id] }, (_, index) =>
             roomExtraBeds[`${room.id}-${index}`] ? (
               <div key={`bed-${room.id}-${index}`}>
-                <span>↳ Extra Bed · {room.name} #{index + 1} · {nights} malam</span>
+                <span>{t("form.summary.extraBedLine", { roomType: room.name, index: index + 1, nights })}</span>
                 <strong>{formatRupiah(extraBedRates[room.id] * nights)}</strong>
               </div>
             ) : null,
@@ -96,7 +101,7 @@ export function BookingSummary({
             <div key={id}>
               <span>
                 {extra.label} × {extraQuantities[id] ?? 1}
-                {extra.perNight ? ` · ${nights} malam` : ""}
+                {extra.perNight ? ` · ${nights} ${t("common.nightsLower")}` : ""}
               </span>
               <strong>
                 {formatRupiah(
@@ -108,21 +113,21 @@ export function BookingSummary({
         })}
 
         {selectedExtras.length === 0 && !Object.values(roomExtraBeds).some(Boolean) && (
-          <div className="booking-summary__empty">Belum ada add-on</div>
+          <div className="booking-summary__empty">{t("form.summary.addOnsEmpty")}</div>
         )}
       </div>
 
       {/* Totals */}
       <div className="booking-summary__totals">
         <div>
-          <strong>Booking Total</strong>
+          <strong>{t("form.summary.bookingTotal")}</strong>
           <strong>{formatRupiah(total)}</strong>
         </div>
 
         {isPhone ? (
           <>
             <div>
-              <span>Payment Status</span>
+              <span>{t("form.summary.paymentStatus")}</span>
               <span
                 className={
                   "status-badge status-badge--" +
@@ -133,22 +138,22 @@ export function BookingSummary({
               </span>
             </div>
             <div>
-              <span>Amount Paid</span>
+              <span>{t("form.summary.amountPaid")}</span>
               <span>{formatRupiah(amountPaid)}</span>
             </div>
             <div className="booking-summary__collected">
-              <strong>Remaining Balance</strong>
+              <strong>{t("form.summary.remainingBalance")}</strong>
               <strong>{formatRupiah(remainingBalance)}</strong>
             </div>
           </>
         ) : (
           <>
             <div>
-              <span>Deposit</span>
+              <span>{t("form.summary.deposit")}</span>
               <span>{formatRupiah(deposit)}</span>
             </div>
             <div className="booking-summary__collected">
-              <strong>Total Collected</strong>
+              <strong>{t("form.summary.totalCollected")}</strong>
               <strong>{formatRupiah(amountPaid + deposit)}</strong>
             </div>
           </>
@@ -158,7 +163,7 @@ export function BookingSummary({
       {/* Deposit note */}
       {!isPhone && (
         <p className="booking-summary__note">
-          Deposit is held separately and is not included in booking revenue.
+          {t("form.summary.depositNote")}
         </p>
       )}
 
@@ -171,21 +176,21 @@ export function BookingSummary({
               className="action-button"
               onClick={() => onSave(false)}
             >
-              Save Reservation
+              {t("form.summary.saveReservation")}
             </button>
             <button
               type="button"
               className="reservation-secondary-button"
               onClick={() => onSave(true)}
             >
-              Save &amp; Check-in
+              {t("form.summary.saveAndCheckIn")}
             </button>
             <button
               type="button"
               className="reservation-secondary-button"
               onClick={onSaveDraft}
             >
-              Save as Draft
+              {t("form.summary.saveAsDraft")}
             </button>
           </>
         ) : (
@@ -195,14 +200,14 @@ export function BookingSummary({
               className="action-button"
               onClick={() => onSave(true)}
             >
-              Save &amp; Check-in
+              {t("form.summary.saveAndCheckIn")}
             </button>
             <button
               type="button"
               className="reservation-secondary-button"
               onClick={() => onSave(false)}
             >
-              Save Reservation
+              {t("form.summary.saveReservation")}
             </button>
           </>
         )}
@@ -211,8 +216,7 @@ export function BookingSummary({
       {/* Phone mode note */}
       {isPhone && (
         <p className="booking-summary__note booking-summary__note--after">
-          Nomor kamar dapat diubah saat tamu tiba. Check-in dengan sisa tagihan
-          memerlukan konfirmasi petugas.
+          {t("form.summary.phoneNote")}
         </p>
       )}
     </aside>

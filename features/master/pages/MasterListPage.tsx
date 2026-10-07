@@ -14,8 +14,12 @@ import {
   updateMasterItem,
   type MasterItem,
 } from "../services/master";
+import { useTranslations } from "../../../lib/i18n";
+import en from "../locales/en.json";
+import id from "../locales/id.json";
 
 export function MasterListPage({ categorySlug }: { categorySlug: string }) {
+  const { t } = useTranslations({ en, id });
   const category = masterCategories.find((item) => item.slug === categorySlug);
   const [items, setItems] = useState<MasterItem[]>([]);
   const [search, setSearch] = useState("");
@@ -46,7 +50,7 @@ export function MasterListPage({ categorySlug }: { categorySlug: string }) {
         if (!controller.signal.aborted) setItems(response.items);
       } catch (cause) {
         if (!controller.signal.aborted) {
-          setLoadError(cause instanceof Error ? cause.message : "Master data gagal dimuat.");
+          setLoadError(cause instanceof Error ? cause.message : t("list.errors.loadFailed"));
         }
       } finally {
         if (!controller.signal.aborted) setLoading(false);
@@ -62,8 +66,8 @@ export function MasterListPage({ categorySlug }: { categorySlug: string }) {
     setNotice("");
   }, [categorySlug]);
 
-  if (!category) return <AdminShell title="Master" context="Not Found">
-    <main className="master-page"><h1>Master category not found</h1></main>
+  if (!category) return <AdminShell title={t("shell.title")} context={t("shell.notFoundContext")}>
+    <main className="master-page"><h1>{t("list.notFound")}</h1></main>
   </AdminShell>;
 
   function openAdd() {
@@ -84,12 +88,12 @@ export function MasterListPage({ categorySlug }: { categorySlug: string }) {
     event.preventDefault();
     const trimmed = name.trim();
     if (!trimmed) {
-      setError("Name is required.");
+      setError(t("list.errors.nameRequired"));
       return;
     }
     if (items.some((item) =>
       item.id !== editingId && item.name.toLowerCase() === trimmed.toLowerCase())) {
-      setError("This name already exists.");
+      setError(t("list.errors.duplicate"));
       return;
     }
     setSaving(true);
@@ -104,67 +108,67 @@ export function MasterListPage({ categorySlug }: { categorySlug: string }) {
           : current.map((item) => item.id === editingId ? response.item : item);
         return next.sort((a, b) => a.sortOrder - b.sortOrder || a.name.localeCompare(b.name));
       });
-      setNotice(editingId === null ? `${trimmed} added.` : `${trimmed} updated.`);
+      setNotice(editingId === null ? t("list.notices.added", { name: trimmed }) : t("list.notices.updated", { name: trimmed }));
       setModalOpen(false);
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Master data gagal disimpan.");
+      setError(cause instanceof Error ? cause.message : t("list.errors.saveFailed"));
     } finally {
       setSaving(false);
     }
   }
 
   async function remove(item: MasterItem) {
-    if (!window.confirm(`Delete ${item.name}?`)) return;
+    if (!window.confirm(t("list.deleteConfirm", { name: item.name }))) return;
     setDeletingId(item.id);
     setNotice("");
     setLoadError("");
     try {
       await deleteMasterItem(categorySlug, item.id);
       setItems((current) => current.filter((value) => value.id !== item.id));
-      setNotice(`${item.name} deleted.`);
+      setNotice(t("list.notices.deleted", { name: item.name }));
     } catch (cause) {
-      setLoadError(cause instanceof Error ? cause.message : "Master data gagal dihapus.");
+      setLoadError(cause instanceof Error ? cause.message : t("list.errors.deleteFailed"));
     } finally {
       setDeletingId(null);
     }
   }
 
   return (
-    <AdminShell title="Master" context={category.title}>
+    <AdminShell title={t("shell.title")} context={category.title}>
       <main className="master-page">
         <header className="master-heading">
           <div>
-            <span className="roles-eyebrow">MASTER DATA</span>
+            <span className="roles-eyebrow">{t("list.eyebrow")}</span>
             <h1>{category.title}</h1>
-            <p>Manage the available {category.title.toLowerCase()} for Green Hero.</p>
+            <p>{t("list.descriptionPrefix")} {category.title.toLowerCase()} {t("list.descriptionSuffix")}</p>
           </div>
-          <button type="button" className="roles-add-button" onClick={openAdd}>+ Add {category.title}</button>
+          <button type="button" className="roles-add-button" onClick={openAdd}>{t("list.addButton", { category: category.title })}</button>
         </header>
 
         <section className="master-panel">
           <div className="master-toolbar">
-            <h2>{category.title} <span>{items.length} items</span></h2>
-            <input aria-label={`Search ${category.title}`} placeholder={`Search ${category.title.toLowerCase()}...`}
+            <h2>{category.title} <span>{t("list.count", { total: items.length })}</span></h2>
+            <input aria-label={t("list.searchAriaLabel", { category: category.title })} placeholder={t("list.searchPlaceholder", { category: category.title.toLowerCase() })}
               value={search} onChange={(event) => setSearch(event.target.value)} />
           </div>
           {loadError && <div className="master-message" role="alert">
-            {loadError} <button type="button" onClick={() => setReloadKey((value) => value + 1)}>Retry</button>
+            {loadError} <button type="button" onClick={() => setReloadKey((value) => value + 1)}>{t("common.retry")}</button>
           </div>}
           <div className="master-table-scroll">
             <table className="master-table">
-              <thead><tr><th>No.</th><th>Name</th><th>Action</th></tr></thead>
+              <thead><tr><th>{t("list.table.no")}</th><th>{t("list.table.name")}</th><th>{t("list.table.action")}</th></tr></thead>
               <tbody>
                 {!loading && visible.map((item, index) => <tr key={item.id}>
-                  <td>{index + 1}</td><td><strong>{item.name}</strong>{!item.isActive && <span className="master-inactive">Inactive</span>}</td>
+                  <td>{index + 1}</td><td><strong>{item.name}</strong>{!item.isActive && <span className="master-inactive">{t("list.inactive")}</span>}</td>
                   <td><div className="master-row-actions">
-                    <button type="button" onClick={() => openEdit(item)}>Edit</button>
+                    <button type="button" onClick={() => openEdit(item)}>{t("common.edit")}</button>
                     <button type="button" disabled={deletingId === item.id} onClick={() => void remove(item)}>
-                      {deletingId === item.id ? "Deleting..." : "Delete"}
+                      {deletingId === item.id ? t("common.deleting") : t("common.delete")}
                     </button>
                   </div></td>
                 </tr>)}
                 {(loading || visible.length === 0) && <tr><td colSpan={3} className="master-empty">
-                  {loading ? <LoadingSkeleton /> : loadError ? "Unable to load items." : "No items found."}
+                  {loading ? <LoadingSkeleton /> : loadError ? t("list.errors.unableToLoad") : t("list.empty")}
                 </td></tr>}
               </tbody>
             </table>
@@ -175,18 +179,18 @@ export function MasterListPage({ categorySlug }: { categorySlug: string }) {
         {modalOpen && <div className="roles-modal-backdrop" onMouseDown={() => { if (!saving) setModalOpen(false); }}>
           <form className="roles-modal" onSubmit={save} onMouseDown={(event) => event.stopPropagation()}>
             <header>
-              <h2>{editingId === null ? "Add" : "Edit"} {category.title}</h2>
-              <button type="button" aria-label="Close" disabled={saving} onClick={() => setModalOpen(false)}>×</button>
+              <h2>{editingId === null ? t("list.modal.addTitle", { category: category.title }) : t("list.modal.editTitle", { category: category.title })}</h2>
+              <button type="button" aria-label={t("common.close")} disabled={saving} onClick={() => setModalOpen(false)}>×</button>
             </header>
-            <p>Enter the name to display in {category.title.toLowerCase()}.</p>
-            <label>Name
+            <p>{t("list.modal.description", { category: category.title.toLowerCase() })}</p>
+            <label>{t("list.modal.name")}
               <input autoFocus value={name} maxLength={80} disabled={saving}
                 onChange={(event) => { setName(event.target.value); setError(""); }} />
             </label>
             {error && <span className="roles-form-error" role="alert">{error}</span>}
             <footer>
-              <button type="button" disabled={saving} onClick={() => setModalOpen(false)}>Cancel</button>
-              <button type="submit" disabled={saving}>{saving ? "Saving..." : editingId === null ? "Add" : "Save Changes"}</button>
+              <button type="button" disabled={saving} onClick={() => setModalOpen(false)}>{t("common.cancel")}</button>
+              <button type="submit" disabled={saving}>{saving ? t("common.saving") : editingId === null ? t("common.add") : t("common.saveChanges")}</button>
             </footer>
           </form>
         </div>}

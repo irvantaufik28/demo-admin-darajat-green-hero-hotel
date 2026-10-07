@@ -10,6 +10,9 @@ import {
   type ReservationSettings,
 } from "../constants/reservation-settings";
 import { getReservationSettings, updateReservationSettings } from "../services/reservation-settings";
+import { useTranslations } from "../../../lib/i18n";
+import en from "../locales/en.json";
+import id from "../locales/id.json";
 
 function SettingToggle({
   label,
@@ -22,6 +25,7 @@ function SettingToggle({
   checked: boolean;
   onChange: (value: boolean) => void;
 }) {
+  const { t } = useTranslations({ en, id });
   return (
     <div className="reservation-setting-row">
       <div>
@@ -31,13 +35,14 @@ function SettingToggle({
       <label className="reservation-setting-switch">
         <input type="checkbox" checked={checked} onChange={(event) => onChange(event.target.checked)} aria-label={label} />
         <span aria-hidden="true" />
-        <small>{checked ? "ON" : "OFF"}</small>
+        <small>{checked ? t("reservationSettings.toggle.on") : t("reservationSettings.toggle.off")}</small>
       </label>
     </div>
   );
 }
 
 export function ReservationSettingsPage() {
+  const { t } = useTranslations({ en, id });
   const [settings, setSettings] = useState<ReservationSettings>(defaultReservationSettings);
   const [saved, setSaved] = useState<ReservationSettings>(defaultReservationSettings);
   const [error, setError] = useState("");
@@ -51,7 +56,7 @@ export function ReservationSettingsPage() {
     const controller = new AbortController();
     async function load() {
       try {
-        if (!(await restoreSession())) throw new Error("Sesi login tidak tersedia.");
+        if (!(await restoreSession())) throw new Error(t("reservationSettings.errors.sessionUnavailable"));
         const result = await getReservationSettings(controller.signal);
         if (controller.signal.aborted) return;
         setSettings(result.settings);
@@ -59,7 +64,7 @@ export function ReservationSettingsPage() {
         setCanEdit(getCurrentUser()?.permissions.includes("master.edit") ?? false);
       } catch (cause) {
         if (!controller.signal.aborted) {
-          setError(cause instanceof Error ? cause.message : "Pengaturan reservasi gagal dimuat.");
+          setError(cause instanceof Error ? cause.message : t("reservationSettings.errors.loadFailed"));
         }
       } finally {
         if (!controller.signal.aborted) setLoading(false);
@@ -78,12 +83,12 @@ export function ReservationSettingsPage() {
   async function save(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!settings.checkInTime || !settings.checkOutTime) {
-      setError("Check-in and check-out times are required.");
+      setError(t("reservationSettings.errors.timesRequired"));
       return;
     }
     if (!Number.isInteger(settings.websitePaymentExpiryMinutes) ||
       settings.websitePaymentExpiryMinutes < 1 || settings.websitePaymentExpiryMinutes > 1440) {
-      setError("Website payment expiry must be between 1 and 1,440 minutes.");
+      setError(t("reservationSettings.errors.expiryRange"));
       return;
     }
     setSaving(true);
@@ -92,31 +97,31 @@ export function ReservationSettingsPage() {
       const result = await updateReservationSettings(settings);
       setSettings(result.settings);
       setSaved(result.settings);
-      setNotice("Reservation settings saved.");
+      setNotice(t("reservationSettings.saved"));
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Pengaturan reservasi gagal disimpan.");
+      setError(cause instanceof Error ? cause.message : t("reservationSettings.errors.saveFailed"));
     } finally {
       setSaving(false);
     }
   }
 
   return (
-    <AdminShell title="Settings" context="Reservation Settings">
+    <AdminShell title={t("shell.title")} context={t("shell.reservationContext")}>
       <main className="reservation-settings-page">
         <header className="reservation-settings-heading">
-          <h1>Reservation Settings</h1>
-          <p>Configure the main reservation and stay rules.</p>
+          <h1>{t("reservationSettings.title")}</h1>
+          <p>{t("reservationSettings.description")}</p>
         </header>
 
         {loading ? <LoadingSkeleton variant="form" rows={8} /> : <form className="reservation-settings-panel" onSubmit={(event) => void save(event)}>
           <section className="reservation-settings-section">
-            <h2>Stay Time</h2>
+            <h2>{t("reservationSettings.stayTime.title")}</h2>
             <div className="reservation-setting-times">
-              <label>Default Check-in Time
+              <label>{t("reservationSettings.stayTime.checkInTime")}
                 <input type="time" value={settings.checkInTime}
                   onChange={(event) => change("checkInTime", event.target.value)} />
               </label>
-              <label>Default Check-out Time
+              <label>{t("reservationSettings.stayTime.checkOutTime")}
                 <input type="time" value={settings.checkOutTime}
                   onChange={(event) => change("checkOutTime", event.target.value)} />
               </label>
@@ -124,48 +129,48 @@ export function ReservationSettingsPage() {
           </section>
 
           <section className="reservation-settings-section">
-            <h2>Reservation Rules</h2>
+            <h2>{t("reservationSettings.rules.title")}</h2>
             <SettingToggle
-              label="Auto Confirm Website Booking After Payment"
-              description="Website reservations are automatically confirmed after successful full payment."
+              label={t("reservationSettings.rules.autoConfirm.label")}
+              description={t("reservationSettings.rules.autoConfirm.description")}
               checked={settings.autoConfirmWebsiteAfterPayment}
               onChange={(value) => change("autoConfirmWebsiteAfterPayment", value)}
             />
             <SettingToggle
-              label="Allow Partial / Unpaid Check-in"
-              description="Staff may check in guests with an outstanding balance. A warning is always shown before check-in."
+              label={t("reservationSettings.rules.allowCheckIn.label")}
+              description={t("reservationSettings.rules.allowCheckIn.description")}
               checked={settings.allowOutstandingCheckIn}
               onChange={(value) => change("allowOutstandingCheckIn", value)}
             />
             <SettingToggle
-              label="Allow Checkout with Outstanding Balance"
-              description="Staff may check out guests with an unpaid balance. A warning is always shown, and the balance remains in Payments."
+              label={t("reservationSettings.rules.allowCheckOut.label")}
+              description={t("reservationSettings.rules.allowCheckOut.description")}
               checked={settings.allowOutstandingCheckOut}
               onChange={(value) => change("allowOutstandingCheckOut", value)}
             />
           </section>
 
           <section className="reservation-settings-section">
-            <h2>Website Booking</h2>
-            <label className="reservation-setting-expiry">Website Payment Expiry
+            <h2>{t("reservationSettings.websiteBooking.title")}</h2>
+            <label className="reservation-setting-expiry">{t("reservationSettings.websiteBooking.expiryLabel")}
               <span>
                 <input type="number" min={1} max={1440} step={1}
                   value={settings.websitePaymentExpiryMinutes}
                   onChange={(event) => change("websitePaymentExpiryMinutes", Number(event.target.value))} />
-                <span>Minutes</span>
+                <span>{t("reservationSettings.websiteBooking.minutes")}</span>
               </span>
             </label>
-            <p className="reservation-setting-help">Unpaid website reservations expire after this duration.</p>
-            <p className="reservation-setting-help">After expiry, the reservation and payment become Expired, and direct room inventory is released.</p>
+            <p className="reservation-setting-help">{t("reservationSettings.websiteBooking.help1")}</p>
+            <p className="reservation-setting-help">{t("reservationSettings.websiteBooking.help2")}</p>
           </section>
 
           <section className="reservation-settings-section">
-            <h2>No-show</h2>
+            <h2>{t("reservationSettings.noShow.title")}</h2>
             <div className="reservation-setting-fixed">
-              <strong>No-show Handling</strong>
-              <span>Manual by Staff</span>
+              <strong>{t("reservationSettings.noShow.handlingLabel")}</strong>
+              <span>{t("reservationSettings.noShow.handlingValue")}</span>
             </div>
-            <p className="reservation-setting-help">Staff manually marks a confirmed guest as no-show when the guest does not arrive.</p>
+            <p className="reservation-setting-help">{t("reservationSettings.noShow.help")}</p>
           </section>
 
           {error && <p className="reservation-settings-error" role="alert">{error}</p>}
@@ -173,8 +178,8 @@ export function ReservationSettingsPage() {
           <footer className="reservation-settings-actions">
             <button type="button" disabled={loading || saving} onClick={() => {
               setSettings({ ...saved }); setError(""); setNotice("");
-            }}>Cancel</button>
-            <button type="submit" disabled={!changed || loading || saving || !canEdit}>{saving ? "Saving..." : "Save Changes"}</button>
+            }}>{t("common.cancel")}</button>
+            <button type="submit" disabled={!changed || loading || saving || !canEdit}>{saving ? t("common.saving") : t("common.saveChanges")}</button>
           </footer>
         </form>}
       </main>

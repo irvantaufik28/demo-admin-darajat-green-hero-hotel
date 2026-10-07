@@ -19,6 +19,9 @@ import {
 } from "../services/api";
 import { reservationDetailPresentation } from "../utils/detail-rules";
 import { restoreSession } from "../../../lib/auth";
+import { useTranslations } from "../../../lib/i18n";
+import en from "../locales/en.json";
+import idLocale from "../locales/id.json";
 
 const labels: Record<string, string> = {
   walk_in: "Walk-in",
@@ -117,6 +120,7 @@ function SummaryRow({
 }
 
 export function ReservationDetailPage() {
+  const { t } = useTranslations({ en, id: idLocale });
   const { bookingId: id } = useParams<{ bookingId: string }>();
   const [detail, setDetail] = useState<ApiReservationDetail | null>(null);
   const [history, setHistory] = useState<ReservationHistoryItem[]>([]);
@@ -166,7 +170,7 @@ export function ReservationDetailPage() {
           setError(
             cause instanceof Error
               ? cause.message
-              : "Detail reservasi gagal dimuat.",
+              : t("detail.loadError"),
           );
         }
       } finally {
@@ -196,8 +200,8 @@ export function ReservationDetailPage() {
 
   return (
     <AdminShell
-      title="Reservations"
-      context={reservation?.bookingCode ?? "Reservation Detail"}
+      title={t("shell.title")}
+      context={reservation?.bookingCode ?? t("shell.reservationDetail")}
     >
       <div
         className={`reservation-detail-page api-reservation-detail-page${isPreStay && isOutstanding ? " api-reservation-detail-page--phone-unpaid" : ""}${isInHouse ? " api-reservation-detail-page--in-house" : ""}`}
@@ -205,7 +209,7 @@ export function ReservationDetailPage() {
         <header className="reservation-detail-heading">
           <div>
             <div className="reservation-detail-title">
-              <h1>{isInHouse ? "Guest Stay" : "Reservation Detail"}</h1>
+              <h1>{isInHouse ? t("detail.guestStay") : t("detail.reservationDetail")}</h1>
             </div>
             {reservation && (
               <div className="reservation-detail-badges">
@@ -222,13 +226,13 @@ export function ReservationDetailPage() {
               <p className="api-reservation-origin">
                 <strong>{reservation.bookingCode}</strong> ·{" "}
                 {reservation.source === "phone"
-                  ? "Created via Front Desk Phone Log"
-                  : `Source: ${label(reservation.source)}`}
+                  ? t("detail.createdViaPhone")
+                  : t("detail.sourcePrefix", { source: label(reservation.source) })}
               </p>
             )}
           </div>
           <Link href="/reservations" className="reservation-secondary-button">
-            ← All Reservations
+            ← {t("detail.allReservations")}
           </Link>
         </header>
 
@@ -244,7 +248,7 @@ export function ReservationDetailPage() {
             <button
               type="button"
               onClick={() => setNotice("")}
-              aria-label="Tutup pesan"
+              aria-label={t("common.closeMessage")}
             >
               ×
             </button>
@@ -265,17 +269,17 @@ export function ReservationDetailPage() {
                 <div>
                   <strong>
                     {reservation?.reservationStatus === "pending"
-                      ? "Hold Reservation Active:"
-                      : "Outstanding Balance:"}
+                      ? t("detail.holdActive")
+                      : t("detail.outstandingBalance")}
                   </strong>{" "}
                   {reservation?.reservationStatus === "pending"
-                    ? "Konfirmasi reservasi dan sisa tagihan sebelum check-in."
-                    : `Check-in tersedia setelah petugas mengonfirmasi sisa tagihan ${rupiah(detail.summary.remainingBalance)}.`}
+                    ? t("detail.holdPendingMessage")
+                    : t("detail.holdConfirmedMessage", { amount: rupiah(detail.summary.remainingBalance) })}
                 </div>
                 <span>
                   {reservation?.paymentStatus === "partial"
-                    ? "Partial Payment"
-                    : "Awaiting Payment"}
+                    ? t("detail.partialPayment")
+                    : t("detail.awaitingPayment")}
                 </span>
               </div>
             )}
@@ -284,75 +288,75 @@ export function ReservationDetailPage() {
               <div className="reservation-detail-content">
                 <section>
                   <div className="reservation-detail-section-title">
-                    <h2>Guest Information</h2>
-                    <span>Primary Contact</span>
+                    <h2>{t("detail.sections.guestInformation")}</h2>
+                    <span>{t("detail.sections.primaryContact")}</span>
                   </div>
                   <div className="reservation-detail-info-grid">
-                    <Info name="Full Name" value={detail.guest.fullName} />
-                    <Info name="WhatsApp / Phone" value={detail.guest.phone} />
-                    <Info name="Email" value={detail.guest.email ?? "—"} />
+                    <Info name={t("detail.fields.fullName")} value={detail.guest.fullName} />
+                    <Info name={t("detail.fields.whatsappPhone")} value={detail.guest.phone} />
+                    <Info name={t("detail.fields.email")} value={detail.guest.email ?? t("common.emptyDash")} />
                   </div>
                 </section>
 
                 <section>
                   <div className="reservation-detail-section-title">
-                    <h2>Stay Details</h2>
-                    <span>{detail.summary.nights} Night Stay</span>
+                    <h2>{t("detail.sections.stayDetails")}</h2>
+                    <span>{t("detail.sections.nightStay", { nights: detail.summary.nights })}</span>
                   </div>
                   {isPreStay && isOutstanding ? (
                     <div className="pending-detail-stay-grid">
                       <div>
-                        <small>Check-in</small>
+                        <small>{t("detail.fields.checkIn")}</small>
                         <strong>
                           {dateLabel(detail.reservation.checkInDate)}
                         </strong>
-                        <span>From 14:00 WIB</span>
+                        <span>{t("detail.fields.fromTime")}</span>
                       </div>
                       <div>
-                        <small>Check-out</small>
+                        <small>{t("detail.fields.checkOut")}</small>
                         <strong>
                           {dateLabel(detail.reservation.checkOutDate)}
                         </strong>
-                        <span>Until 12:00 WIB</span>
+                        <span>{t("detail.fields.untilTime")}</span>
                       </div>
                       <div>
-                        <small>Duration</small>
+                        <small>{t("detail.fields.duration")}</small>
                         <strong>
                           {detail.summary.nights}{" "}
-                          {detail.summary.nights === 1 ? "Night" : "Nights"}
+                          {detail.summary.nights === 1 ? t("common.night") : t("common.nights")}
                         </strong>
                       </div>
                       <div>
-                        <small>Total Guests</small>
-                        <strong>{detail.reservation.adults} Adults</strong>
-                        <span>{detail.reservation.children} Children</span>
+                        <small>{t("detail.fields.totalGuests")}</small>
+                        <strong>{t("detail.rooms.adults", { count: detail.reservation.adults })}</strong>
+                        <span>{detail.reservation.children} {t("common.children")}</span>
                       </div>
                     </div>
                   ) : (
                     <div className="reservation-detail-info-grid">
                       <Info
-                        name="Check-in"
+                        name={t("detail.fields.checkIn")}
                         value={dateLabel(detail.reservation.checkInDate)}
                       />
                       <Info
-                        name="Check-out"
+                        name={t("detail.fields.checkOut")}
                         value={dateLabel(detail.reservation.checkOutDate)}
                       />
                       <Info
-                        name="Total Guests"
-                        value={`${detail.reservation.adults} Adults · ${detail.reservation.children} Children`}
+                        name={t("detail.fields.totalGuests")}
+                        value={t("detail.fields.adultsChildren", { adults: detail.reservation.adults, children: detail.reservation.children })}
                       />
                     </div>
                   )}
                   {detail.reservation.specialRequests && (
                     <p className="reservation-detail-note">
-                      <strong>Special Requests: </strong>
+                      <strong>{t("detail.fields.specialRequests")}</strong>
                       {detail.reservation.specialRequests}
                     </p>
                   )}
                   {detail.reservation.internalNotes && (
                     <p className="reservation-detail-note">
-                      <strong>Internal Notes: </strong>
+                      <strong>{t("detail.fields.internalNotes")}</strong>
                       {detail.reservation.internalNotes}
                     </p>
                   )}
@@ -362,31 +366,32 @@ export function ReservationDetailPage() {
                   <div className="reservation-detail-section-title">
                     <h2>
                       {isInHouse
-                        ? "Assigned Room & Configuration"
-                        : "Room Allocation & Rate"}
+                        ? t("detail.sections.assignedRoomConfig")
+                        : t("detail.sections.roomAllocationRate")}
                     </h2>
                     <span>
-                      {detail.rooms.length}{" "}
-                      {detail.rooms.length === 1 ? "Room" : "Rooms"}
+                      {detail.rooms.length === 1
+                        ? t("detail.sections.roomCountSingle")
+                        : t("detail.sections.roomsCount", { count: detail.rooms.length })}
                     </span>
                   </div>
                   {isPreStay &&
                     detail.rooms.some((room) => !room.roomNumber) && (
                       <div className="pending-detail-lock">
-                        Room numbers are assigned during check-in.
+                        {t("detail.rooms.assignedAtCheckIn")}
                       </div>
                     )}
                   <div className="pending-detail-table-scroll">
                     <table className="pending-detail-table api-reservation-room-table">
                       <thead>
                         <tr>
-                          <th>Room Type</th>
-                          <th>Room No.</th>
-                          <th>Guests</th>
-                          <th>Nights</th>
-                          <th>Room Rate</th>
-                          <th>Extra Bed</th>
-                          {isInHouse && <th>Actions</th>}
+                          <th>{t("detail.rooms.roomType")}</th>
+                          <th>{t("detail.rooms.roomNo")}</th>
+                          <th>{t("detail.rooms.guests")}</th>
+                          <th>{t("detail.rooms.nights")}</th>
+                          <th>{t("detail.rooms.roomRate")}</th>
+                          <th>{t("detail.rooms.extraBed")}</th>
+                          {isInHouse && <th>{t("detail.rooms.actions")}</th>}
                         </tr>
                       </thead>
                       <tbody>
@@ -399,14 +404,14 @@ export function ReservationDetailPage() {
                               <td>
                                 {room.roomNumber ?? (
                                   <span className="pending-detail-locked-badge">
-                                    Not Assigned
+                                    {t("detail.rooms.notAssigned")}
                                   </span>
                                 )}
                               </td>
                               <td>
-                                {room.adults} Adults
+                                {t("detail.rooms.adults", { count: room.adults })}
                                 {room.children
-                                  ? ` · ${room.children} Children`
+                                  ? t("detail.rooms.childrenSuffix", { count: room.children })
                                   : ""}
                               </td>
                               <td>{room.nights.length}</td>
@@ -420,8 +425,8 @@ export function ReservationDetailPage() {
                               </td>
                               <td>
                                 {room.extraBeds.some((bed) => bed.dateTo === detail.reservation.checkOutDate)
-                                  ? `${room.extraBeds.filter((bed) => bed.dateTo === detail.reservation.checkOutDate).reduce((sum, bed) => sum + bed.quantity, 0)} Bed`
-                                  : "—"}
+                                  ? t("detail.rooms.bed", { count: room.extraBeds.filter((bed) => bed.dateTo === detail.reservation.checkOutDate).reduce((sum, bed) => sum + bed.quantity, 0) })
+                                  : t("common.emptyDash")}
                               </td>
                               {isInHouse && (
                                 <td>
@@ -437,17 +442,15 @@ export function ReservationDetailPage() {
                                 <td colSpan={isInHouse ? 7 : 6}>
                                   ↳{" "}
                                   <strong>
-                                    Extra Bed (
-                                    {room.roomNumber
-                                      ? `Room ${room.roomNumber}`
-                                      : room.roomTypeNameSnapshot}
-                                    )
+                                    {t("detail.rooms.extraBedLine", { room: room.roomNumber ? t("roomRack.newBooking.room", { roomNumber: room.roomNumber }) : room.roomTypeNameSnapshot })}
                                   </strong>{" "}
-                                  · {bed.quantity} Bed ·{" "}
-                                  {dateLabel(bed.dateFrom)} –{" "}
-                                  {dateLabel(bed.dateTo)} (
-                                  {stayNights(bed.dateFrom, bed.dateTo)} Nights
-                                  @ {rupiah(bed.unitPricePerNight)}) ={" "}
+                                  · {t("detail.rooms.extraBedDetail", {
+                                    quantity: bed.quantity,
+                                    from: dateLabel(bed.dateFrom),
+                                    to: dateLabel(bed.dateTo),
+                                    nights: stayNights(bed.dateFrom, bed.dateTo),
+                                    rate: rupiah(bed.unitPricePerNight),
+                                  })} ={" "}
                                   <strong>
                                     {rupiah(
                                       bed.quantity *
@@ -468,7 +471,7 @@ export function ReservationDetailPage() {
                 {detail.appliedCampaigns?.length > 0 && (
                   <section>
                     <div className="reservation-detail-section-title">
-                      <h2>Campaign &amp; Discount</h2>
+                      <h2>{t("detail.sections.campaignDiscount")}</h2>
                     </div>
                     {detail.appliedCampaigns.map((campaign) => (
                       <div className="reservation-detail-row" key={campaign.id}>
@@ -501,7 +504,7 @@ export function ReservationDetailPage() {
 
                 <section>
                   <div className="reservation-detail-section-title">
-                    <h2>Experiences & Add-ons</h2>
+                    <h2>{t("detail.sections.experiencesAddOns")}</h2>
                   </div>
                   {detail.experiences.map((item) => (
                     <div className="reservation-detail-row" key={item.id}>
@@ -512,7 +515,7 @@ export function ReservationDetailPage() {
                     </div>
                   ))}
                   {detail.experiences.length === 0 && (
-                    <p className="reservation-empty">Belum ada add-on.</p>
+                    <p className="reservation-empty">{t("detail.experiences.empty")}</p>
                   )}
                 </section>
 
@@ -520,8 +523,8 @@ export function ReservationDetailPage() {
                   <div className="reservation-detail-section-title">
                     <h2>
                       {isPreStay && isOutstanding
-                        ? "Charges & Folio"
-                        : "Booking Payment"}
+                        ? t("detail.sections.chargesFolio")
+                        : t("detail.sections.bookingPayment")}
                     </h2>
                   </div>
                   <div className="api-reservation-financial-list">
@@ -532,17 +535,17 @@ export function ReservationDetailPage() {
                       </div>
                     ))}
                     {detail.charges.length === 0 && (
-                      <p className="cell-muted">Belum ada tagihan.</p>
+                      <p className="cell-muted">{t("detail.charges.empty")}</p>
                     )}
                     <div className="reservation-detail-summary-divider" />
-                    <SummaryRow name="Booking Total">
+                    <SummaryRow name={t("detail.fields.bookingTotal")}>
                       {rupiah(detail.summary.bookingTotal)}
                     </SummaryRow>
-                    <SummaryRow name="Total Paid">
+                    <SummaryRow name={t("detail.fields.totalPaid")}>
                       {rupiah(detail.summary.paidAmount)}
                     </SummaryRow>
                     <div className="pending-detail-balance">
-                      <span>Remaining Balance (Outstanding)</span>
+                      <span>{t("detail.fields.remainingBalanceOutstanding")}</span>
                       <strong>{rupiah(detail.summary.remainingBalance)}</strong>
                     </div>
                   </div>
@@ -550,8 +553,8 @@ export function ReservationDetailPage() {
 
                 <section>
                   <div className="reservation-detail-section-title">
-                    <h2>Payment History</h2>
-                    <span>{detail.payments.length} Transactions</span>
+                    <h2>{t("detail.sections.paymentHistory")}</h2>
+                    <span>{t("detail.sections.transactions", { count: detail.payments.length })}</span>
                   </div>
                   <div className="pending-detail-history">
                     {detail.payments.map((payment) => (
@@ -559,7 +562,7 @@ export function ReservationDetailPage() {
                         <div>
                           <strong>{rupiah(payment.amount)}</strong>
                           <span>
-                            {payment.method?.name ?? "—"} ·{" "}
+                            {payment.method?.name ?? t("common.emptyDash")} ·{" "}
                             {label(payment.status)}
                           </span>
                         </div>
@@ -569,7 +572,7 @@ export function ReservationDetailPage() {
                     {detail.payments.length === 0 && (
                       <div className="pending-detail-payment-empty">
                         <strong>
-                          No payment has been recorded for this reservation.
+                          {t("detail.payment.empty")}
                         </strong>
                       </div>
                     )}
@@ -579,7 +582,7 @@ export function ReservationDetailPage() {
                 {detail.deposits.length > 0 && (
                   <section>
                     <div className="reservation-detail-section-title">
-                      <h2>Deposit</h2>
+                      <h2>{t("detail.sections.deposit")}</h2>
                     </div>
                     {detail.deposits.map((deposit) => (
                       <div
@@ -587,11 +590,11 @@ export function ReservationDetailPage() {
                         key={deposit.id}
                       >
                         <div className="reservation-detail-row">
-                          <span>Held · {deposit.method?.name ?? "—"}</span>
+                          <span>{t("detail.depositRow.held", { method: deposit.method?.name ?? t("common.emptyDash") })}</span>
                           <strong>{rupiah(deposit.amountHeld)}</strong>
                         </div>
                         <div className="reservation-detail-row">
-                          <span>Refunded / Deducted</span>
+                          <span>{t("detail.depositRow.refundedDeducted")}</span>
                           <strong>
                             {rupiah(deposit.amountRefunded)} /{" "}
                             {rupiah(deposit.amountDeducted)}
@@ -604,11 +607,11 @@ export function ReservationDetailPage() {
 
                 <section>
                   <div className="reservation-detail-section-title">
-                    <h2>Internal Notes</h2>
+                    <h2>{t("detail.sections.internalNotes")}</h2>
                   </div>
                   <p className="pending-detail-internal-note">
                     {detail.reservation.internalNotes ||
-                      "No internal notes have been recorded."}
+                      t("detail.internalNotesEmpty")}
                   </p>
                 </section>
               </div>
@@ -618,53 +621,53 @@ export function ReservationDetailPage() {
                   <h2>
                     {reservation?.reservationStatus === "checked_in" ||
                     reservation?.reservationStatus === "checked_out"
-                      ? "Stay Summary"
-                      : "Reservation Summary"}
+                      ? t("detail.sections.staySummary")
+                      : t("detail.sections.stickySummary")}
                   </h2>
-                  <span>{detail.summary.nights} Night</span>
+                  <span>{t("detail.sections.nightLabel", { nights: detail.summary.nights })}</span>
                 </div>
                 <div className="reservation-detail-summary-rows">
-                  <SummaryRow name="Guest">{detail.guest.fullName}</SummaryRow>
-                  <SummaryRow name="Stay Period">
+                  <SummaryRow name={t("detail.fields.guest")}>{detail.guest.fullName}</SummaryRow>
+                  <SummaryRow name={t("detail.fields.stayPeriod")}>
                     {dateLabel(detail.reservation.checkInDate)} →{" "}
                     {dateLabel(detail.reservation.checkOutDate)}
                   </SummaryRow>
-                  <SummaryRow name="Room Types">
+                  <SummaryRow name={t("detail.fields.roomTypes")}>
                     {detail.rooms
                       .map((room) => room.roomTypeNameSnapshot)
                       .join(", ")}
                   </SummaryRow>
-                  <SummaryRow name="Room Numbers">
+                  <SummaryRow name={t("detail.fields.roomNumbers")}>
                     {detail.rooms
-                      .map((room) => room.roomNumber || "Not Assigned")
+                      .map((room) => room.roomNumber || t("detail.rooms.notAssigned"))
                       .join(", ")}
                   </SummaryRow>
                   <div className="reservation-detail-summary-divider" />
-                  <SummaryRow name="Booking Total">
+                  <SummaryRow name={t("detail.fields.bookingTotal")}>
                     {rupiah(detail.summary.bookingTotal)}
                   </SummaryRow>
-                  <SummaryRow name="Paid Amount">
+                  <SummaryRow name={t("detail.fields.paidAmount")}>
                     {rupiah(detail.summary.paidAmount)}
                   </SummaryRow>
-                  <SummaryRow name="Remaining Balance">
+                  <SummaryRow name={t("detail.fields.remainingBalance")}>
                     {rupiah(detail.summary.remainingBalance)}
                   </SummaryRow>
                   {detail.deposits.length > 0 && (
-                    <SummaryRow name="Deposit Balance">
+                    <SummaryRow name={t("detail.fields.depositBalance")}>
                       {rupiah(detail.summary.depositBalance)}
                     </SummaryRow>
                   )}
-                  <SummaryRow name="Payment Status">
+                  <SummaryRow name={t("detail.fields.paymentStatus")}>
                     <StatusBadge value={detail.reservation.paymentStatus} />
                   </SummaryRow>
-                  <SummaryRow name="Reservation Status">
+                  <SummaryRow name={t("detail.fields.reservationStatus")}>
                     <StatusBadge value={detail.reservation.reservationStatus} />
                   </SummaryRow>
                   {isPreStay && isOutstanding && (
                     <p className="pending-detail-summary-warning">
                       {reservation?.reservationStatus === "pending"
-                        ? "Reservasi menunggu konfirmasi. Sisa tagihan tetap tercatat."
-                        : "Check-in memerlukan konfirmasi petugas atas sisa tagihan."}
+                        ? t("detail.summaryWarningPending")
+                        : t("detail.summaryWarningConfirmed")}
                     </p>
                   )}
                 </div>

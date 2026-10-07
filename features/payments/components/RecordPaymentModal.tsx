@@ -1,6 +1,9 @@
 "use client";
 
 import type { PaymentMethodOption } from "../../reservations/services/api";
+import { useTranslations } from "../../../lib/i18n";
+import en from "../locales/en.json";
+import id from "../locales/id.json";
 
 type Props = {
   balance: number;
@@ -31,24 +34,25 @@ export function RecordPaymentModal({
   onClose,
   onSave,
 }: Props) {
+  const { t } = useTranslations({ en, id });
   return (
     <div
       className="payment-invoice-overlay"
       role="presentation"
       onMouseDown={(event) => { if (event.target === event.currentTarget && !saving) onClose(); }}
     >
-      <section className="payment-invoice-modal payment-record-modal" role="dialog" aria-modal="true" aria-label="Record payment">
+      <section className="payment-invoice-modal payment-record-modal" role="dialog" aria-modal="true" aria-label={t("recordPaymentModal.ariaLabel")}>
         <header>
-          <h2>Record Payment</h2>
-          <button type="button" aria-label="Close" disabled={saving} onClick={onClose}>×</button>
+          <h2>{t("recordPaymentModal.title")}</h2>
+          <button type="button" aria-label={t("recordPaymentModal.close")} disabled={saving} onClick={onClose}>×</button>
         </header>
         <div className="payment-record-modal__body">
           <div className="payment-record-modal__balance">
-            <span>Remaining Balance</span>
+            <span>{t("recordPaymentModal.remainingBalance")}</span>
             <strong>{money(balance)}</strong>
           </div>
           <label>
-            Amount (IDR)
+            {t("recordPaymentModal.amountLabel")}
             <input
               type="number"
               min="1"
@@ -59,23 +63,23 @@ export function RecordPaymentModal({
             />
           </label>
           <label>
-            Payment Method
+            {t("recordPaymentModal.methodLabel")}
             <select
               value={methodId}
               disabled={loadingMethods || methods.length === 0}
               onChange={(event) => onMethodChange(event.target.value)}
             >
-              <option value="">{loadingMethods ? "Loading methods..." : "Select payment method"}</option>
+              <option value="">{loadingMethods ? t("recordPaymentModal.loadingMethods") : t("recordPaymentModal.selectMethod")}</option>
               {methods.map((method) => <option key={method.id} value={method.id}>{method.name}</option>)}
             </select>
           </label>
-          {!loadingMethods && methods.length === 0 && !error && <p className="payment-record-modal__error">No active payment methods are available.</p>}
+          {!loadingMethods && methods.length === 0 && !error && <p className="payment-record-modal__error">{t("recordPaymentModal.noMethods")}</p>}
           {error && <p className="payment-record-modal__error" role="alert">{error}</p>}
         </div>
         <footer className="payment-record-modal__footer">
-          <button type="button" disabled={saving} onClick={onClose}>Cancel</button>
+          <button type="button" disabled={saving} onClick={onClose}>{t("recordPaymentModal.cancel")}</button>
           <button type="button" className="payment-record-modal__save" disabled={saving || loadingMethods || !methodId || amount < 1 || amount > balance} onClick={onSave}>
-            {saving ? "Saving..." : "Save Payment"}
+            {saving ? t("recordPaymentModal.saving") : t("recordPaymentModal.savePayment")}
           </button>
         </footer>
       </section>

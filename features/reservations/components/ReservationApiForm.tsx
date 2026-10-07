@@ -34,47 +34,51 @@ import {
   type ReservationSource,
 } from "../services/create";
 import type { CheckInContext, EarlyCheckInInput } from "../services/api";
+import { useTranslations, type Translate } from "../../../lib/i18n";
+import en from "../locales/en.json";
+import id from "../locales/id.json";
 
 type RoomEntry = SelectedRoom & { key: string };
 type PaymentStatus = "Paid" | "Partial" | "Unpaid";
 
-const unavailableReasonLabels: Record<string, string> = {
-  capacity_mismatch: "Kapasitas tamu tidak sesuai",
-  capacity_not_configured: "Pola kapasitas kamar belum diatur",
-  not_configured: "Harga atau stok belum diatur",
-  stop_sell: "Penjualan dihentikan",
-  minimum_nights: "Minimum malam belum terpenuhi",
-  sold_out: "Stok kamar habis",
-  no_ready_room: "Tidak ada nomor kamar berstatus Available untuk check-in",
+const unavailableReasonKeys: Record<string, string> = {
+  capacity_mismatch: "form.unavailableReasons.capacityMismatch",
+  capacity_not_configured: "form.unavailableReasons.capacityNotConfigured",
+  not_configured: "form.unavailableReasons.notConfigured",
+  stop_sell: "form.unavailableReasons.stopSell",
+  minimum_nights: "form.unavailableReasons.minimumNights",
+  sold_out: "form.unavailableReasons.soldOut",
+  no_ready_room: "form.unavailableReasons.noReadyRoom",
 };
 
 function money(value: string) {
   return Number(value.replace(/\D/g, "")) || 0;
 }
 
-function describeCancellationRule(rule: PolicyRuleRecord) {
+function describeCancellationRule(t: Translate, rule: PolicyRuleRecord) {
   const timing = rule.timingType === "more_than"
-    ? `Lebih dari ${rule.daysBefore} hari sebelum check-in`
-    : `Dalam ${rule.daysBefore} hari sebelum check-in`;
+    ? t("form.cancellationPolicy.ruleMoreThan", { days: rule.daysBefore })
+    : t("form.cancellationPolicy.ruleWithin", { days: rule.daysBefore });
   const charge = rule.chargeType === "percentage"
-    ? rule.chargeValue === 0 ? "Gratis" : `Biaya ${rule.chargeValue}% dari nilai reservasi`
+    ? rule.chargeValue === 0 ? t("form.cancellationPolicy.chargeFree") : t("form.cancellationPolicy.chargePercentage", { value: rule.chargeValue })
     : rule.chargeType === "fixed"
-      ? `Biaya ${formatRupiah(rule.chargeValue)}`
-      : `Biaya ${rule.chargeValue} malam`;
-  return `${timing}: ${charge}`;
+      ? t("form.cancellationPolicy.chargeFixed", { amount: formatRupiah(rule.chargeValue) })
+      : t("form.cancellationPolicy.chargeNights", { value: rule.chargeValue });
+  return t("form.cancellationPolicy.ruleTemplate", { timing, charge });
 }
 
-function describeNoShow(policy: PolicyRecord) {
+function describeNoShow(t: Translate, policy: PolicyRecord) {
   if (!policy.noShowChargeType) return null;
   const charge = policy.noShowChargeType === "first_night"
-    ? "biaya malam pertama"
+    ? t("form.cancellationPolicy.noShowFirstNight")
     : policy.noShowChargeType === "full_stay"
-      ? "biaya seluruh masa inap"
-      : `${policy.noShowChargeValue}% dari nilai reservasi`;
-  return `No-show: ${charge}`;
+      ? t("form.cancellationPolicy.noShowFullStay")
+      : t("form.cancellationPolicy.noShowPercentage", { value: policy.noShowChargeValue });
+  return t("form.cancellationPolicy.noShowTemplate", { charge });
 }
 
 export function ReservationApiForm({ source }: { source: ReservationSource }) {
+  const { t } = useTranslations({ en, id });
   const isPhone = source === "phone";
   const [initialDate, setInitialDate] = useState("");
   const [checkIn, setCheckIn] = useState("");
@@ -126,10 +130,7 @@ export function ReservationApiForm({ source }: { source: ReservationSource }) {
     : "";
   const allocatedAdults = rooms.reduce((sum, room) => sum + room.adults, 0);
   const allocatedChildren = rooms.reduce((sum, room) => sum + room.children, 0);
-  const roomAssignmentLabel =
-    initialDate && checkIn > initialDate
-      ? "nomor kamar dapat ditetapkan"
-      : "kamar siap check-in";
+  const roomAssignmentFuture = Boolean(initialDate && checkIn > initialDate);
   const total = quote?.bookingTotal ?? 0;
   const amountPaid =
     paymentStatus === "Paid"
@@ -197,7 +198,7 @@ export function ReservationApiForm({ source }: { source: ReservationSource }) {
         setFeedback(
           error instanceof Error
             ? error.message
-            : "Ketersediaan kamar gagal dimuat.",
+            : t("form.errors.availabilityLoadError"),
         );
     } finally {
       if (!signal?.aborted) setAvailabilityLoading(false);
@@ -234,7 +235,7 @@ export function ReservationApiForm({ source }: { source: ReservationSource }) {
           setFeedback(
             error instanceof Error
               ? error.message
-              : "Pilihan form gagal dimuat.",
+              : t("form.errors.optionsLoadError"),
           );
       }
     }
@@ -259,7 +260,7 @@ export function ReservationApiForm({ source }: { source: ReservationSource }) {
       })
       .catch((error) => {
         if (!controller.signal.aborted) setFeedback(
-          error instanceof Error ? error.message : "Kebijakan pembatalan gagal dimuat.",
+          error instanceof Error ? error.message : t("form.errors.policiesLoadError"),
         );
       });
     return () => controller.abort();
@@ -298,7 +299,7 @@ export function ReservationApiForm({ source }: { source: ReservationSource }) {
           setFeedback(
             error instanceof Error
               ? error.message
-              : "Harga reservasi gagal dihitung.",
+              : t("form.errors.quoteError"),
           );
       } finally {
         if (!controller.signal.aborted) setQuoteLoading(false);
@@ -354,44 +355,44 @@ export function ReservationApiForm({ source }: { source: ReservationSource }) {
 
   function validate(checkInGuest: boolean) {
     if (!checkIn || (initialDate && checkIn < initialDate))
-      return "Tanggal check-in tidak boleh sebelum hari ini.";
+      return t("form.errors.checkInBeforeToday");
     if (!isPhone && checkIn !== todayJakarta())
-      return "Tanggal check-in Walk-in harus hari ini.";
+      return t("form.errors.walkInToday");
     if (checkInGuest && checkIn !== todayJakarta())
-      return "Save & Check-in hanya tersedia untuk check-in hari ini. Gunakan Save Reservation untuk tanggal mendatang.";
-    if (nights < 1) return "Tanggal check-out harus setelah check-in.";
-    if (!rooms.length) return "Pilih minimal satu kamar.";
-    if (availabilityLoading) return "Tunggu hasil pencarian kamar selesai.";
+      return t("form.errors.checkInTodayOnly");
+    if (nights < 1) return t("form.errors.checkOutAfterCheckIn");
+    if (!rooms.length) return t("form.errors.selectRoom");
+    if (availabilityLoading) return t("form.errors.waitAvailability");
     if (rooms.some((room) => !available.find(
       (option) => option.roomType.id === room.roomTypeId && option.bookable,
-    ))) return "Kamar yang dipilih tidak tersedia untuk kapasitas atau tanggal ini.";
+    ))) return t("form.errors.roomsUnavailable");
     if (allocationError) return allocationError;
     if (!quote || quoteLoading || quotedInput !== currentQuoteInput)
-      return "Tunggu perhitungan harga dari API selesai.";
+      return t("form.errors.waitQuote");
     if (!guestName.trim() || !phone.trim())
-      return "Nama tamu dan nomor WhatsApp wajib diisi.";
+      return t("form.errors.guestRequired");
     if (checkInGuest && rooms.some((room) => !room.roomUnitId))
-      return "Pilih nomor untuk setiap kamar sebelum check-in.";
+      return t("form.errors.roomNumbersRequired");
     const ids = rooms.map((room) => room.roomUnitId).filter(Boolean);
     if (new Set(ids).size !== ids.length)
-      return "Nomor kamar tidak boleh digunakan dua kali.";
+      return t("form.errors.duplicateRoomNumbers");
     if (
       paymentStatus === "Partial" &&
       (partialAmount < 1 || partialAmount >= total)
     ) {
-      return "Pembayaran Partial harus lebih dari Rp0 dan kurang dari total reservasi.";
+      return t("form.errors.partialInvalid");
     }
-    if (amountPaid > 0 && !paymentMethodId) return "Pilih metode pembayaran.";
+    if (amountPaid > 0 && !paymentMethodId) return t("form.errors.methodRequired");
     if (requireDeposit && (depositAmount < 1 || !depositMethodId))
-      return "Isi jumlah dan metode deposit.";
+      return t("form.errors.depositRequired");
     if (checkInGuest && balance > 0 && !acknowledged)
-      return "Konfirmasi sisa tagihan sebelum check-in.";
+      return t("form.errors.balanceConfirmRequired");
     return "";
   }
 
   async function requestSave(checkInGuest: boolean) {
     if (checkInGuest && checkIn !== todayJakarta()) {
-      setFeedback("Save & Check-in hanya tersedia untuk check-in hari ini. Gunakan Save Reservation untuk tanggal mendatang.");
+      setFeedback(t("form.errors.checkInTodayOnly"));
       return;
     }
     const error = validate(false);
@@ -400,7 +401,7 @@ export function ReservationApiForm({ source }: { source: ReservationSource }) {
       return;
     }
     if (checkInGuest && rooms.some((room) => !room.roomUnitId)) {
-      setFeedback("Pilih nomor untuk setiap kamar sebelum check-in.");
+      setFeedback(t("form.errors.roomNumbersRequired"));
       return;
     }
     setAcknowledged(false);
@@ -411,7 +412,7 @@ export function ReservationApiForm({ source }: { source: ReservationSource }) {
       try {
         setCheckInContext(await getCreateCheckInContext(checkIn));
       } catch (cause) {
-        setFeedback(cause instanceof Error ? cause.message : "Jam check-in gagal dimuat.");
+        setFeedback(cause instanceof Error ? cause.message : t("form.errors.checkInTimeLoadError"));
         return;
       }
     }
@@ -476,7 +477,7 @@ export function ReservationApiForm({ source }: { source: ReservationSource }) {
       requestKey.current = null;
     } catch (cause) {
       setFeedback(
-        cause instanceof Error ? cause.message : "Reservasi gagal disimpan.",
+        cause instanceof Error ? cause.message : t("form.errors.saveError"),
       );
     } finally {
       setSaving(false);
@@ -485,15 +486,15 @@ export function ReservationApiForm({ source }: { source: ReservationSource }) {
 
   return (
     <AdminShell
-      title="Reservations"
-      context="New Reservation"
-      badge={isPhone ? "PHONE MODE" : "WALK-IN MODE"}
+      title={t("shell.title")}
+      context={t("shell.newReservation")}
+      badge={isPhone ? t("shell.phoneMode") : t("shell.walkInMode")}
     >
       <div className="walkin-page">
         <div className="walkin-heading">
           <div>
-            <h1>Create Reservation – {isPhone ? "Phone" : "Walk In"}</h1>
-            <p>Buat reservasi baru untuk tamu</p>
+            <h1>{isPhone ? t("form.phoneTitle") : t("form.walkInTitle")}</h1>
+            <p>{t("form.description")}</p>
           </div>
           <button
             type="button"
@@ -516,7 +517,7 @@ export function ReservationApiForm({ source }: { source: ReservationSource }) {
               setFeedback("");
             }}
           >
-            ↻ &nbsp; Reset Form
+            ↻ &nbsp; {t("form.resetForm")}
           </button>
         </div>
         {feedback && (
@@ -528,7 +529,7 @@ export function ReservationApiForm({ source }: { source: ReservationSource }) {
             <button
               type="button"
               onClick={() => setFeedback("")}
-              aria-label="Tutup pesan"
+              aria-label={t("common.closeMessage")}
             >
               ×
             </button>
@@ -537,46 +538,46 @@ export function ReservationApiForm({ source }: { source: ReservationSource }) {
         <div className="walkin-columns">
           <div className="walkin-form-column">
             <section className="reservation-panel reservation-source-panel">
-              <h2>Reservation Source</h2>
+              <h2>{t("form.sections.reservationSource")}</h2>
               <div
                 className="source-tabs"
                 role="group"
-                aria-label="Reservation Source"
+                aria-label={t("form.sections.reservationSource")}
               >
                 <Link
                   href="/reservations/create-reservation-walkin"
                   className={isPhone ? "source-tab" : "source-tab source-tab--active"}
                   aria-current={isPhone ? undefined : "page"}
                 >
-                  Walk-in
+                  {t("form.sourceTabs.walkIn")}
                 </Link>
                 <Link
                   href="/reservations/create-reservation-phone"
                   className={isPhone ? "source-tab source-tab--active" : "source-tab"}
                   aria-current={isPhone ? "page" : undefined}
                 >
-                  Phone
+                  {t("form.sourceTabs.phone")}
                 </Link>
                 <Link
                   href="/reservations/create-reservation-ota"
                   className="source-tab"
                 >
-                  OTA
+                  {t("form.sourceTabs.ota")}
                 </Link>
               </div>
             </section>
             <section className="reservation-panel">
               <div className="reservation-panel__heading">
-                <h2>Stay</h2>
+                <h2>{t("form.sections.stay")}</h2>
                 <span className="status-badge status-badge--success">
-                  {nights} {nights === 1 ? "night" : "nights"}
+                  {nights === 1 ? t("form.stay.nightBadge", { nights }) : t("form.stay.nightsBadge", { nights })}
                 </span>
               </div>
               <div className="stay-fields stay-fields--date-range">
-                <ReservationField label="Check-in — Check-out" htmlFor="stay-date-range">
+                <ReservationField label={t("form.stay.dateRangeLabel")} htmlFor="stay-date-range">
                   <DateRangePicker
                     id="stay-date-range"
-                    label="Stay date range"
+                    label={t("form.stay.dateRangePickerLabel")}
                     start={checkIn}
                     end={checkOut}
                     minDate={initialDate || undefined}
@@ -589,7 +590,7 @@ export function ReservationApiForm({ source }: { source: ReservationSource }) {
                     }}
                   />
                 </ReservationField>
-                <ReservationField label="Adults" htmlFor="adults">
+                <ReservationField label={t("form.stay.adultsLabel")} htmlFor="adults">
                   <select
                     id="adults"
                     value={searchAdults}
@@ -608,7 +609,7 @@ export function ReservationApiForm({ source }: { source: ReservationSource }) {
                     )}
                   </select>
                 </ReservationField>
-                <ReservationField label="Children" htmlFor="children">
+                <ReservationField label={t("form.stay.childrenLabel")} htmlFor="children">
                   <select
                     id="children"
                     value={searchChildren}
@@ -633,20 +634,20 @@ export function ReservationApiForm({ source }: { source: ReservationSource }) {
                   disabled={availabilityLoading}
                   onClick={() => void refreshAvailability()}
                 >
-                  ⌕ &nbsp; {availabilityLoading ? "Checking..." : "Check"}
+                  ⌕ &nbsp; {availabilityLoading ? t("form.stay.checking") : t("form.stay.check")}
                 </button>
               </div>
             </section>
             <section className="reservation-panel">
               <div className="reservation-panel__heading">
-                <h2>Available Rooms</h2>
+                <h2>{t("form.sections.availableRooms")}</h2>
                 <span className="reservation-panel__meta">
-                  Terpilih: {selectedRooms} Kamar
+                  {t("form.availableRooms.selectedMeta", { count: selectedRooms })}
                 </span>
               </div>
               <div className="available-rooms">
                 <p className="room-allocation-guidance">
-                  Total {searchAdults} dewasa dan {searchChildren} anak dibagi otomatis ke kamar terpilih. Staf dapat mengoreksi pembagian per kamar.
+                  {t("form.availableRooms.allocationGuidance", { adults: searchAdults, children: searchChildren })}
                 </p>
                 {availabilityLoading && <LoadingSkeleton rows={3} />}
                 {!availabilityLoading && available.map((option) => {
@@ -670,16 +671,15 @@ export function ReservationApiForm({ source }: { source: ReservationSource }) {
                           <strong>{option.roomType.name}</strong>
                           {!option.bookable && (
                             <span className="room-option__unavailable-badge">
-                              Tidak dapat dipilih
+                              {t("form.availableRooms.cannotSelectBadge")}
                             </span>
                           )}
                         </div>
                         <div className="room-option__availability">
                           <span>
-                            {option.availableRooms}{" "}
                             {option.bookable
-                              ? "stok reservasi tersedia"
-                              : "stok tersisa · tidak dapat dipesan"}
+                              ? t("form.availableRooms.stockAvailable", { count: option.availableRooms })
+                              : t("form.availableRooms.stockUnavailable", { count: option.availableRooms })}
                           </span>
                           <span
                             className={
@@ -688,27 +688,29 @@ export function ReservationApiForm({ source }: { source: ReservationSource }) {
                                 : "room-option__assignment"
                             }
                           >
-                            {assignableCount} {roomAssignmentLabel}
+                            {roomAssignmentFuture
+                              ? t("form.availableRooms.assignmentReadyFuture", { count: assignableCount })
+                              : t("form.availableRooms.assignmentReady", { count: assignableCount })}
                           </span>
                         </div>
                         <small className={option.bookable ? undefined : "room-option__reason"}>
                           {option.bookable
-                            ? `Per kamar: hingga ${maxAdults} dewasa${maxChildren ? ` + ${maxChildren} anak` : ""} · ${option.roomType.maxExtraBeds} extra bed max`
+                            ? t("form.availableRooms.perRoomCapacity", { adults: maxAdults, children: maxChildren ? t("form.availableRooms.perRoomChildren", { count: maxChildren }) : "", extraBeds: option.roomType.maxExtraBeds })
                             : option.unavailableReasons
-                                .map((reason) => unavailableReasonLabels[reason] ?? reason)
-                                .join(" · ") || "Tidak tersedia untuk pencarian ini"}
+                                .map((reason) => t(unavailableReasonKeys[reason] ?? reason))
+                                .join(" · ") || t("form.availableRooms.notAvailableForSearch")}
                         </small>
                       </div>
                       <div className="room-option__right">
                         <div className="room-option__rate">
                           <strong>
                             {option.totalPrice === null
-                              ? "—"
+                              ? t("common.emptyDash")
                               : formatRupiah(
                                   Math.round(option.totalPrice / nights),
                                 )}
                           </strong>
-                          <small>/ night</small>
+                          <small>{t("form.availableRooms.perNight")}</small>
                         </div>
                         <QuantityControl
                           label={option.roomType.name}
@@ -732,17 +734,17 @@ export function ReservationApiForm({ source }: { source: ReservationSource }) {
                 })}
                 {!availabilityLoading && available.length === 0 && (
                   <p className="reservation-empty">
-                    Tidak ada tipe kamar tersedia untuk tanggal ini.
+                    {t("form.availableRooms.empty")}
                   </p>
                 )}
               </div>
             </section>
             <section className="reservation-panel">
-              <h2>Assign Rooms</h2>
+              <h2>{t("form.sections.assignRooms")}</h2>
               {rooms.length > 0 && (
                 <p className={allocationError ? "room-allocation-status room-allocation-status--error" : "room-allocation-status"}>
-                  Pembagian tamu: {allocatedAdults}/{searchAdults} dewasa · {allocatedChildren}/{searchChildren} anak.
-                  {allocationError ? ` ${allocationError}` : " Semua tamu sudah mendapat kamar."}
+                  {t("form.assignRooms.allocationStatus", { allocatedAdults, adults: searchAdults, allocatedChildren, children: searchChildren })}
+                  {allocationError ? ` ${allocationError}` : t("form.assignRooms.allocationComplete")}
                 </p>
               )}
               {rooms.some(
@@ -752,8 +754,7 @@ export function ReservationApiForm({ source }: { source: ReservationSource }) {
                     ?.assignableRoomUnits.length === 0,
               ) && (
                 <p className="assign-rooms-note">
-                  Nomor kamar belum tersedia untuk ditetapkan. Reservasi tetap dapat
-                  disimpan; Save &amp; Check-in memerlukan nomor kamar tersedia.
+                  {t("form.assignRooms.noRoomNumberNote")}
                 </p>
               )}
               {rooms.length ? (
@@ -761,11 +762,11 @@ export function ReservationApiForm({ source }: { source: ReservationSource }) {
                   <table className="assign-rooms-table">
                     <thead>
                       <tr>
-                        <th scope="col">Room Type</th>
-                        <th scope="col">Room No.</th>
-                        <th scope="col">Adults</th>
-                        <th scope="col">Children</th>
-                        <th scope="col">Extra Bed</th>
+                        <th scope="col">{t("form.assignRooms.roomType")}</th>
+                        <th scope="col">{t("form.assignRooms.roomNo")}</th>
+                        <th scope="col">{t("form.assignRooms.adults")}</th>
+                        <th scope="col">{t("form.assignRooms.children")}</th>
+                        <th scope="col">{t("form.assignRooms.extraBed")}</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -782,7 +783,7 @@ export function ReservationApiForm({ source }: { source: ReservationSource }) {
                           <tr key={room.key}>
                             <th scope="row">
                               <strong>{option.roomType.name}</strong>
-                              <small>Room {roomIndex}</small>
+                              <small>{t("form.assignRooms.room", { index: roomIndex })}</small>
                             </th>
                             <td>
                               <select
@@ -796,8 +797,8 @@ export function ReservationApiForm({ source }: { source: ReservationSource }) {
                               >
                                 <option value="">
                                   {option.assignableRoomUnits.length
-                                    ? "Assign at check-in"
-                                    : "No available room number"}
+                                    ? t("form.assignRooms.assignAtCheckIn")
+                                    : t("form.assignRooms.noAvailableNumber")}
                                 </option>
                                 {option.assignableRoomUnits.map((unit) => (
                                   <option
@@ -809,7 +810,7 @@ export function ReservationApiForm({ source }: { source: ReservationSource }) {
                                         other.roomUnitId === unit.id,
                                     )}
                                   >
-                                    Room {unit.roomNumber}
+                                    {t("form.assignRooms.roomNumberOption", { roomNumber: unit.roomNumber })}
                                   </option>
                                 ))}
                               </select>
@@ -856,11 +857,11 @@ export function ReservationApiForm({ source }: { source: ReservationSource }) {
                                     }
                                   />
                                   <small>
-                                    {formatRupiah(option.roomType.extraBedPricePerNight)} / night
+                                    {t("form.assignRooms.perNight", { price: formatRupiah(option.roomType.extraBedPricePerNight) })}
                                   </small>
                                 </div>
                               ) : (
-                                <span className="assign-rooms-unavailable">—</span>
+                                <span className="assign-rooms-unavailable">{t("common.emptyDash")}</span>
                               )}
                             </td>
                           </tr>
@@ -871,15 +872,15 @@ export function ReservationApiForm({ source }: { source: ReservationSource }) {
                 </div>
               ) : (
                 <p className="reservation-empty">
-                  Pilih kamar untuk menentukan nomor kamar.
+                  {t("form.assignRooms.selectRoomsFirst")}
                 </p>
               )}
             </section>
             <section className="reservation-panel">
-              <h2>Guest Information</h2>
+              <h2>{t("form.sections.guestInformation")}</h2>
               <div className="guest-fields">
                 <ReservationField
-                  label="Full Name"
+                  label={t("form.guest.fullName")}
                   htmlFor="guest-name"
                   required
                 >
@@ -889,7 +890,7 @@ export function ReservationApiForm({ source }: { source: ReservationSource }) {
                     onChange={(event) => setGuestName(event.target.value)}
                   />
                 </ReservationField>
-                <ReservationField label="WhatsApp" htmlFor="whatsapp" required>
+                <ReservationField label={t("form.guest.whatsapp")} htmlFor="whatsapp" required>
                   <input
                     id="whatsapp"
                     type="tel"
@@ -897,7 +898,7 @@ export function ReservationApiForm({ source }: { source: ReservationSource }) {
                     onChange={(event) => setPhone(event.target.value)}
                   />
                 </ReservationField>
-                <ReservationField label="Email" htmlFor="email" optional>
+                <ReservationField label={t("form.guest.email")} htmlFor="email" optional>
                   <input
                     id="email"
                     type="email"
@@ -905,7 +906,7 @@ export function ReservationApiForm({ source }: { source: ReservationSource }) {
                     onChange={(event) => setEmail(event.target.value)}
                   />
                 </ReservationField>
-                <ReservationField label="Notes" htmlFor="notes" optional>
+                <ReservationField label={t("form.guest.notes")} htmlFor="notes" optional>
                   <input
                     id="notes"
                     value={notes}
@@ -916,10 +917,10 @@ export function ReservationApiForm({ source }: { source: ReservationSource }) {
             </section>
             {isPhone && (
               <section className="reservation-panel">
-                <h2>Cancellation Policy</h2>
+                <h2>{t("form.sections.cancellationPolicy")}</h2>
                 {rooms.length === 0 ? (
                   <p className="reservation-policy-empty">
-                    Pilih kamar untuk melihat kebijakan pembatalan yang berlaku.
+                    {t("form.cancellationPolicy.selectRoomsFirst")}
                   </p>
                 ) : (
                   <div className="reservation-policy-rooms">
@@ -930,21 +931,22 @@ export function ReservationApiForm({ source }: { source: ReservationSource }) {
                         const roomNumber = roomType?.assignableRoomUnits.find((unit) => unit.id === room.roomUnitId)?.roomNumber;
                         const roomPolicies = policiesForRoom(room);
                         const selectedPolicy = selectedPolicyForRoom(room);
+                        const roomTypeName = roomType?.roomType.name ?? t("detail.rooms.notAssigned");
                         return (
                           <div className="reservation-policy-room" key={room.key}>
                             <div className="reservation-policy-room__heading">
-                              <strong>{roomType?.roomType.name ?? "Room"} · Room {roomIndex}{roomNumber ? ` · No. ${roomNumber}` : ""}</strong>
-                              <span>{selectedPolicy ? "Policy berlaku" : "Default"}</span>
+                              <strong>{roomNumber ? t("form.cancellationPolicy.roomHeadingWithNumber", { roomType: roomTypeName, index: roomIndex, number: roomNumber }) : t("form.cancellationPolicy.roomHeading", { roomType: roomTypeName, index: roomIndex })}</strong>
+                              <span>{selectedPolicy ? t("form.cancellationPolicy.policyApplies") : t("form.cancellationPolicy.default")}</span>
                             </div>
-                            <div className="reservation-policy-options" role="group" aria-label={`Cancellation policy ${roomType?.roomType.name ?? "Room"} ${roomIndex}`}>
+                            <div className="reservation-policy-options" role="group" aria-label={t("form.cancellationPolicy.groupLabel", { roomType: roomTypeName, index: roomIndex })}>
                               {roomPolicies.length === 0 && (
                                 <div className="reservation-policy-option reservation-policy-option--fallback">
-                                  <input type="checkbox" checked readOnly aria-label="Kebijakan pembatalan default" />
+                                  <input type="checkbox" checked readOnly aria-label={t("form.cancellationPolicy.default")} />
                                   <span className="reservation-policy-copy">
-                                    <strong>100% cancellation charge</strong>
-                                    <small>Non-refundable · Tidak ada kebijakan yang berlaku untuk kamar dan tanggal ini.</small>
+                                    <strong>{t("form.cancellationPolicy.fallbackName")}</strong>
+                                    <small>{t("form.cancellationPolicy.fallbackDescription")}</small>
                                   </span>
-                                  <span className="reservation-policy-default">Default</span>
+                                  <span className="reservation-policy-default">{t("form.cancellationPolicy.default")}</span>
                                 </div>
                               )}
                               {roomPolicies.map((policy) => (
@@ -961,12 +963,12 @@ export function ReservationApiForm({ source }: { source: ReservationSource }) {
                                     <strong>{policy.name}</strong>
                                     {policy.rules.length ? [...policy.rules]
                                       .sort((first, second) => first.sortOrder - second.sortOrder)
-                                      .map((rule) => <small key={rule.id}>{describeCancellationRule(rule)}</small>)
-                                      : <small>Aturan pembatalan belum ditentukan.</small>}
-                                    {describeNoShow(policy) && <small>{describeNoShow(policy)}</small>}
+                                      .map((rule) => <small key={rule.id}>{describeCancellationRule(t, rule)}</small>)
+                                      : <small>{t("form.cancellationPolicy.rulesUndefined")}</small>}
+                                    {describeNoShow(t, policy) && <small>{describeNoShow(t, policy)}</small>}
                                   </span>
                                   {selectedPolicy?.id === policy.id && !roomPolicySelections[room.key] && (
-                                    <span className="reservation-policy-default">Otomatis dipilih</span>
+                                    <span className="reservation-policy-default">{t("form.cancellationPolicy.autoSelected")}</span>
                                   )}
                                 </label>
                               ))}
@@ -980,18 +982,18 @@ export function ReservationApiForm({ source }: { source: ReservationSource }) {
             )}
             <section className="reservation-panel">
               <div className="reservation-panel__heading">
-                <h2>Experiences &amp; Add-ons</h2>
+                <h2>{t("form.sections.experiencesAddOns")}</h2>
                 <button
                   type="button"
                   className="reservation-secondary-button reservation-add-button"
                   onClick={() => setAddingExperience((value) => !value)}
                 >
-                  ＋ Add
+                  ＋ {t("form.experiences.add")}
                 </button>
               </div>
               {addingExperience && (
                 <div className="extra-picker">
-                  <label htmlFor="extra-choice">Pilih add-on</label>
+                  <label htmlFor="extra-choice">{t("form.experiences.pickAddOn")}</label>
                   <select
                     id="extra-choice"
                     value=""
@@ -1004,7 +1006,7 @@ export function ReservationApiForm({ source }: { source: ReservationSource }) {
                       setAddingExperience(false);
                     }}
                   >
-                    <option value="">Pilih paket</option>
+                    <option value="">{t("form.experiences.selectPackage")}</option>
                     {variants
                       .filter(
                         (variant) =>
@@ -1030,7 +1032,7 @@ export function ReservationApiForm({ source }: { source: ReservationSource }) {
                     <div className="selected-extra" key={item.variantId}>
                       <div className="selected-extra__description">
                         <strong>{variant.label}</strong>
-                        <small>{formatRupiah(variant.price)} / paket</small>
+                        <small>{formatRupiah(variant.price)} {t("form.experiences.perPackage")}</small>
                       </div>
                       <div className="selected-extra__actions">
                         <QuantityControl
@@ -1053,7 +1055,7 @@ export function ReservationApiForm({ source }: { source: ReservationSource }) {
                         </strong>
                         <button
                           type="button"
-                          aria-label={`Hapus ${variant.label}`}
+                          aria-label={t("ota.rooms.removeAriaLabel", { name: variant.label })}
                           onClick={() =>
                             setSelectedExperiences((current) =>
                               current.filter(
@@ -1069,15 +1071,15 @@ export function ReservationApiForm({ source }: { source: ReservationSource }) {
                   );
                 })}
                 {selectedExperiences.length === 0 && (
-                  <p className="reservation-empty">Belum ada add-on.</p>
+                  <p className="reservation-empty">{t("form.experiences.empty")}</p>
                 )}
               </div>
             </section>
             <section className="reservation-panel">
-              <h2>Payment</h2>
+              <h2>{t("form.sections.payment")}</h2>
               <div className="payment-fields">
                 <ReservationField
-                  label="Payment Method"
+                  label={t("form.payment.methodLabel")}
                   htmlFor="payment-method"
                 >
                   <select
@@ -1085,7 +1087,7 @@ export function ReservationApiForm({ source }: { source: ReservationSource }) {
                     value={paymentMethodId}
                     onChange={(event) => setPaymentMethodId(event.target.value)}
                   >
-                    <option value="">Select method</option>
+                    <option value="">{t("form.payment.selectMethod")}</option>
                     {methods.map((method) => (
                       <option key={method.id} value={method.id}>
                         {method.name}
@@ -1094,7 +1096,7 @@ export function ReservationApiForm({ source }: { source: ReservationSource }) {
                   </select>
                 </ReservationField>
                 <ReservationField
-                  label="Payment Status"
+                  label={t("form.payment.statusLabel")}
                   htmlFor="payment-status"
                 >
                   <select
@@ -1104,12 +1106,16 @@ export function ReservationApiForm({ source }: { source: ReservationSource }) {
                       setPaymentStatus(event.target.value as PaymentStatus)
                     }
                   >
-                    {["Unpaid", "Partial", "Paid"].map((value) => (
-                      <option key={value}>{value}</option>
+                    {([
+                      ["Unpaid", "status.unpaid"],
+                      ["Partial", "status.partial"],
+                      ["Paid", "status.paid"],
+                    ] as const).map(([value, key]) => (
+                      <option key={value} value={value}>{t(key)}</option>
                     ))}
                   </select>
                 </ReservationField>
-                <ReservationField label="Amount Paid" htmlFor="amount-paid">
+                <ReservationField label={t("form.payment.amountPaidLabel")} htmlFor="amount-paid">
                   <input
                     id="amount-paid"
                     inputMode="numeric"
@@ -1124,7 +1130,7 @@ export function ReservationApiForm({ source }: { source: ReservationSource }) {
             </section>
             <section className="reservation-panel">
               <div className="reservation-panel__heading">
-                <h2>Deposit</h2>
+                <h2>{t("form.sections.deposit")}</h2>
                 <label className="deposit-checkbox">
                   <input
                     type="checkbox"
@@ -1133,13 +1139,13 @@ export function ReservationApiForm({ source }: { source: ReservationSource }) {
                       setRequireDeposit(event.target.checked)
                     }
                   />{" "}
-                  Require Deposit
+                  {t("form.deposit.requireDeposit")}
                 </label>
               </div>
               {requireDeposit && (
                 <div className="deposit-fields">
                   <ReservationField
-                    label="Deposit Amount"
+                    label={t("form.deposit.amountLabel")}
                     htmlFor="deposit-amount"
                   >
                     <input
@@ -1152,7 +1158,7 @@ export function ReservationApiForm({ source }: { source: ReservationSource }) {
                     />
                   </ReservationField>
                   <ReservationField
-                    label="Deposit Method"
+                    label={t("form.deposit.methodLabel")}
                     htmlFor="deposit-method"
                   >
                     <select
@@ -1162,7 +1168,7 @@ export function ReservationApiForm({ source }: { source: ReservationSource }) {
                         setDepositMethodId(event.target.value)
                       }
                     >
-                      <option value="">Select method</option>
+                      <option value="">{t("form.deposit.selectMethod")}</option>
                       {methods.map((method) => (
                         <option key={method.id} value={method.id}>
                           {method.name}
@@ -1171,7 +1177,7 @@ export function ReservationApiForm({ source }: { source: ReservationSource }) {
                     </select>
                   </ReservationField>
                   <ReservationField
-                    label="Deposit Note"
+                    label={t("form.deposit.noteLabel")}
                     htmlFor="deposit-note"
                     optional
                   >
@@ -1187,14 +1193,13 @@ export function ReservationApiForm({ source }: { source: ReservationSource }) {
           </div>
           <aside className="booking-summary">
             <div className="booking-summary__header">
-              <h2>Booking Summary</h2>
-              <span>{isPhone ? "Phone" : "Walk-in"}</span>
+              <h2>{t("form.summary.title")}</h2>
+              <span>{isPhone ? t("form.summary.phone") : t("form.summary.walkIn")}</span>
             </div>
             <div className="booking-summary__stay">
-              <span>Stay</span>
+              <span>{t("form.summary.stay")}</span>
               <strong>
-                {formatStayDate(checkIn)} → {formatStayDate(checkOut)} ·{" "}
-                {nights} {nights === 1 ? "night" : "nights"}
+                {t("form.summary.stayValue", { from: formatStayDate(checkIn), to: formatStayDate(checkOut), nights })}
               </strong>
             </div>
             <div className="booking-summary__lines">
@@ -1206,20 +1211,19 @@ export function ReservationApiForm({ source }: { source: ReservationSource }) {
                   <div className="booking-summary__room" key={room.key}>
                     <div>
                       <span>
-                        {available.find(
+                        {t("form.summary.room", { roomType: available.find(
                           (item) => item.roomType.id === room.roomTypeId,
-                        )?.roomType.name ?? "Room"}{" "}
-                        #{index + 1}
+                        )?.roomType.name ?? t("detail.rooms.notAssigned"), index: index + 1 })}
                       </span>
                       <strong>
                         {quote
                           ? formatRupiah(quote.charges.rooms[index]?.subtotal ?? 0)
-                          : "—"}
+                          : t("common.emptyDash")}
                       </strong>
                     </div>
                     {roomDiscount > 0 && (
                       <div className="booking-summary__discount">
-                        <span>Diskon kamar #{index + 1}</span>
+                        <span>{t("form.summary.roomDiscount", { index: index + 1 })}</span>
                         <span>−{formatRupiah(roomDiscount)}</span>
                       </div>
                     )}
@@ -1229,9 +1233,7 @@ export function ReservationApiForm({ source }: { source: ReservationSource }) {
               {selectedExperiences.map((item) => (
                 <div key={item.variantId}>
                   <span>
-                    {variants.find((variant) => variant.id === item.variantId)
-                      ?.label ?? "Experience"}{" "}
-                    × {item.quantity}
+                    {t("form.summary.experience", { label: variants.find((variant) => variant.id === item.variantId)?.label ?? t("form.sections.experiencesAddOns"), quantity: item.quantity })}
                   </span>
                   <strong>
                     {quote
@@ -1240,26 +1242,25 @@ export function ReservationApiForm({ source }: { source: ReservationSource }) {
                             (entry) => entry.variantId === item.variantId,
                           )?.amount ?? 0,
                         )
-                      : "—"}
+                      : t("common.emptyDash")}
                   </strong>
                 </div>
               ))}
               {!rooms.length && (
-                <div className="booking-summary__empty">Pilih kamar</div>
+                <div className="booking-summary__empty">{t("form.summary.selectRooms")}</div>
               )}
             </div>
             {quote && quote.appliedCampaigns.length > 0 && (
               <details className="booking-summary__campaigns">
-                <summary>See Campaign</summary>
+                <summary>{t("form.summary.seeCampaign")}</summary>
                 <ul>
                   {quote.appliedCampaigns.map((campaign) => (
                     <li key={campaign.id}>
                       <strong>{campaign.name}</strong>
                       <span>
-                        Berlaku sampai{" "}
                         {campaign.stayEnd || campaign.bookingEnd
-                          ? formatStayDate(campaign.stayEnd ?? campaign.bookingEnd ?? "")
-                          : "tanpa batas tanggal"}
+                          ? t("form.summary.campaignValidUntil", { date: formatStayDate(campaign.stayEnd ?? campaign.bookingEnd ?? "") })
+                          : t("form.summary.campaignValidUntil", { date: t("form.summary.campaignNoLimit") })}
                       </span>
                     </li>
                   ))}
@@ -1270,42 +1271,42 @@ export function ReservationApiForm({ source }: { source: ReservationSource }) {
               {quote && quote.discountTotal > 0 && (
                 <>
                   <div>
-                    <span>Subtotal sebelum diskon</span>
+                    <span>{t("form.summary.subtotalBeforeDiscount")}</span>
                     <span>{formatRupiah(total + quote.discountTotal)}</span>
                   </div>
                   <div className="booking-summary__discount">
-                    <span>Total Discount</span>
+                    <span>{t("form.summary.totalDiscount")}</span>
                     <strong>−{formatRupiah(quote.discountTotal)}</strong>
                   </div>
                 </>
               )}
               <div>
-                <strong>Booking Total</strong>
+                <strong>{t("form.summary.bookingTotal")}</strong>
                 <strong>
                   {quoteLoading
                     ? <LoadingSkeleton variant="inline" />
                     : quote
                       ? formatRupiah(total)
-                      : "—"}
+                      : t("common.emptyDash")}
                 </strong>
               </div>
               <div>
-                <span>Deposit</span>
+                <span>{t("form.summary.deposit")}</span>
                 <span>{formatRupiah(requireDeposit ? depositAmount : 0)}</span>
               </div>
               <div className="booking-summary__collected">
-                <strong>Total Collected</strong>
+                <strong>{t("form.summary.totalCollected")}</strong>
                 <strong>
                   {quote
                     ? formatRupiah(
                         amountPaid + (requireDeposit ? depositAmount : 0),
                       )
-                    : "—"}
+                    : t("common.emptyDash")}
                 </strong>
               </div>
             </div>
             <p className="booking-summary__note">
-              Deposit is held separately and is not included in booking revenue.
+              {t("form.summary.depositNote")}
             </p>
             <div className="booking-summary__actions">
               {checkIn === initialDate && (
@@ -1315,7 +1316,7 @@ export function ReservationApiForm({ source }: { source: ReservationSource }) {
                   disabled={saving}
                   onClick={() => requestSave(true)}
                 >
-                  Save &amp; Check-in
+                  {t("form.summary.saveAndCheckIn")}
                 </button>
               )}
               <button
@@ -1324,16 +1325,16 @@ export function ReservationApiForm({ source }: { source: ReservationSource }) {
                 disabled={saving}
                 onClick={() => requestSave(false)}
               >
-                Save Reservation
+                {t("form.summary.saveReservation")}
               </button>
               {isPhone && (
                 <button
                   type="button"
                   className="reservation-secondary-button"
                   disabled
-                  title="Draft reservation belum tersedia di API"
+                  title={t("form.summary.draftUnavailable")}
                 >
-                  Save as Draft
+                  {t("form.summary.saveAsDraft")}
                 </button>
               )}
             </div>

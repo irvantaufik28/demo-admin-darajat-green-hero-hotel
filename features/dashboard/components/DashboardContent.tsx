@@ -9,33 +9,15 @@ import { Icon } from "../../../components/ui/Icon";
 import { getDashboard, type DashboardResponse } from "../services/api";
 import { restoreSession } from "../../../lib/auth";
 import { useOperationalRefresh } from "../../reservations/hooks/useOperationalRefresh";
+import { useTranslations, type Translate } from "../../../lib/i18n";
+import en from "../locales/en.json";
+import id from "../locales/id.json";
 
 type SummaryCardItem = {
   label: string;
   value: string;
   detail: string;
   tone: "warning" | "neutral" | "success" | "danger";
-};
-
-const reservationLabels: Record<string, string> = {
-  pending: "Pending",
-  confirmed: "Confirmed",
-  checked_in: "Checked-in",
-  checked_out: "Checked-out",
-  cancelled: "Cancelled",
-  expired: "Expired",
-  unpaid: "Unpaid",
-  partial: "Partial",
-  paid: "Paid",
-  failed: "Failed",
-  refunded: "Refunded",
-};
-
-const sourceLabels: Record<string, string> = {
-  website: "Website",
-  phone: "Phone",
-  walk_in: "Walk-in",
-  ota: "OTA",
 };
 
 function formatRupiah(value: number): string {
@@ -50,28 +32,28 @@ function formatStayDate(value: string): string {
   );
 }
 
-function summaryCards(summary: DashboardResponse["summary"]): SummaryCardItem[] {
+function summaryCards(summary: DashboardResponse["summary"], t: Translate): SummaryCardItem[] {
   return [
     {
-      label: "Arrivals Today",
+      label: t("summary.arrivalsToday"),
       value: String(summary.arrivalsToday),
-      detail: `${summary.arrivalsPending} belum check-in`,
+      detail: t("summary.arrivalsPending", { count: summary.arrivalsPending }),
       tone: "warning",
     },
     {
-      label: "Departures Today",
+      label: t("summary.departuresToday"),
       value: String(summary.departuresToday),
-      detail: `${summary.departuresPending} belum check-out`,
+      detail: t("summary.departuresPending", { count: summary.departuresPending }),
       tone: "neutral",
     },
     {
-      label: "In House",
+      label: t("summary.inHouse"),
       value: String(summary.inHouse),
-      detail: `${summary.inHouse} tamu aktif`,
+      detail: t("summary.inHouseDetail", { count: summary.inHouse }),
       tone: "success",
     },
     {
-      label: "Pending Payment",
+      label: t("summary.pendingPayment"),
       value: String(summary.pendingPayment),
       detail: formatRupiah(summary.outstandingAmount),
       tone: "danger",
@@ -79,8 +61,8 @@ function summaryCards(summary: DashboardResponse["summary"]): SummaryCardItem[] 
   ];
 }
 
-function StatusBadge({ value }: { value: string }) {
-  const label = reservationLabels[value] ?? value;
+function StatusBadge({ value, t }: { value: string; t: Translate }) {
+  const label = t(`reservationStatus.${value}`);
   const tone =
     value === "confirmed" || value === "paid"
       ? "success"
@@ -109,6 +91,7 @@ function SummaryCard({ item }: { item: SummaryCardItem }) {
 }
 
 export function DashboardContent() {
+  const { t } = useTranslations({ en, id });
   const operationalRefresh = useOperationalRefresh();
   const [dashboard, setDashboard] = useState<DashboardResponse | null>(null);
   const [loading, setLoading] = useState(true);
@@ -126,7 +109,7 @@ export function DashboardContent() {
         if (active) setDashboard(response);
       } catch (cause) {
         if (active && !controller.signal.aborted) {
-          setError(cause instanceof Error ? cause.message : "Dashboard gagal dimuat.");
+          setError(cause instanceof Error ? cause.message : t("errors.loadFailed"));
         }
       } finally {
         if (active) setLoading(false);
@@ -147,22 +130,22 @@ export function DashboardContent() {
   }
 
   return (
-    <AdminShell title="Dashboard" context="Front Desk Overview">
+    <AdminShell title={t("shell.title")} context={t("shell.context")}>
       <div className="dashboard-page">
         <section className="dashboard-title-row">
           <div>
-            <h1>Dashboard</h1>
-            <p>Ringkasan operasional hari ini</p>
+            <h1>{t("header.title")}</h1>
+            <p>{t("header.description")}</p>
           </div>
           <Link href="/reservations/create-reservation-walkin" className="action-button">
-            <Icon name="plus" /> New Reservation
+            <Icon name="plus" /> {t("header.newReservation")}
           </Link>
         </section>
 
         {error && (
           <div className="dashboard-message" role="alert">
             <span>{error}</span>
-            <button type="button" onClick={retry}>Coba lagi</button>
+            <button type="button" onClick={retry}>{t("errors.retry")}</button>
           </div>
         )}
 
@@ -170,8 +153,8 @@ export function DashboardContent() {
 
         {dashboard && !loading && (
           <>
-            <section className="summary-grid" aria-label="Ringkasan operasional">
-              {summaryCards(dashboard.summary).map((item) => (
+            <section className="summary-grid" aria-label={t("summary.ariaLabel")}>
+              {summaryCards(dashboard.summary, t).map((item) => (
                 <SummaryCard key={item.label} item={item} />
               ))}
             </section>
@@ -179,15 +162,15 @@ export function DashboardContent() {
             <section className="data-panel" aria-labelledby="activity-title">
               <div className="data-panel__header">
                 <div>
-                  <h2 id="activity-title">Today Activity</h2>
-                  <p>Tamu yang membutuhkan tindakan hari ini</p>
+                  <h2 id="activity-title">{t("todayActivity.title")}</h2>
+                  <p>{t("todayActivity.description")}</p>
                 </div>
-                <span className="pending-count"><i />{dashboard.todayActivity.totalShown} Pending Actions</span>
+                <span className="pending-count"><i />{t("todayActivity.pendingActions", { count: dashboard.todayActivity.totalShown })}</span>
               </div>
               <div className="table-scroll">
                 <table className="data-table">
                   <thead>
-                    <tr><th>Guest</th><th>Room</th><th>Type</th><th>Status</th><th className="cell-right">Action</th></tr>
+                    <tr><th>{t("todayActivity.table.guest")}</th><th>{t("todayActivity.table.room")}</th><th>{t("todayActivity.table.type")}</th><th>{t("todayActivity.table.status")}</th><th className="cell-right">{t("todayActivity.table.action")}</th></tr>
                   </thead>
                   <tbody>
                     {dashboard.todayActivity.items.map((row) => (
@@ -195,12 +178,12 @@ export function DashboardContent() {
                         <td className="cell-strong">{row.guestName}</td>
                         <td className="cell-muted">{row.roomSummary || "—"}</td>
                         <td><span className={`activity-type activity-type--${row.type.toLowerCase()}`}>{row.type}</span></td>
-                        <td><StatusBadge value={row.status} /></td>
-                        <td className="cell-right"><Link href={row.url} className="table-action">View</Link></td>
+                        <td><StatusBadge value={row.status} t={t} /></td>
+                        <td className="cell-right"><Link href={row.url} className="table-action">{t("todayActivity.view")}</Link></td>
                       </tr>
                     ))}
                     {dashboard.todayActivity.items.length === 0 && (
-                      <tr><td colSpan={5} className="cell-muted">Belum ada aktivitas yang perlu ditindak.</td></tr>
+                      <tr><td colSpan={5} className="cell-muted">{t("todayActivity.empty")}</td></tr>
                     )}
                   </tbody>
                 </table>
@@ -210,53 +193,53 @@ export function DashboardContent() {
             <section className="data-panel" aria-labelledby="reservations-title">
               <div className="data-panel__header">
                 <div>
-                  <h2 id="reservations-title">Recent Reservations</h2>
-                  <p>Reservasi terbaru dari seluruh channel</p>
+                  <h2 id="reservations-title">{t("recentReservations.title")}</h2>
+                  <p>{t("recentReservations.description")}</p>
                 </div>
                 <Link href="/reservations" className="text-action">
-                  View All Reservations <Icon name="arrow" width={15} height={15} />
+                  {t("recentReservations.viewAll")} <Icon name="arrow" width={15} height={15} />
                 </Link>
               </div>
               <div className="table-scroll">
                 <table className="data-table">
                   <thead>
-                    <tr><th>Booking</th><th>Guest</th><th>Source</th><th>Stay</th><th>Payment</th><th>Status</th><th className="cell-right">Action</th></tr>
+                    <tr><th>{t("recentReservations.table.booking")}</th><th>{t("recentReservations.table.guest")}</th><th>{t("recentReservations.table.source")}</th><th>{t("recentReservations.table.stay")}</th><th>{t("recentReservations.table.payment")}</th><th>{t("recentReservations.table.status")}</th><th className="cell-right">{t("recentReservations.table.action")}</th></tr>
                   </thead>
                   <tbody>
                     {dashboard.recentReservations.map((row) => (
                       <tr key={row.reservationId}>
                         <td className="cell-strong numeric">{row.bookingCode}</td>
                         <td className="cell-strong">{row.guestName}</td>
-                        <td className="cell-muted">{sourceLabels[row.source] ?? row.source}</td>
+                        <td className="cell-muted">{t(`source.${row.source}`)}</td>
                         <td className="cell-muted numeric">{formatStayDate(row.checkInDate)} → {formatStayDate(row.checkOutDate)}</td>
-                        <td><StatusBadge value={row.paymentStatus} /></td>
-                        <td><StatusBadge value={row.reservationStatus} /></td>
-                        <td className="cell-right"><Link href={row.url} className="table-action">View</Link></td>
+                        <td><StatusBadge value={row.paymentStatus} t={t} /></td>
+                        <td><StatusBadge value={row.reservationStatus} t={t} /></td>
+                        <td className="cell-right"><Link href={row.url} className="table-action">{t("recentReservations.view")}</Link></td>
                       </tr>
                     ))}
                     {dashboard.recentReservations.length === 0 && (
-                      <tr><td colSpan={7} className="cell-muted">Belum ada reservasi.</td></tr>
+                      <tr><td colSpan={7} className="cell-muted">{t("recentReservations.empty")}</td></tr>
                     )}
                   </tbody>
                 </table>
               </div>
             </section>
 
-            <section className="availability-strip" aria-label="Ketersediaan kamar hari ini">
-              <strong>Today&apos;s Availability</strong>
+            <section className="availability-strip" aria-label={t("availability.ariaLabel")}>
+              <strong>{t("availability.title")}</strong>
               <div className="availability-list">
                 {dashboard.todayAvailability.map((item) => (
                   <div key={item.roomTypeId}>
                     <span>{item.roomTypeName}:</span>
                     <span className={`status-badge status-badge--${item.available === null || item.available <= 1 ? "warning" : "success"}`}>
-                      {item.available === null ? "Belum diatur" : `${item.available} available`}
+                      {item.available === null ? t("availability.notSet") : t("availability.available", { count: item.available })}
                     </span>
                   </div>
                 ))}
-                {dashboard.todayAvailability.length === 0 && <span>Belum ada tipe kamar aktif.</span>}
+                {dashboard.todayAvailability.length === 0 && <span>{t("availability.empty")}</span>}
               </div>
               <Link href="/prices-stocks" className="text-action">
-                Manage Prices &amp; Stocks <Icon name="arrow" width={15} height={15} />
+                {t("availability.manage")} <Icon name="arrow" width={15} height={15} />
               </Link>
             </section>
           </>

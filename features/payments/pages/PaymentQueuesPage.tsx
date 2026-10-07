@@ -13,6 +13,9 @@ import {
   type OutstandingListItem,
   type RefundListItem,
 } from "../services/payments";
+import { useTranslations, type Translate } from "../../../lib/i18n";
+import en from "../locales/en.json";
+import id from "../locales/id.json";
 
 type Mode = "refunds" | "outstanding";
 const pageSize = 20;
@@ -37,28 +40,36 @@ function Badge({ value }: { value: string }) {
   return <span className={`reservations-source payments-badge--${tone}`}>{label(value)}</span>;
 }
 
-const headings: Record<Mode, string[]> = {
-  refunds: ["Booking", "Guest", "Source", "Policy", "Paid", "Estimated Refund", "Refunded", "Status", "Action"],
-  outstanding: ["Booking", "Guest", "Source", "Check-out", "Booking Total", "Paid", "Outstanding", "Payment Status", "Action"],
+const headings: Record<Mode, (t: Translate) => string[]> = {
+  refunds: (t) => [
+    t("queues.table.booking"), t("queues.table.guest"), t("queues.table.source"),
+    t("queues.table.policy"), t("queues.table.paid"), t("queues.table.estimatedRefund"),
+    t("queues.table.refunded"), t("queues.table.status"), t("queues.table.action"),
+  ],
+  outstanding: (t) => [
+    t("queues.table.booking"), t("queues.table.guest"), t("queues.table.source"),
+    t("queues.table.checkOut"), t("queues.table.bookingTotal"), t("queues.table.paid"),
+    t("queues.table.outstanding"), t("queues.table.paymentStatus"), t("queues.table.action"),
+  ],
 };
 
-function RefundRow({ row }: { row: RefundListItem }) {
+function RefundRow({ row, t }: { row: RefundListItem; t: Translate }) {
   return (
     <tr>
       <td><strong className="payments-booking">{row.bookingCode}</strong><small>{dateLabel(row.cancelledAt)}</small></td>
       <td><strong>{row.guest.fullName}</strong><small>{row.guest.phone}</small></td>
       <td>{label(row.source)}</td>
-      <td>{row.policy.name ?? "Manual review"}</td>
+      <td>{row.policy.name ?? t("queues.table.manualReview")}</td>
       <td>{money(row.grossPaidAmount)}</td>
-      <td>{row.estimatedRefundAmount === null ? "Review" : money(row.estimatedRefundAmount)}</td>
+      <td>{row.estimatedRefundAmount === null ? t("queues.table.review") : money(row.estimatedRefundAmount)}</td>
       <td>{money(row.refundedAmount)}</td>
       <td><Badge value={row.status} /></td>
-      <td><Link href={`/payments/${row.reservationId}`}>View</Link></td>
+      <td><Link href={`/payments/${row.reservationId}`}>{t("queues.table.view")}</Link></td>
     </tr>
   );
 }
 
-function OutstandingRow({ row }: { row: OutstandingListItem }) {
+function OutstandingRow({ row, t }: { row: OutstandingListItem; t: Translate }) {
   return (
     <tr>
       <td><strong className="payments-booking">{row.bookingCode}</strong><small>{dateLabel(row.checkedOutAt)}</small></td>
@@ -69,12 +80,13 @@ function OutstandingRow({ row }: { row: OutstandingListItem }) {
       <td>{money(row.grossPaid)}</td>
       <td className="payments-remaining">{money(row.remainingBalance)}</td>
       <td><Badge value={row.paymentStatus} /></td>
-      <td><Link href={`/payments/${row.id}`}>View</Link></td>
+      <td><Link href={`/payments/${row.id}`}>{t("queues.table.view")}</Link></td>
     </tr>
   );
 }
 
 export function PaymentQueuesPage({ mode }: { mode: Mode }) {
+  const { t } = useTranslations({ en, id });
   const [rows, setRows] = useState<(RefundListItem | OutstandingListItem)[]>([]);
   const [total, setTotal] = useState(0);
   const [totalOutstanding, setTotalOutstanding] = useState(0);
@@ -104,7 +116,7 @@ export function PaymentQueuesPage({ mode }: { mode: Mode }) {
         }
       } catch (cause) {
         if (!controller.signal.aborted) {
-          setError(cause instanceof Error ? cause.message : "Data pembayaran gagal dimuat.");
+          setError(cause instanceof Error ? cause.message : t("queues.messages.loadError"));
         }
       } finally {
         if (!controller.signal.aborted) setLoading(false);
@@ -116,45 +128,45 @@ export function PaymentQueuesPage({ mode }: { mode: Mode }) {
     };
   }, [mode, page, search, source]);
 
-  const title = mode === "refunds" ? "Refunds" : "Outstanding Balance";
+  const title = mode === "refunds" ? t("queues.refunds.title") : t("queues.outstanding.title");
   const description = mode === "refunds"
-    ? "Reservasi yang dibatalkan dengan pembayaran dan penyelesaian refund."
-    : "Sisa tagihan reservasi yang sudah check-out.";
+    ? t("queues.refunds.description")
+    : t("queues.outstanding.description");
 
   return (
-    <AdminShell title="Payments" context={title}>
+    <AdminShell title={t("shell.title")} context={title}>
       <div className="payments-page">
         <div className="payments-heading">
           <div><h1>{title}</h1><p>{description}</p></div>
-          {mode === "outstanding" && <strong className="payments-summary-total">Total outstanding: {money(totalOutstanding)}</strong>}
+          {mode === "outstanding" && <strong className="payments-summary-total">{t("queues.outstanding.totalOutstanding", { amount: money(totalOutstanding) })}</strong>}
         </div>
         <div className="payments-filters">
           <input
-            aria-label="Search payments"
-            placeholder="Search booking, guest, or WhatsApp"
+            aria-label={t("queues.filters.searchAriaLabel")}
+            placeholder={t("queues.filters.searchPlaceholder")}
             value={search}
             onChange={(event) => { setSearch(event.target.value); setPage(1); }}
           />
-          <select aria-label="Source" value={source} onChange={(event) => { setSource(event.target.value); setPage(1); }}>
-            <option value="">Source: All</option>
+          <select aria-label={t("queues.filters.sourceAriaLabel")} value={source} onChange={(event) => { setSource(event.target.value); setPage(1); }}>
+            <option value="">{t("queues.filters.sourceAll")}</option>
             {["website", "walk_in", "phone", "ota"].map((value) => <option key={value} value={value}>{label(value)}</option>)}
           </select>
-          <button type="button" onClick={() => { setSearch(""); setSource(""); setPage(1); }}>Reset</button>
+          <button type="button" onClick={() => { setSearch(""); setSource(""); setPage(1); }}>{t("queues.filters.reset")}</button>
         </div>
         <div className="payments-table-shell">
           <div className="payments-table-scroll">
             <table className="payments-table">
-              <thead><tr>{headings[mode].map((heading) => <th key={heading}>{heading}</th>)}</tr></thead>
+              <thead><tr>{headings[mode](t).map((heading) => <th key={heading}>{heading}</th>)}</tr></thead>
               <tbody>{!loading && rows.map((row) => mode === "refunds"
-                ? <RefundRow key={(row as RefundListItem).reservationId} row={row as RefundListItem} />
-                : <OutstandingRow key={(row as OutstandingListItem).id} row={row as OutstandingListItem} />
+                ? <RefundRow key={(row as RefundListItem).reservationId} row={row as RefundListItem} t={t} />
+                : <OutstandingRow key={(row as OutstandingListItem).id} row={row as OutstandingListItem} t={t} />
               )}</tbody>
             </table>
-            {(loading || error || rows.length === 0) && <div className="payments-empty">{loading ? <LoadingSkeleton /> : error || "Tidak ada data yang sesuai filter."}</div>}
+            {(loading || error || rows.length === 0) && <div className="payments-empty">{loading ? <LoadingSkeleton /> : error || t("queues.messages.empty")}</div>}
           </div>
           <div className="payments-footer">
-            Menampilkan <strong>{rows.length}</strong> dari <strong>{total}</strong> data
-            {total > pageSize && <span> · <button type="button" disabled={page === 1} onClick={() => setPage((value) => value - 1)}>Previous</button> Page {page} of {Math.ceil(total / pageSize)} <button type="button" disabled={page * pageSize >= total} onClick={() => setPage((value) => value + 1)}>Next</button></span>}
+            {t("queues.pagination.showing", { count: rows.length, total })}
+            {total > pageSize && <span> · <button type="button" disabled={page === 1} onClick={() => setPage((value) => value - 1)}>{t("queues.pagination.previous")}</button> {t("queues.pagination.pageInfo", { page, total: Math.ceil(total / pageSize) })} <button type="button" disabled={page * pageSize >= total} onClick={() => setPage((value) => value + 1)}>{t("queues.pagination.next")}</button></span>}
           </div>
         </div>
       </div>

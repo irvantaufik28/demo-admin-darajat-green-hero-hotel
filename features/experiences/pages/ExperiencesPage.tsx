@@ -21,6 +21,9 @@ import {
   type ExperienceInput,
   type ExperienceRecord,
 } from "../services/experiences";
+import { useTranslations } from "../../../lib/i18n";
+import en from "../locales/en.json";
+import id from "../locales/id.json";
 
 const formatPrice = (value: number) => `Rp${new Intl.NumberFormat("id-ID").format(value)}`;
 
@@ -33,6 +36,7 @@ function priceRange(experience: ExperienceRecord) {
 }
 
 export function ExperiencesPage() {
+  const { t } = useTranslations({ en, id });
   const [items, setItems] = useState<ExperienceRecord[]>([]);
   const [categories, setCategories] = useState<ExperienceCategory[]>([]);
   const [search, setSearch] = useState("");
@@ -57,7 +61,7 @@ export function ExperiencesPage() {
         const result = await listExperienceCategories(controller.signal);
         if (!controller.signal.aborted) setCategories(result);
       } catch (cause) {
-        if (!controller.signal.aborted) setError(cause instanceof Error ? cause.message : "Kategori gagal dimuat.");
+        if (!controller.signal.aborted) setError(cause instanceof Error ? cause.message : t("list.messages.categoriesLoadFailed"));
       }
     })();
     return () => controller.abort();
@@ -84,7 +88,7 @@ export function ExperiencesPage() {
           setItems(result.items);
           setTotal(result.total);
         } catch (cause) {
-          if (!controller.signal.aborted) setError(cause instanceof Error ? cause.message : "Experiences gagal dimuat.");
+          if (!controller.signal.aborted) setError(cause instanceof Error ? cause.message : t("list.messages.experiencesLoadFailed"));
         } finally {
           if (!controller.signal.aborted) setLoading(false);
         }
@@ -101,7 +105,7 @@ export function ExperiencesPage() {
       const result = await getExperience(experience.id);
       setModal({ initial: result.experience });
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Detail experience gagal dimuat.");
+      setError(cause instanceof Error ? cause.message : t("list.messages.detailLoadFailed"));
     } finally {
       setBusyId("");
     }
@@ -117,7 +121,7 @@ export function ExperiencesPage() {
       setModal(null);
       setReload((current) => current + 1);
     } catch (cause) {
-      setModalError(cause instanceof Error ? cause.message : "Experience gagal disimpan.");
+      setModalError(cause instanceof Error ? cause.message : t("list.messages.saveFailed"));
     } finally {
       setSaving(false);
     }
@@ -130,7 +134,7 @@ export function ExperiencesPage() {
       await setExperienceStatus(experience.id, !experience.isActive);
       setReload((current) => current + 1);
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Status experience gagal diubah.");
+      setError(cause instanceof Error ? cause.message : t("list.messages.statusChangeFailed"));
     } finally {
       setBusyId("");
     }
@@ -139,17 +143,17 @@ export function ExperiencesPage() {
   const hasFilter = Boolean(search || categoryFilter !== "all" || statusFilter !== "all");
 
   return (
-    <AdminShell title="Admin" context="Experiences">
+    <AdminShell title={t("shell.title")} context={t("shell.context")}>
       <div className="exp-page">
         <div className="exp-heading">
           <div>
-            <h1>Experiences</h1>
-            <p>Kelola add-on dan pilihan paket untuk reservasi tamu</p>
+            <h1>{t("list.page.title")}</h1>
+            <p>{t("list.page.description")}</p>
           </div>
           <button type="button" className="action-button" disabled={!categories.some((category) => category.isActive)}
             onClick={() => { setModalError(""); setModal({ initial: null }); }}>
             <Icon name="plus" />
-            <span>+ Add Experience</span>
+            <span>{t("list.actions.addExperience")}</span>
           </button>
         </div>
 
@@ -157,13 +161,13 @@ export function ExperiencesPage() {
           <div className="exp-filter-bar__left">
             <div className="campaigns-search-wrap">
               <Icon name="search" className="campaigns-search-icon" width={16} height={16} />
-              <input type="text" className="campaigns-search" placeholder="Search experience..." value={search}
+              <input type="text" className="campaigns-search" placeholder={t("list.filters.searchPlaceholder")} value={search}
                 onChange={(event) => { setSearch(event.target.value); setPage(1); }} />
             </div>
             <div className="campaigns-select-wrap">
               <select className="campaigns-select" value={categoryFilter}
                 onChange={(event) => { setCategoryFilter(event.target.value); setPage(1); }}>
-                <option value="all">All Types</option>
+                <option value="all">{t("list.filters.allTypes")}</option>
                 {categories.map((category) => <option key={category.id} value={category.id}>{category.name}</option>)}
               </select>
               <Icon name="chevron" className="campaigns-select-chevron" width={14} height={14} />
@@ -171,18 +175,18 @@ export function ExperiencesPage() {
             <div className="campaigns-select-wrap">
               <select className="campaigns-select" value={statusFilter}
                 onChange={(event) => { setStatusFilter(event.target.value); setPage(1); }}>
-                <option value="all">All Status</option>
-                <option value="active">Active</option>
-                <option value="inactive">Inactive</option>
+                <option value="all">{t("list.filters.status.all")}</option>
+                <option value="active">{t("list.filters.status.active")}</option>
+                <option value="inactive">{t("list.filters.status.inactive")}</option>
               </select>
               <Icon name="chevron" className="campaigns-select-chevron" width={14} height={14} />
             </div>
             {hasFilter && <button type="button" className="campaigns-reset-button"
               onClick={() => { setSearch(""); setCategoryFilter("all"); setStatusFilter("all"); setPage(1); }}>
-              <Icon name="reset" width={14} height={14} /><span>Reset</span>
+              <Icon name="reset" width={14} height={14} /><span>{t("list.actions.reset")}</span>
             </button>}
           </div>
-          <span className="exp-filter-bar__count">Total <strong>{total}</strong> experiences recorded</span>
+          <span className="exp-filter-bar__count">{t("list.filters.count", { total })}</span>
         </div>
 
         {error && <div className="campaigns-api-message" role="alert">{error}</div>}
@@ -191,13 +195,13 @@ export function ExperiencesPage() {
           <div className="table-scroll">
             <table className="exp-table">
               <thead><tr className="exp-table__head-row">
-                <th className="exp-table__th exp-table__th--exp">Experience</th>
-                <th className="exp-table__th">Category</th>
-                <th className="exp-table__th">Packages</th>
-                <th className="exp-table__th exp-table__th--right">Price Range</th>
-                <th className="exp-table__th">Max Qty</th>
-                <th className="exp-table__th exp-table__th--center">Status</th>
-                <th className="exp-table__th exp-table__th--right">Action</th>
+                <th className="exp-table__th exp-table__th--exp">{t("list.table.experience")}</th>
+                <th className="exp-table__th">{t("list.table.category")}</th>
+                <th className="exp-table__th">{t("list.table.packages")}</th>
+                <th className="exp-table__th exp-table__th--right">{t("list.table.priceRange")}</th>
+                <th className="exp-table__th">{t("list.table.maxQty")}</th>
+                <th className="exp-table__th exp-table__th--center">{t("list.table.status")}</th>
+                <th className="exp-table__th exp-table__th--right">{t("list.table.action")}</th>
               </tr></thead>
               <tbody>
                 {!loading && items.length > 0 ? items.map((experience) => (
@@ -215,46 +219,46 @@ export function ExperiencesPage() {
                     </td>
                     <td className="exp-table__td"><span className={`exp-type-badge exp-type-badge--${experience.category.name.toLowerCase() === "celebrate" ? "celebrate" : "dining"}`}>{experience.category.name}</span></td>
                     <td className="exp-table__td exp-table__td--muted">
-                      <strong>{experience.variants.length} package{experience.variants.length === 1 ? "" : "s"}</strong>
+                      <strong>{experience.variants.length === 1 ? t("list.cell.package", { count: experience.variants.length }) : t("list.cell.packages", { count: experience.variants.length })}</strong>
                       <span className="exp-variant-summary">{experience.variants.map((variant) => variant.subName).join(", ")}</span>
                     </td>
                     <td className="exp-table__td exp-table__td--right exp-table__td--price">{priceRange(experience)}</td>
                     <td className="exp-table__td exp-table__td--muted">{experience.maxQuantity}</td>
                     <td className="exp-table__td exp-table__td--center">
                       <span className={`exp-status-badge exp-status-badge--${experience.isActive ? "active" : "inactive"}`}>
-                        {experience.isActive ? "Active" : "Inactive"}
+                        {experience.isActive ? t("list.status.active") : t("list.status.inactive")}
                       </span>
                     </td>
                     <td className="exp-table__td exp-table__td--right">
                       <div className="exp-actions">
                         <button type="button" className="exp-edit-btn" disabled={busyId === experience.id}
-                          onClick={() => void openEdit(experience)}>Edit</button>
+                          onClick={() => void openEdit(experience)}>{t("list.actions.edit")}</button>
                         <button type="button" className="text-action" disabled={busyId === experience.id}
                           onClick={() => void toggleStatus(experience)}>
-                          {experience.isActive ? "Disable" : "Enable"}
+                          {experience.isActive ? t("list.actions.disable") : t("list.actions.enable")}
                         </button>
                       </div>
                     </td>
                   </tr>
                 )) : <tr><td colSpan={7} className="campaigns-table__empty">
-                  {loading ? <LoadingSkeleton /> : "Tidak ada experience yang sesuai filter."}
+                  {loading ? <LoadingSkeleton /> : t("list.messages.empty")}
                 </td></tr>}
               </tbody>
             </table>
           </div>
           <div className="campaigns-pagination">
             <span className="campaigns-pagination__info">
-              Showing <strong>{total ? (page - 1) * limit + 1 : 0}–{Math.min(page * limit, total)}</strong> of <strong>{total}</strong> experiences
+              {t("list.pagination.showing", { from: total ? (page - 1) * limit + 1 : 0, to: Math.min(page * limit, total), total })}
             </span>
             <div className="campaigns-pagination__controls">
               <button type="button" className="campaigns-pagination__btn" disabled={page <= 1 || loading}
                 onClick={() => setPage((current) => current - 1)}>
-                <Icon name="chevronLeft" width={14} height={14} /><span>Previous</span>
+                <Icon name="chevronLeft" width={14} height={14} /><span>{t("list.actions.previous")}</span>
               </button>
               <button type="button" className="campaigns-pagination__page campaigns-pagination__page--active">{page}</button>
               <button type="button" className="campaigns-pagination__btn" disabled={page * limit >= total || loading}
                 onClick={() => setPage((current) => current + 1)}>
-                <span>Next</span><Icon name="chevronRight" width={14} height={14} />
+                <span>{t("list.actions.next")}</span><Icon name="chevronRight" width={14} height={14} />
               </button>
             </div>
           </div>
@@ -262,8 +266,7 @@ export function ExperiencesPage() {
 
         <div className="campaigns-notice">
           <Icon name="info" className="campaigns-notice__icon" width={18} height={18} />
-          <p><strong>Informasi Operasional:</strong> Harga paket experience disalin ke reservasi saat pemesanan.
-            Perubahan harga berikutnya tidak mengubah transaksi sebelumnya.</p>
+          <p><strong>{t("list.notice.title")}</strong> {t("list.notice.body")}</p>
         </div>
       </div>
 

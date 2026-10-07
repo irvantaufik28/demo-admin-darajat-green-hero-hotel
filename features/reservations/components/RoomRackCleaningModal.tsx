@@ -1,5 +1,9 @@
+"use client";
 import { useEffect, useState } from "react";
 import { markRoomAvailable } from "../services/room-rack";
+import { useTranslations } from "../../../lib/i18n";
+import en from "../locales/en.json";
+import id from "../locales/id.json";
 
 type CleaningRoom = {
   id: string;
@@ -16,6 +20,7 @@ export function RoomRackCleaningModal({
   onClose: () => void;
   onSaved: () => void;
 }) {
+  const { t } = useTranslations({ en, id });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
@@ -35,7 +40,7 @@ export function RoomRackCleaningModal({
       onSaved();
     } catch (cause) {
       setError(
-        cause instanceof Error ? cause.message : "Status kamar gagal diubah.",
+        cause instanceof Error ? cause.message : t("cleaningModal.error"),
       );
       setSaving(false);
     }
@@ -56,15 +61,15 @@ export function RoomRackCleaningModal({
       >
         <div className="rr-cleaning-modal__header">
           <div>
-            <span className="rr-cleaning-modal__eyebrow">Room status</span>
-            <h2 id="rr-cleaning-title">Room {room.number}</h2>
+            <span className="rr-cleaning-modal__eyebrow">{t("cleaningModal.eyebrow")}</span>
+            <h2 id="rr-cleaning-title">{t("cleaningModal.roomTitle", { number: room.number })}</h2>
           </div>
           <button
             type="button"
             className="rr-cleaning-modal__close"
             onClick={onClose}
             disabled={saving}
-            aria-label="Close"
+            aria-label={t("cleaningModal.close")}
           >
             ×
           </button>
@@ -73,16 +78,15 @@ export function RoomRackCleaningModal({
           <p className="rr-cleaning-modal__type">{room.groupName}</p>
           <div className="rr-cleaning-modal__transition">
             <span className="rr-cleaning-modal__status rr-cleaning-modal__status--cleaning">
-              Cleaning
+              {t("cleaningModal.cleaning")}
             </span>
             <span aria-hidden="true">→</span>
             <span className="rr-cleaning-modal__status rr-cleaning-modal__status--available">
-              Available
+              {t("cleaningModal.available")}
             </span>
           </div>
           <p>
-            Pastikan kamar sudah selesai dibersihkan dan siap digunakan sebelum
-            mengubah statusnya.
+            {t("cleaningModal.description")}
           </p>
           {error && (
             <p className="rr-cleaning-modal__error" role="alert">
@@ -97,7 +101,7 @@ export function RoomRackCleaningModal({
             onClick={onClose}
             disabled={saving}
           >
-            Cancel
+            {t("common.cancel")}
           </button>
           <button
             type="button"
@@ -105,7 +109,7 @@ export function RoomRackCleaningModal({
             onClick={confirm}
             disabled={saving}
           >
-            {saving ? "Saving…" : "Mark as Available"}
+            {saving ? t("common.saving") : t("cleaningModal.markAsAvailable")}
           </button>
         </div>
       </div>

@@ -13,6 +13,9 @@ import {
   updateCapacityPattern,
   type CapacityPattern,
 } from "../services/capacity-patterns";
+import { useTranslations, type Translate } from "../../../lib/i18n";
+import en from "../locales/en.json";
+import id from "../locales/id.json";
 
 type Draft = {
   adults: string;
@@ -28,11 +31,18 @@ const emptyDraft: Draft = {
   isActive: true,
 };
 
-function patternLabel(pattern: Pick<CapacityPattern, "adults" | "children">) {
-  return `${pattern.adults} ${pattern.adults === 1 ? "Adult" : "Adults"} + ${pattern.children} ${pattern.children === 1 ? "Child" : "Children"}`;
+function patternLabel(pattern: Pick<CapacityPattern, "adults" | "children">, t: Translate) {
+  const adults = pattern.adults === 1
+    ? t("capacityPatterns.label.adult", { count: pattern.adults })
+    : t("capacityPatterns.label.adults", { count: pattern.adults });
+  const children = pattern.children === 1
+    ? t("capacityPatterns.label.child", { count: pattern.children })
+    : t("capacityPatterns.label.children", { count: pattern.children });
+  return `${adults} + ${children}`;
 }
 
 export function CapacityPatternsPage() {
+  const { t } = useTranslations({ en, id });
   const [items, setItems] = useState<CapacityPattern[]>([]);
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
@@ -47,8 +57,8 @@ export function CapacityPatternsPage() {
   const [draft, setDraft] = useState<Draft>(emptyDraft);
 
   const visible = useMemo(() => items.filter((item) =>
-    patternLabel(item).toLowerCase().includes(search.trim().toLowerCase())),
-  [items, search]);
+    patternLabel(item, t).toLowerCase().includes(search.trim().toLowerCase())),
+  [items, search, t]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -61,7 +71,7 @@ export function CapacityPatternsPage() {
         if (!controller.signal.aborted) setItems(response.items);
       } catch (cause) {
         if (!controller.signal.aborted) {
-          setLoadError(cause instanceof Error ? cause.message : "Capacity patterns gagal dimuat.");
+          setLoadError(cause instanceof Error ? cause.message : t("capacityPatterns.errors.loadFailed"));
         }
       } finally {
         if (!controller.signal.aborted) setLoading(false);
@@ -101,12 +111,12 @@ export function CapacityPatternsPage() {
       !Number.isInteger(children) || children < 0 || children > 99 ||
       !Number.isInteger(sortOrder) || sortOrder < 0 || sortOrder > 10000
     ) {
-      setFormError("Isi Adults (1–99), Children (0–99), dan Sort Order (0–10000).");
+      setFormError(t("capacityPatterns.errors.validation"));
       return;
     }
     if (items.some((item) =>
       item.id !== editingId && item.adults === adults && item.children === children)) {
-      setFormError("Kombinasi kapasitas ini sudah ada.");
+      setFormError(t("capacityPatterns.errors.duplicate"));
       return;
     }
 
@@ -123,76 +133,76 @@ export function CapacityPatternsPage() {
           : [...current, response.item];
         return next.sort((a, b) => a.sortOrder - b.sortOrder || a.adults - b.adults || a.children - b.children);
       });
-      setNotice(editingId ? "Capacity pattern updated." : "Capacity pattern added.");
+      setNotice(editingId ? t("capacityPatterns.notices.updated") : t("capacityPatterns.notices.added"));
       setModalOpen(false);
     } catch (cause) {
-      setFormError(cause instanceof Error ? cause.message : "Capacity pattern gagal disimpan.");
+      setFormError(cause instanceof Error ? cause.message : t("capacityPatterns.errors.saveFailed"));
     } finally {
       setSaving(false);
     }
   }
 
   async function remove(item: CapacityPattern) {
-    if (!window.confirm(`Delete ${patternLabel(item)}?`)) return;
+    if (!window.confirm(t("capacityPatterns.deleteConfirm", { label: patternLabel(item, t) }))) return;
     setDeletingId(item.id);
     setLoadError("");
     setNotice("");
     try {
       await deleteCapacityPattern(item.id);
       setItems((current) => current.filter((value) => value.id !== item.id));
-      setNotice("Capacity pattern deleted.");
+      setNotice(t("capacityPatterns.notices.deleted"));
     } catch (cause) {
-      setLoadError(cause instanceof Error ? cause.message : "Capacity pattern gagal dihapus.");
+      setLoadError(cause instanceof Error ? cause.message : t("capacityPatterns.errors.deleteFailed"));
     } finally {
       setDeletingId(null);
     }
   }
 
   return (
-    <AdminShell title="Master" context="Capacity Patterns">
+    <AdminShell title={t("shell.title")} context={t("shell.capacityContext")}>
       <main className="master-page">
         <header className="master-heading">
           <div>
-            <span className="roles-eyebrow">MASTER DATA</span>
-            <h1>Capacity Patterns</h1>
-            <p>Manage adult and child combinations available for room types.</p>
+            <span className="roles-eyebrow">{t("common.eyebrow")}</span>
+            <h1>{t("capacityPatterns.title")}</h1>
+            <p>{t("capacityPatterns.description")}</p>
           </div>
-          <button type="button" className="roles-add-button" onClick={openAdd}>+ Add Capacity Pattern</button>
+          <button type="button" className="roles-add-button" onClick={openAdd}>{t("capacityPatterns.addButton")}</button>
         </header>
 
         <section className="master-panel">
           <div className="master-toolbar">
-            <h2>Capacity Patterns <span>{items.length} items</span></h2>
+            <h2>{t("capacityPatterns.panelTitle")} <span>{t("capacityPatterns.count", { total: items.length })}</span></h2>
             <input
-              aria-label="Search capacity patterns"
-              placeholder="Search capacity patterns..."
+              aria-label={t("capacityPatterns.searchAriaLabel")}
+              placeholder={t("capacityPatterns.searchPlaceholder")}
               value={search}
               onChange={(event) => setSearch(event.target.value)}
             />
           </div>
           {loadError && <div className="master-message" role="alert">
-            {loadError} <button type="button" onClick={() => setReloadKey((value) => value + 1)}>Retry</button>
+            {loadError} <button type="button" onClick={() => setReloadKey((value) => value + 1)}>{t("common.retry")}</button>
           </div>}
           <div className="master-table-scroll">
             <table className="master-table">
-              <thead><tr><th>No.</th><th>Capacity</th><th>Sort Order</th><th>Status</th><th>Action</th></tr></thead>
+              <thead><tr><th>{t("capacityPatterns.table.no")}</th><th>{t("capacityPatterns.table.capacity")}</th><th>{t("capacityPatterns.table.sortOrder")}</th><th>{t("capacityPatterns.table.status")}</th><th>{t("capacityPatterns.table.action")}</th></tr></thead>
               <tbody>
                 {!loading && visible.map((item, index) => <tr key={item.id}>
                   <td>{index + 1}</td>
-                  <td><strong>{patternLabel(item)}</strong></td>
+                  <td><strong>{patternLabel(item, t)}</strong></td>
                   <td>{item.sortOrder}</td>
                   <td><span className={`master-status master-status--${item.isActive ? "active" : "inactive"}`}>
-                    {item.isActive ? "Active" : "Inactive"}
+                    {item.isActive ? t("common.status.active") : t("common.status.inactive")}
                   </span></td>
                   <td><div className="master-row-actions">
-                    <button type="button" onClick={() => openEdit(item)}>Edit</button>
+                    <button type="button" onClick={() => openEdit(item)}>{t("common.edit")}</button>
                     <button type="button" disabled={deletingId === item.id} onClick={() => void remove(item)}>
-                      {deletingId === item.id ? "Deleting..." : "Delete"}
+                      {deletingId === item.id ? t("common.deleting") : t("common.delete")}
                     </button>
                   </div></td>
                 </tr>)}
                 {(loading || !visible.length) && <tr><td colSpan={5} className="master-empty">
-                  {loading ? <LoadingSkeleton /> : loadError ? "Unable to load items." : "No capacity patterns found."}
+                  {loading ? <LoadingSkeleton /> : loadError ? t("capacityPatterns.errors.unableToLoad") : t("capacityPatterns.empty")}
                 </td></tr>}
               </tbody>
             </table>
@@ -203,31 +213,31 @@ export function CapacityPatternsPage() {
         {modalOpen && <div className="roles-modal-backdrop" onMouseDown={() => { if (!saving) setModalOpen(false); }}>
           <form className="roles-modal master-capacity-modal" onSubmit={(event) => void save(event)} onMouseDown={(event) => event.stopPropagation()}>
             <header>
-              <h2>{editingId ? "Edit" : "Add"} Capacity Pattern</h2>
-              <button type="button" aria-label="Close" disabled={saving} onClick={() => setModalOpen(false)}>×</button>
+              <h2>{editingId ? t("capacityPatterns.modal.editTitle") : t("capacityPatterns.modal.addTitle")}</h2>
+              <button type="button" aria-label={t("common.close")} disabled={saving} onClick={() => setModalOpen(false)}>×</button>
             </header>
-            <p>Set a valid guest combination for room type capacity.</p>
-            <label>Adults
+            <p>{t("capacityPatterns.modal.description")}</p>
+            <label>{t("capacityPatterns.modal.adults")}
               <input type="number" min={1} max={99} required value={draft.adults} disabled={saving}
                 onChange={(event) => setDraft((current) => ({ ...current, adults: event.target.value }))} />
             </label>
-            <label>Children
+            <label>{t("capacityPatterns.modal.children")}
               <input type="number" min={0} max={99} required value={draft.children} disabled={saving}
                 onChange={(event) => setDraft((current) => ({ ...current, children: event.target.value }))} />
             </label>
-            <label>Sort Order
+            <label>{t("capacityPatterns.modal.sortOrder")}
               <input type="number" min={0} max={10000} required value={draft.sortOrder} disabled={saving}
                 onChange={(event) => setDraft((current) => ({ ...current, sortOrder: event.target.value }))} />
             </label>
             {editingId && <label className="master-checkbox-label">
               <input type="checkbox" checked={draft.isActive} disabled={saving}
                 onChange={(event) => setDraft((current) => ({ ...current, isActive: event.target.checked }))} />
-              Active
+              {t("capacityPatterns.modal.active")}
             </label>}
             {formError && <span className="roles-form-error" role="alert">{formError}</span>}
             <footer>
-              <button type="button" disabled={saving} onClick={() => setModalOpen(false)}>Cancel</button>
-              <button type="submit" disabled={saving}>{saving ? "Saving..." : editingId ? "Save Changes" : "Add"}</button>
+              <button type="button" disabled={saving} onClick={() => setModalOpen(false)}>{t("common.cancel")}</button>
+              <button type="submit" disabled={saving}>{saving ? t("common.saving") : editingId ? t("common.saveChanges") : t("common.add")}</button>
             </footer>
           </form>
         </div>}

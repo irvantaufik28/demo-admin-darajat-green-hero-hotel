@@ -18,10 +18,13 @@ import {
   type CampaignRecord,
   type CampaignRoomTypeOption,
 } from "../services/campaigns";
+import { useTranslations, type Translate } from "../../../lib/i18n";
+import en from "../locales/en.json";
+import id from "../locales/id.json";
 
 // ─── Sub-components ──────────────────────────────────────────────────────────
 
-function DiscountBadge({ campaign }: { campaign: CampaignRecord }) {
+function DiscountBadge({ campaign, t }: { campaign: CampaignRecord; t: Translate }) {
   const isActive = campaign.isActive;
   return (
     <span
@@ -30,13 +33,13 @@ function DiscountBadge({ campaign }: { campaign: CampaignRecord }) {
       }
     >
       {campaign.discountType === "percent"
-        ? `${campaign.discountValue}% Off`
-        : `Rp ${new Intl.NumberFormat("id-ID").format(campaign.discountValue)} Off`}
+        ? t("list.cell.percentOff", { value: campaign.discountValue })
+        : t("list.cell.amountOff", { value: new Intl.NumberFormat("id-ID").format(campaign.discountValue) })}
     </span>
   );
 }
 
-function StatusBadge({ isActive }: { isActive: boolean }) {
+function StatusBadge({ isActive, t }: { isActive: boolean; t: Translate }) {
   return (
     <span
       className={
@@ -46,14 +49,14 @@ function StatusBadge({ isActive }: { isActive: boolean }) {
       }
     >
       <i />
-      {isActive ? "Active" : "Inactive"}
+      {isActive ? t("list.status.active") : t("list.status.inactive")}
     </span>
   );
 }
 
-function PriorityBadge({ priority }: { priority: number }) {
+function PriorityBadge({ priority, t }: { priority: number; t: Translate }) {
   return (
-    <span className="campaign-priority" title={`Priority ${priority}`}>
+    <span className="campaign-priority" title={t("list.cell.priorityTitle", { priority })}>
       {priority}
     </span>
   );
@@ -62,13 +65,15 @@ function PriorityBadge({ priority }: { priority: number }) {
 function RoomTypeCell({
   campaign,
   roomTypes,
+  t,
 }: {
   campaign: CampaignRecord;
   roomTypes: CampaignRoomTypeOption[];
+  t: Translate;
 }) {
   const isAll = campaign.roomTypeIds.length === 0;
   if (isAll) {
-    return <span className="campaign-room-all">All Room Types</span>;
+    return <span className="campaign-room-all">{t("list.cell.allRoomTypes")}</span>;
   }
   return (
     <span className="campaign-room-list">
@@ -77,8 +82,8 @@ function RoomTypeCell({
   );
 }
 
-function formatPeriod(start: string | null, end: string | null) {
-  return `${start ? formatStayDate(start) : "Any date"} — ${end ? formatStayDate(end) : "Any date"}`;
+function formatPeriod(start: string | null, end: string | null, t: Translate) {
+  return `${start ? formatStayDate(start) : t("list.cell.anyDate")} — ${end ? formatStayDate(end) : t("list.cell.anyDate")}`;
 }
 
 function jakartaToday() {
@@ -106,6 +111,7 @@ function CampaignRow({
   onStatusChange,
   onDelete,
   busy,
+  t,
 }: {
   campaign: CampaignRecord;
   roomTypes: CampaignRoomTypeOption[];
@@ -113,6 +119,7 @@ function CampaignRow({
   onStatusChange: (campaign: CampaignRecord) => void;
   onDelete: (campaign: CampaignRecord) => void;
   busy: boolean;
+  t: Translate;
 }) {
   const stayState = stayPeriodState(campaign.stayStart, campaign.stayEnd, today);
   return (
@@ -132,11 +139,11 @@ function CampaignRow({
           <div className="campaign-code-wrap">
             {campaign.promoCode ? (
               <span className="campaign-code">
-                Code: <span>{campaign.promoCode}</span>
+                {t("list.cell.codeLabel")} <span>{campaign.promoCode}</span>
               </span>
             ) : (
               <span className="campaign-code campaign-code--auto">
-                No Code (Auto-applied)
+                {t("list.cell.noCode")}
               </span>
             )}
           </div>
@@ -145,41 +152,41 @@ function CampaignRow({
 
       {/* Room Type */}
       <td className="campaigns-table__td">
-        <RoomTypeCell campaign={campaign} roomTypes={roomTypes} />
+        <RoomTypeCell campaign={campaign} roomTypes={roomTypes} t={t} />
       </td>
 
       <td className="campaigns-table__td campaigns-table__td--muted">
-        {campaign.channel === "website" ? "Website" : "Front Desk"}
+        {campaign.channel === "website" ? t("list.cell.channelWebsite") : t("list.cell.channelFrontDesk")}
       </td>
 
       {/* Booking Period */}
       <td className="campaigns-table__td campaigns-table__td--muted">
-        {formatPeriod(campaign.bookingStart, campaign.bookingEnd)}
+        {formatPeriod(campaign.bookingStart, campaign.bookingEnd, t)}
       </td>
 
       {/* Stay Period */}
       <td className="campaigns-table__td campaigns-table__td--medium">
-        {formatPeriod(campaign.stayStart, campaign.stayEnd)}
+        {formatPeriod(campaign.stayStart, campaign.stayEnd, t)}
       </td>
 
       {/* Discount */}
       <td className="campaigns-table__td">
-        <DiscountBadge campaign={campaign} />
+        <DiscountBadge campaign={campaign} t={t} />
       </td>
 
       {/* Min Night */}
       <td className="campaigns-table__td campaigns-table__td--muted">
-        {campaign.minNights === 1 ? "1 Night" : `${campaign.minNights} Nights`}
+        {campaign.minNights === 1 ? t("list.cell.oneNight") : t("list.cell.nights", { count: campaign.minNights })}
       </td>
 
       {/* Priority */}
       <td className="campaigns-table__td campaigns-table__td--center">
-        <PriorityBadge priority={campaign.priority} />
+        <PriorityBadge priority={campaign.priority} t={t} />
       </td>
 
       {/* Status */}
       <td className="campaigns-table__td">
-        <StatusBadge isActive={campaign.isActive} />
+        <StatusBadge isActive={campaign.isActive} t={t} />
       </td>
 
       {/* Actions */}
@@ -189,8 +196,8 @@ function CampaignRow({
             type="button"
             role="switch"
             aria-checked={campaign.isActive}
-            aria-label={`${campaign.isActive ? "Disable" : "Enable"} ${campaign.name}`}
-            title={campaign.isActive ? "Disable campaign" : "Enable campaign"}
+            aria-label={campaign.isActive ? t("list.switch.disableAria", { name: campaign.name }) : t("list.switch.enableAria", { name: campaign.name })}
+            title={campaign.isActive ? t("list.switch.disableTitle") : t("list.switch.enableTitle")}
             className={`campaign-actions__switch${campaign.isActive ? " campaign-actions__switch--active" : ""}`}
             disabled={busy}
             onClick={() => onStatusChange(campaign)}
@@ -198,7 +205,7 @@ function CampaignRow({
             <span />
           </button>
           <Link href={`/campaigns/${campaign.id}/edit`} className="text-action">
-            Edit
+            {t("list.actions.edit")}
           </Link>
           <button
             type="button"
@@ -206,7 +213,7 @@ function CampaignRow({
             disabled={busy}
             onClick={() => onDelete(campaign)}
           >
-            Delete
+            {t("list.actions.delete")}
           </button>
         </div>
       </td>
@@ -217,6 +224,7 @@ function CampaignRow({
 // ─── Main component ──────────────────────────────────────────────────────────
 
 export function CampaignsPage() {
+  const { t } = useTranslations({ en, id });
   const [today, setToday] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | "Active" | "Inactive">("all");
@@ -248,7 +256,7 @@ export function CampaignsPage() {
         setRoomTypes(await listCampaignRoomTypes(controller.signal));
       } catch (cause) {
         if (!controller.signal.aborted) {
-          setError(cause instanceof Error ? cause.message : "Room types gagal dimuat.");
+          setError(cause instanceof Error ? cause.message : t("list.messages.roomTypesLoadFailed"));
         }
       }
     })();
@@ -279,7 +287,7 @@ export function CampaignsPage() {
         } catch (cause) {
           if (!controller.signal.aborted) {
             setItems([]);
-            setError(cause instanceof Error ? cause.message : "Campaign gagal dimuat.");
+            setError(cause instanceof Error ? cause.message : t("list.messages.campaignsLoadFailed"));
           }
         } finally {
           if (!controller.signal.aborted) setLoading(false);
@@ -299,7 +307,7 @@ export function CampaignsPage() {
       await setCampaignStatus(campaign.id, !campaign.isActive);
       setReload((current) => current + 1);
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Status campaign gagal diubah.");
+      setError(cause instanceof Error ? cause.message : t("list.messages.statusChangeFailed"));
     } finally {
       setBusyId("");
     }
@@ -316,7 +324,7 @@ export function CampaignsPage() {
       setReload((current) => current + 1);
     } catch (cause) {
       setCampaignToDelete(null);
-      setError(cause instanceof Error ? cause.message : "Campaign gagal dihapus.");
+      setError(cause instanceof Error ? cause.message : t("list.messages.deleteFailed"));
     } finally {
       setBusyId("");
     }
@@ -335,22 +343,21 @@ export function CampaignsPage() {
 
   return (
     <AdminShell
-      title="Operations"
-      context="Campaigns & Promotions"
+      title={t("shell.title")}
+      context={t("shell.context")}
     >
       <div className="campaigns-page">
         {/* Page header */}
         <div className="campaigns-heading">
           <div>
-            <h1>Campaigns &amp; Promotions</h1>
+            <h1>{t("list.page.title")}</h1>
             <p>
-              Kelola promo yang berlaku berdasarkan periode, tipe kamar, dan
-              aturan booking
+              {t("list.page.description")}
             </p>
           </div>
           <Link href="/campaigns/add" className="action-button">
             <Icon name="plus" />
-            <span>+ Add Campaign</span>
+            <span>{t("list.actions.addCampaign")}</span>
           </Link>
         </div>
 
@@ -368,7 +375,7 @@ export function CampaignsPage() {
               <input
                 type="text"
                 className="campaigns-search"
-                placeholder="Search campaign name or promo code..."
+                placeholder={t("list.filters.searchPlaceholder")}
                 value={search}
                 onChange={(e) => { setSearch(e.target.value); setPage(1); }}
               />
@@ -384,9 +391,9 @@ export function CampaignsPage() {
                   setPage(1);
                 }}
               >
-                <option value="all">All Status</option>
-                <option value="Active">Active</option>
-                <option value="Inactive">Inactive</option>
+                <option value="all">{t("list.filters.status.all")}</option>
+                <option value="Active">{t("list.filters.status.active")}</option>
+                <option value="Inactive">{t("list.filters.status.inactive")}</option>
               </select>
               <Icon
                 name="chevron"
@@ -399,16 +406,16 @@ export function CampaignsPage() {
             <div className="campaigns-select-wrap">
               <select
                 className="campaigns-select"
-                aria-label="Filter channel"
+                aria-label={t("list.filters.channelAriaLabel")}
                 value={channelFilter}
                 onChange={(e) => {
                   setChannelFilter(e.target.value as typeof channelFilter);
                   setPage(1);
                 }}
               >
-                <option value="all">All Channels</option>
-                <option value="website">Website</option>
-                <option value="front_desk">Front Desk</option>
+                <option value="all">{t("list.filters.channel.all")}</option>
+                <option value="website">{t("list.filters.channel.website")}</option>
+                <option value="front_desk">{t("list.filters.channel.frontDesk")}</option>
               </select>
               <Icon name="chevron" className="campaigns-select-chevron" width={14} height={14} />
             </div>
@@ -420,7 +427,7 @@ export function CampaignsPage() {
                 value={roomFilter}
                 onChange={(e) => { setRoomFilter(e.target.value); setPage(1); }}
               >
-                <option value="all">All Room Types</option>
+                <option value="all">{t("list.filters.roomType.all")}</option>
                 {roomTypes.map((room) => (
                   <option key={room.id} value={room.id}>
                     {room.name}
@@ -444,7 +451,7 @@ export function CampaignsPage() {
               onClick={resetFilters}
             >
               <Icon name="reset" width={14} height={14} />
-              <span>Reset Filter</span>
+              <span>{t("list.actions.resetFilter")}</span>
             </button>
           )}
         </div>
@@ -457,19 +464,19 @@ export function CampaignsPage() {
             <table className="campaigns-table">
               <thead>
                 <tr className="campaigns-table__head-row">
-                  <th className="campaigns-table__th">Campaign Name</th>
-                  <th className="campaigns-table__th">Room Type</th>
-                  <th className="campaigns-table__th">Channel</th>
-                  <th className="campaigns-table__th">Booking Period</th>
-                  <th className="campaigns-table__th">Stay Period</th>
-                  <th className="campaigns-table__th">Discount</th>
-                  <th className="campaigns-table__th">Min. Night</th>
+                  <th className="campaigns-table__th">{t("list.table.campaignName")}</th>
+                  <th className="campaigns-table__th">{t("list.table.roomType")}</th>
+                  <th className="campaigns-table__th">{t("list.table.channel")}</th>
+                  <th className="campaigns-table__th">{t("list.table.bookingPeriod")}</th>
+                  <th className="campaigns-table__th">{t("list.table.stayPeriod")}</th>
+                  <th className="campaigns-table__th">{t("list.table.discount")}</th>
+                  <th className="campaigns-table__th">{t("list.table.minNight")}</th>
                   <th className="campaigns-table__th campaigns-table__th--center">
-                    Priority
+                    {t("list.table.priority")}
                   </th>
-                  <th className="campaigns-table__th">Status</th>
+                  <th className="campaigns-table__th">{t("list.table.status")}</th>
                   <th className="campaigns-table__th campaigns-table__th--right">
-                    Action
+                    {t("list.table.action")}
                   </th>
                 </tr>
               </thead>
@@ -484,6 +491,7 @@ export function CampaignsPage() {
                       busy={busyId === campaign.id}
                       onStatusChange={toggleStatus}
                       onDelete={setCampaignToDelete}
+                      t={t}
                     />
                   ))
                 ) : (
@@ -492,7 +500,7 @@ export function CampaignsPage() {
                       colSpan={10}
                       className="campaigns-table__empty"
                     >
-                      {loading ? <LoadingSkeleton /> : "Tidak ada campaign yang sesuai filter."}
+                      {loading ? <LoadingSkeleton /> : t("list.messages.empty")}
                     </td>
                   </tr>
                 )}
@@ -503,11 +511,7 @@ export function CampaignsPage() {
           {/* Pagination footer */}
           <div className="campaigns-pagination">
             <span className="campaigns-pagination__info">
-              Showing{" "}
-              <strong>
-                {total > 0 ? (page - 1) * limit + 1 : 0}–{Math.min(page * limit, total)}
-              </strong>{" "}
-              of <strong>{total}</strong> campaigns
+              {t("list.pagination.showing", { from: total > 0 ? (page - 1) * limit + 1 : 0, to: Math.min(page * limit, total), total })}
             </span>
             <div className="campaigns-pagination__controls">
               <button
@@ -517,7 +521,7 @@ export function CampaignsPage() {
                 onClick={() => setPage((current) => current - 1)}
               >
                 <Icon name="chevronLeft" width={14} height={14} />
-                <span>Previous</span>
+                <span>{t("list.actions.previous")}</span>
               </button>
               <button
                 type="button"
@@ -531,7 +535,7 @@ export function CampaignsPage() {
                 disabled={page * limit >= total || loading}
                 onClick={() => setPage((current) => current + 1)}
               >
-                <span>Next</span>
+                <span>{t("list.actions.next")}</span>
                 <Icon name="chevronRight" width={14} height={14} />
               </button>
             </div>
@@ -547,11 +551,7 @@ export function CampaignsPage() {
             height={18}
           />
           <p>
-            <strong>Catatan Prioritas Promo:</strong> Jika beberapa campaign
-            aktif pada channel, tipe kamar, dan tanggal menginap yang
-            sama, sistem secara otomatis menerapkan promo dengan Prioritas
-            tertinggi (angka 1 = prioritas utama). Promo tidak dapat digabung
-            (non-stackable).
+            <strong>{t("list.notice.priorityTitle")}</strong> {t("list.notice.priorityBody")}
           </p>
         </div>
 
@@ -563,18 +563,16 @@ export function CampaignsPage() {
               aria-modal="true"
               aria-labelledby="campaign-delete-title"
             >
-              <h2 id="campaign-delete-title">Delete Campaign?</h2>
+              <h2 id="campaign-delete-title">{t("list.deleteDialog.title")}</h2>
               <p>
-                Hapus <strong>{campaignToDelete.name}</strong>? Riwayat promo pada
-                reservasi tetap tersimpan sebagai snapshot. Priority campaign
-                lain dalam channel yang sama akan diperbarui otomatis.
+                {t("list.deleteDialog.body", { name: campaignToDelete.name })}
               </p>
               <div className="campaign-delete-dialog__actions">
                 <button type="button" disabled={busyId === campaignToDelete.id} onClick={() => setCampaignToDelete(null)}>
-                  Cancel
+                  {t("list.deleteDialog.cancel")}
                 </button>
                 <button type="button" className="campaign-delete-dialog__confirm" disabled={busyId === campaignToDelete.id} onClick={() => void confirmDelete()}>
-                  {busyId === campaignToDelete.id ? "Deleting..." : "Delete Campaign"}
+                  {busyId === campaignToDelete.id ? t("list.deleteDialog.deleting") : t("list.deleteDialog.confirm")}
                 </button>
               </div>
             </section>

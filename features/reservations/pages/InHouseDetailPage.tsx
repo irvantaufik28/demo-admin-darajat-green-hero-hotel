@@ -15,6 +15,9 @@ import {
   getExtraCost,
   roomTypes,
 } from "../constants/walk-in-data";
+import { useTranslations } from "../../../lib/i18n";
+import en from "../locales/en.json";
+import id from "../locales/id.json";
 
 type ModalKind =
   | "payment"
@@ -98,17 +101,18 @@ function Info({ label, value }: { label: string; value: ReactNode }) {
 }
 
 export function InHouseDetailPage() {
+  const { t } = useTranslations({ en, id });
   const { bookingId } = useParams<{ bookingId: string }>();
   const guest = inHouseGuests.find((item) => item.bookingId === bookingId);
 
   return (
-    <AdminShell title="Reservations" context="In House">
+    <AdminShell title={t("shell.title")} context={t("shell.inHouse")}>
       {guest ? (
         <GuestStay key={guest.bookingId} guest={guest} />
       ) : (
         <div className="guest-stay-page">
-          <h1>Reservasi tidak ditemukan</h1>
-          <Link href="/reservations/in-house">← In House</Link>
+          <h1>{t("inHouseDetail.notFound")}</h1>
+          <Link href="/reservations/in-house">← {t("inHouseDetail.backInHouse")}</Link>
         </div>
       )}
     </AdminShell>
@@ -116,6 +120,7 @@ export function InHouseDetailPage() {
 }
 
 function GuestStay({ guest }: { guest: InHouseRecord }) {
+  const { t } = useTranslations({ en, id });
   const [amountPaid, setAmountPaid] = useState(guest.amountPaid);
   const [total, setTotal] = useState(guest.total);
   const [billTotal, setBillTotal] = useState(guest.total);
@@ -315,7 +320,7 @@ function GuestStay({ guest }: { guest: InHouseRecord }) {
       !Number.isInteger(roomChangeNights) ||
       roomChangeNights < 1
     ) {
-      setError("Pilih kamar tersedia dan jumlah malam yang valid.");
+      setError(t("inHouseDetail.errors.roomInvalid"));
       return;
     }
     const roomPriceDifference =
@@ -361,10 +366,10 @@ function GuestStay({ guest }: { guest: InHouseRecord }) {
     );
     setNotice(
       difference > 0
-        ? `Kamar diubah. Simpan tagihan ${formatRupiah(difference)} di Summary.`
+        ? t("inHouseDetail.notice.roomChangedCharge", { amount: formatRupiah(difference) })
         : difference < 0
-          ? `Kamar diubah. Simpan kredit ${formatRupiah(-difference)} di Summary.`
-          : "Nomor kamar berhasil diubah tanpa selisih tarif.",
+          ? t("inHouseDetail.notice.roomChangedCredit", { amount: formatRupiah(-difference) })
+          : t("inHouseDetail.notice.roomChangedNoDiff"),
     );
     setModal(null);
   }
@@ -372,7 +377,7 @@ function GuestStay({ guest }: { guest: InHouseRecord }) {
   function manageBed() {
     const existing = activeRoom.bed;
     if (bedEnabled && (!Number.isInteger(bedNights) || bedNights < 1)) {
-      setError("Jumlah malam harus minimal 1.");
+      setError(t("inHouseDetail.errors.bedNightsMin"));
       return;
     }
     const amount = bedEnabled ? bedRate * bedNights : 0;
@@ -407,15 +412,19 @@ function GuestStay({ guest }: { guest: InHouseRecord }) {
     setTotal((current) => current + difference);
     setNotice(
       bedEnabled
-        ? `Extra Bed diperbarui. ${difference > 0 ? "Tambahan biaya" : difference < 0 ? "Pengurangan biaya" : "Biaya"} ${formatRupiah(Math.abs(difference))} tercatat.`
-        : "Extra Bed dihapus dari tagihan.",
+        ? difference > 0
+          ? t("inHouseDetail.notice.bedUpdatedAdd", { amount: formatRupiah(Math.abs(difference)) })
+          : difference < 0
+            ? t("inHouseDetail.notice.bedUpdatedReduce", { amount: formatRupiah(Math.abs(difference)) })
+            : t("inHouseDetail.notice.bedUpdatedSame", { amount: formatRupiah(Math.abs(difference)) })
+        : t("inHouseDetail.notice.bedRemoved"),
     );
     setModal(null);
   }
 
   function addExtra() {
     if (!chosenExtra || addedExtras.some((item) => item.id === extraId)) {
-      setError("Pilih item yang belum ditambahkan.");
+      setError(t("inHouseDetail.errors.extraNotAdded"));
       return;
     }
     if (
@@ -425,7 +434,7 @@ function GuestStay({ guest }: { guest: InHouseRecord }) {
       !Number.isInteger(extraNights) ||
       extraNights < 1
     ) {
-      setError("Periksa jumlah item dan malam yang dipilih.");
+      setError(t("inHouseDetail.errors.extraInvalid"));
       return;
     }
     const nights = chosenExtra.perNight ? extraNights : 1;
@@ -442,7 +451,7 @@ function GuestStay({ guest }: { guest: InHouseRecord }) {
     ]);
     setTotal((current) => current + amount);
     setNotice(
-      `${chosenExtra.label} ditambahkan. Tekan Save Bill di Summary untuk menagihnya nanti.`,
+      t("inHouseDetail.notice.extraAdded", { label: chosenExtra.label }),
     );
     setModal(null);
   }
@@ -458,7 +467,7 @@ function GuestStay({ guest }: { guest: InHouseRecord }) {
     setAddedExtras((current) => current.filter((item) => item.id !== id));
     setTotal((current) => current - selected.amount);
     setNotice(
-      `${extras.find((item) => item.id === id)?.label ?? "Add-on"} dihapus dari tagihan.`,
+      t("inHouseDetail.notice.extraRemoved", { label: extras.find((item) => item.id === id)?.label ?? t("inHouseDetail.addItem") }),
     );
   }
 
@@ -466,7 +475,7 @@ function GuestStay({ guest }: { guest: InHouseRecord }) {
     const amount = Number(paymentInput);
     if (!Number.isFinite(amount) || amount <= 0 || amount > balance) {
       setError(
-        "Jumlah pembayaran harus lebih dari Rp0 dan tidak melebihi sisa tagihan.",
+        t("inHouseDetail.errors.paymentInvalid"),
       );
       return;
     }
@@ -494,7 +503,7 @@ function GuestStay({ guest }: { guest: InHouseRecord }) {
         ),
       );
     }
-    setNotice(`Pembayaran ${formatRupiah(amount)} dicatat untuk demo ini.`);
+    setNotice(t("inHouseDetail.notice.paymentRecorded", { amount: formatRupiah(amount) }));
     setModal(null);
   }
 
@@ -521,13 +530,13 @@ function GuestStay({ guest }: { guest: InHouseRecord }) {
           : room,
       ),
     );
-    setNotice("Tagihan disimpan. Biaya baru masuk ke Remaining Balance untuk dibayar nanti.");
+    setNotice(t("inHouseDetail.notice.billSaved"));
   }
 
   function extendStay() {
     const nights = calculateNights(checkOut, extensionDate);
     if (nights < 1 || extensionDate <= "2026-09-30") {
-      setError("Pilih tanggal check-out baru setelah 30 Sep 2026.");
+      setError(t("inHouseDetail.errors.extendDate"));
       return;
     }
     const addedCost = assignedRooms.reduce(
@@ -541,46 +550,46 @@ function GuestStay({ guest }: { guest: InHouseRecord }) {
     setCheckOut(extensionDate);
     setStayState("In House");
     setNotice(
-      `Masa menginap diperpanjang ${nights} malam. Tekan Save Bill untuk menyimpan tambahan biaya ${formatRupiah(addedCost)}.`,
+      t("inHouseDetail.notice.stayExtended", { nights, amount: formatRupiah(addedCost) }),
     );
     setModal(null);
   }
 
   function concludeCheckout() {
     if (hasPendingBillChanges) {
-      setError("Simpan perubahan tagihan sebelum check-out.");
+      setError(t("inHouseDetail.errors.saveBillFirst"));
       return;
     }
     if (balance > 0 && (!checkoutBalanceAcknowledged || !checkoutOutstandingReason.trim())) {
-      setError("Centang konfirmasi dan isi alasan check-out dengan sisa tagihan.");
+      setError(t("inHouseDetail.errors.checkoutReasonRequired"));
       return;
     }
     if (isOverdue && !overstayReviewed) {
       setError(
-        "Tinjau potensi biaya lewat waktu bersama supervisor sebelum check-out.",
+        t("inHouseDetail.errors.overstayReview"),
       );
       return;
     }
     setStayState("Checked Out");
-    setNotice(`Check-out selesai.${balance > 0 ? ` Sisa tagihan ${formatRupiah(balance)}. Alasan: ${checkoutOutstandingReason.trim()}.` : ""}${guest.deposit > 0 ? ` Deposit ${formatRupiah(guest.deposit)} perlu diselesaikan.` : ""}`);
+    setNotice(`${t("inHouseDetail.notice.checkoutDone")}${balance > 0 ? t("inHouseDetail.notice.checkoutBalance", { amount: formatRupiah(balance), reason: checkoutOutstandingReason.trim() }) : ""}${guest.deposit > 0 ? t("inHouseDetail.notice.checkoutDeposit", { amount: formatRupiah(guest.deposit) }) : ""}`);
     setModal(null);
   }
 
   return (
     <div className="guest-stay-page">
       <div className="guest-stay-breadcrumb">
-        <Link href="/reservations/in-house">← In House</Link>
+        <Link href="/reservations/in-house">← {t("inHouseDetail.backInHouse")}</Link>
         <span>/</span>
         <span>{guest.bookingId}</span>
       </div>
       <div className="guest-stay-heading">
         <div>
           <div className="guest-stay-heading-line">
-            <h1>Guest Stay</h1>
+            <h1>{t("inHouseDetail.guestStay")}</h1>
             <span className="guest-stay-booking">{guest.bookingId}</span>
             <span className="reservations-source">{guest.source}</span>
             <span className="reservations-badge reservations-badge--success">
-              {isCheckedOut ? "Checked-out" : "Checked-in"}
+              {isCheckedOut ? t("inHouseDetail.checkedOut") : t("inHouseDetail.checkedIn")}
             </span>
             <span
               className={
@@ -607,15 +616,14 @@ function GuestStay({ guest }: { guest: InHouseRecord }) {
               }
             >
               {isInHouse
-                ? "2 Nights Remaining"
+                ? t("inHouseDetail.nightsRemaining")
                 : isOverdue
-                  ? "Overdue · 1 Day"
+                  ? t("inHouseDetail.overdueBadge")
                   : stayState}
             </span>
           </div>
           <p>
-            Primary Guest: <strong>{guest.guestName}</strong> · Scheduled
-            check-out {dateLabel(checkOut)}
+            {t("inHouseDetail.primaryGuest")}<strong>{guest.guestName}</strong>{t("inHouseDetail.scheduledCheckOut", { date: dateLabel(checkOut) })}
           </p>
         </div>
       
@@ -629,7 +637,7 @@ function GuestStay({ guest }: { guest: InHouseRecord }) {
           {notice}
           <button
             type="button"
-            aria-label="Tutup pesan"
+            aria-label={t("common.closeMessage")}
             onClick={() => setNotice("")}
           >
             ×
@@ -639,11 +647,9 @@ function GuestStay({ guest }: { guest: InHouseRecord }) {
       {isOverdue && (
         <div className="guest-stay-alert guest-stay-alert--danger">
           <div>
-            <strong>Lewat jadwal check-out · 1 hari</strong>
+            <strong>{t("inHouseDetail.overdueTitle")}</strong>
             <p>
-              Check-out dijadwalkan {dateLabel(checkOut)} pukul 12.00. Periksa
-              potensi biaya tambahan satu malam sebelum memperpanjang masa inap
-              atau menyelesaikan check-out.
+              {t("inHouseDetail.overdueBody", { date: dateLabel(checkOut) })}
             </p>
           </div>
           <div className="guest-stay-alert-actions">
@@ -652,7 +658,7 @@ function GuestStay({ guest }: { guest: InHouseRecord }) {
               className="guest-stay-button guest-stay-button--secondary"
               onClick={openExtend}
             >
-              Extend Stay
+              {t("inHouseDetail.extendStay")}
             </button>
             {!hasPendingBillChanges && (
               <button
@@ -660,7 +666,7 @@ function GuestStay({ guest }: { guest: InHouseRecord }) {
                 className="guest-stay-button guest-stay-button--danger"
                 onClick={openCheckout}
               >
-                Check Out Guest
+                {t("inHouseDetail.checkOutGuest")}
               </button>
             )}
           </div>
@@ -669,10 +675,9 @@ function GuestStay({ guest }: { guest: InHouseRecord }) {
       {(isDueOut || isOverdue) && balance > 0 && (
         <div className="guest-stay-alert guest-stay-alert--warning">
           <div>
-            <strong>Outstanding payment</strong>
+            <strong>{t("inHouseDetail.outstandingTitle")}</strong>
             <p>
-              Sisa tagihan {formatRupiah(balance)} dapat ditindaklanjuti setelah
-              check-out dengan konfirmasi dan alasan petugas.
+              {t("inHouseDetail.outstandingBody", { amount: formatRupiah(balance) })}
             </p>
           </div>
         </div>
@@ -680,36 +685,37 @@ function GuestStay({ guest }: { guest: InHouseRecord }) {
 
       <div className="guest-stay-columns">
         <div className="guest-stay-main">
-          <Section title="Guest & Stay Information">
+          <Section title={t("inHouseDetail.guestStayInfo")}>
             <div className="guest-stay-info-grid">
-              <Info label="Guest Name" value={guest.guestName} />
-              <Info label="WhatsApp / Phone" value={guest.whatsapp} />
-              <Info label="Booking Source" value={guest.source} />
+              <Info label={t("inHouseDetail.guestName")} value={guest.guestName} />
+              <Info label={t("inHouseDetail.whatsappPhone")} value={guest.whatsapp} />
+              <Info label={t("inHouseDetail.bookingSource")} value={guest.source} />
               <Info
-                label="Room Numbers"
+                label={t("inHouseDetail.roomNumbers")}
                 value={assignedRooms.map((room) => room.number).join(", ")}
               />
               <Info
-                label="Check-in"
-                value={`${dateLabel(guest.checkIn)} · 14:00`}
+                label={t("inHouseDetail.checkIn")}
+                value={t("inHouseDetail.checkInValue", { date: dateLabel(guest.checkIn) })}
               />
               <Info
-                label="Scheduled Check-out"
-                value={`${dateLabel(checkOut)} · 12:00`}
+                label={t("inHouseDetail.scheduledCheckOutLabel")}
+                value={t("inHouseDetail.checkOutValue", { date: dateLabel(checkOut) })}
               />
               <Info
-                label="Duration"
-                value={`${calculateNights(guest.checkIn, checkOut)} Nights`}
+                label={t("inHouseDetail.duration")}
+                value={t("inHouseDetail.nights", { count: calculateNights(guest.checkIn, checkOut) })}
               />
-              <Info label="Guests" value={`${guest.adults} Adults`} />
+              <Info label={t("inHouseDetail.guests")} value={t("inHouseDetail.adults", { count: guest.adults })} />
             </div>
           </Section>
           <Section
-            title="Assigned Room & Configuration"
+            title={t("inHouseDetail.assignedRoomConfig")}
             aside={
               <span className="reservations-badge reservations-badge--success">
-                {assignedRooms.length}{" "}
-                {assignedRooms.length === 1 ? "Room" : "Rooms"} Occupied
+                {assignedRooms.length === 1
+                  ? t("inHouseDetail.roomsOccupiedSingle")
+                  : t("inHouseDetail.roomsOccupied", { count: assignedRooms.length })}
               </span>
             }
           >
@@ -717,13 +723,13 @@ function GuestStay({ guest }: { guest: InHouseRecord }) {
               <table className="guest-stay-table guest-stay-room-table">
                 <thead>
                   <tr>
-                    <th>ROOM TYPE</th>
-                    <th>ROOM NO.</th>
-                    <th>GUESTS</th>
-                    <th>DATES</th>
-                    <th>EXTRA BED</th>
-                    <th>STATUS</th>
-                    <th>ACTIONS</th>
+                    <th>{t("inHouseDetail.tableRoomType")}</th>
+                    <th>{t("inHouseDetail.tableRoomNo")}</th>
+                    <th>{t("inHouseDetail.tableGuests")}</th>
+                    <th>{t("inHouseDetail.tableDates")}</th>
+                    <th>{t("inHouseDetail.tableExtraBed")}</th>
+                    <th>{t("inHouseDetail.tableStatus")}</th>
+                    <th>{t("inHouseDetail.tableActions")}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -736,17 +742,17 @@ function GuestStay({ guest }: { guest: InHouseRecord }) {
                         <td>
                           <strong>{room.number}</strong>
                         </td>
-                        <td>{room.adults} Adults</td>
+                        <td>{t("inHouseDetail.adults", { count: room.adults })}</td>
                         <td>
-                          {dateLabel(guest.checkIn)} – {dateLabel(checkOut)}
+                          {t("inHouseDetail.dateRange", { from: dateLabel(guest.checkIn), to: dateLabel(checkOut) })}
                         </td>
                         <td>
                           {room.bed ? (
                             <span className="guest-stay-bed-cell">
-                              1 Bed ({formatRupiah(room.bed.amount)})
+                              {t("inHouseDetail.bedCell", { amount: formatRupiah(room.bed.amount) })}
                             </span>
                           ) : (
-                            <span className="in-house-muted">—</span>
+                            <span className="in-house-muted">{t("common.emptyDash")}</span>
                           )}
                         </td>
                         <td>
@@ -761,12 +767,12 @@ function GuestStay({ guest }: { guest: InHouseRecord }) {
                             }
                           >
                             {isOverdue
-                              ? "Overdue 1d"
+                              ? t("inHouseDetail.statusOverdue")
                               : isDueOut
-                                ? "Due Out Today"
+                                ? t("inHouseDetail.statusDueOut")
                                 : isCheckedOut
-                                  ? "Vacated"
-                                  : "Occupied"}
+                                  ? t("inHouseDetail.statusVacated")
+                                  : t("inHouseDetail.statusOccupied")}
                           </span>
                         </td>
                         <td>
@@ -777,14 +783,14 @@ function GuestStay({ guest }: { guest: InHouseRecord }) {
                                 className="guest-stay-button guest-stay-button--secondary"
                                 onClick={() => openRoom(room.key)}
                               >
-                                Change Room
+                                {t("inHouseDetail.changeRoom")}
                               </button>
                               <button
                                 type="button"
                                 className="guest-stay-button guest-stay-button--secondary"
                                 onClick={() => openBed(room.key)}
                               >
-                                Manage Extra Bed
+                                {t("inHouseDetail.manageExtraBed")}
                               </button>
                             </div>
                           )}
@@ -794,12 +800,9 @@ function GuestStay({ guest }: { guest: InHouseRecord }) {
                         <tr className="guest-stay-bed-row">
                           <td colSpan={7}>
                             <span>↳</span>
-                            <strong>Extra Bed (Room {room.number})</strong>
+                            <strong>{t("inHouseDetail.extraBedRowLabel", { room: room.number })}</strong>
                             <span>
-                              1 Bed · {dateLabel(guest.checkIn)} –{" "}
-                              {dateLabel(checkOut)} ({room.bed.nights} Nights @{" "}
-                              {formatRupiah(extraBedRates[room.name] ?? 150000)}
-                              ) ={" "}
+                              {t("inHouseDetail.extraBedRowDetail", { from: dateLabel(guest.checkIn), to: dateLabel(checkOut), nights: room.bed.nights, rate: formatRupiah(extraBedRates[room.name] ?? 150000) })}
                               <strong>{formatRupiah(room.bed.amount)}</strong>
                             </span>
                           </td>
@@ -812,7 +815,7 @@ function GuestStay({ guest }: { guest: InHouseRecord }) {
             </div>
           </Section>
           <Section
-            title="Experiences & Add-ons"
+            title={t("inHouseDetail.experiencesAddOns")}
             aside={
               !isCheckedOut && (
                 <button
@@ -821,14 +824,14 @@ function GuestStay({ guest }: { guest: InHouseRecord }) {
                   onClick={openExtra}
                   disabled={addedExtras.length === experienceOptions.length}
                 >
-                  ＋ Add Item
+                  ＋ {t("inHouseDetail.addItem")}
                 </button>
               )
             }
           >
             {addedExtras.length === 0 ? (
               <p className="guest-stay-empty">
-                Belum ada experience atau add-on.
+                {t("inHouseDetail.experiencesEmpty")}
               </p>
             ) : (
               <div className="guest-stay-extras">
@@ -842,13 +845,13 @@ function GuestStay({ guest }: { guest: InHouseRecord }) {
                         <small>
                           {item.quantity} × {formatRupiah(extra.price)}
                           {extra.perNight
-                            ? ` × ${item.nights} malam`
+                            ? t("inHouseDetail.extraPerNight", { nights: item.nights })
                             : ""} ·{" "}
                           {item.paymentChoice === "pending"
-                            ? "Belum disimpan"
+                            ? t("inHouseDetail.extraUnsaved")
                             : item.paymentChoice === "paid" || balance === 0
-                              ? "Dibayar"
-                              : "Bayar nanti"}
+                              ? t("inHouseDetail.extraPaid")
+                              : t("inHouseDetail.extraPayLater")}
                         </small>
                       </div>
                       <strong>{formatRupiah(item.amount)}</strong>
@@ -863,10 +866,10 @@ function GuestStay({ guest }: { guest: InHouseRecord }) {
                           title={
                             item.paymentChoice === "paid" ||
                             total - item.amount < amountPaid
-                              ? "Pembayaran sudah mencakup item ini"
-                              : "Hapus item"
+                              ? t("inHouseDetail.extraPaid")
+                              : t("inHouseDetail.extraRemoveTitle")
                           }
-                          aria-label={`Hapus ${extra.label}`}
+                          aria-label={t("ota.rooms.removeAriaLabel", { name: extra.label })}
                         >
                           ×
                         </button>
@@ -878,12 +881,12 @@ function GuestStay({ guest }: { guest: InHouseRecord }) {
             )}
           </Section>
           <Section
-            title="Charges & Payments"
-            aside={<span>Currency: IDR</span>}
+            title={t("inHouseDetail.chargesPayments")}
+            aside={<span>{t("inHouseDetail.currencyIdr")}</span>}
           >
             <div className="guest-stay-ledger">
               <div>
-                <span>Room & Extension Charges</span>
+                <span>{t("inHouseDetail.roomExtensionCharges")}</span>
                 <strong>
                   {formatRupiah(
                     total -
@@ -899,7 +902,7 @@ function GuestStay({ guest }: { guest: InHouseRecord }) {
               {roomAdjustments.map((item) => (
                 <div key={item.id}>
                   <span>
-                    Change Room · {item.from} → {item.to} ({item.nights} malam)
+                    {t("inHouseDetail.changeRoomLedger", { from: item.from, to: item.to, nights: item.nights })}
                   </span>
                   <strong>
                     {item.amount < 0 ? "−" : "+"}
@@ -909,17 +912,15 @@ function GuestStay({ guest }: { guest: InHouseRecord }) {
               ))}
               <div>
                 <span>
-                  Extra Bed (
-                  {assignedRooms
+                  {t("inHouseDetail.extraBedLedger", { rooms: assignedRooms
                     .filter((room) => room.bed)
                     .map((room) => room.number)
-                    .join(", ") || "—"}
-                  )
+                    .join(", ") || t("common.emptyDash") })}
                 </span>
                 <strong>{formatRupiah(bedTotal)}</strong>
               </div>
               <div>
-                <span>Experiences & Add-ons</span>
+                <span>{t("inHouseDetail.experiencesAddOns")}</span>
                 <strong>
                   {formatRupiah(
                     addedExtras.reduce((sum, item) => sum + item.amount, 0),
@@ -927,33 +928,33 @@ function GuestStay({ guest }: { guest: InHouseRecord }) {
                 </strong>
               </div>
               <div>
-                <span>Booking Total</span>
+                <span>{t("inHouseDetail.bookingTotal")}</span>
                 <strong>{formatRupiah(total)}</strong>
               </div>
               {pendingBill !== 0 && (
                 <div>
-                  <span>Pending Bill</span>
+                  <span>{t("inHouseDetail.pendingBill")}</span>
                   <strong>{formatRupiah(pendingBill)}</strong>
                 </div>
               )}
               <div>
-                <span>Total Paid</span>
+                <span>{t("inHouseDetail.totalPaid")}</span>
                 <strong>{formatRupiah(amountPaid)}</strong>
               </div>
               <div className="guest-stay-ledger-balance">
-                <span>Remaining Balance</span>
+                <span>{t("inHouseDetail.remainingBalance")}</span>
                 <strong>{formatRupiah(balance)}</strong>
               </div>
               {refundDue > 0 && (
                 <div className="guest-stay-ledger-credit">
-                  <span>Refund Due</span>
+                  <span>{t("inHouseDetail.refundDue")}</span>
                   <strong>{formatRupiah(refundDue)}</strong>
                 </div>
               )}
             </div>
             {pendingBill !== 0 && (
               <p className="guest-stay-charge-later">
-                <span>Perubahan tagihan belum disimpan</span>
+                <span>{t("inHouseDetail.unsavedBillChange")}</span>
                 <strong>{formatRupiah(pendingBill)}</strong>
               </p>
             )}
@@ -962,7 +963,7 @@ function GuestStay({ guest }: { guest: InHouseRecord }) {
               .map((item) => (
                 <p className="guest-stay-charge-later" key={item.id}>
                   <span>
-                    Kredit perubahan kamar · {item.from} → {item.to}
+                    {t("inHouseDetail.roomChangeCredit", { from: item.from, to: item.to })}
                   </span>
                   <strong>{formatRupiah(-item.amount)}</strong>
                 </p>
@@ -974,8 +975,8 @@ function GuestStay({ guest }: { guest: InHouseRecord }) {
                 )
                 .map((item) => (
                   <p className="guest-stay-charge-later" key={item.id}>
-                    <span>Selisih perubahan kamar · {item.to}</span>
-                    <strong>Bayar Nanti · {formatRupiah(item.amount)}</strong>
+                    <span>{t("inHouseDetail.roomChangeDiff", { to: item.to })}</span>
+                    <strong>{t("inHouseDetail.payLaterLine", { amount: formatRupiah(item.amount) })}</strong>
                   </p>
                 ))}
             {balance > 0 &&
@@ -983,9 +984,9 @@ function GuestStay({ guest }: { guest: InHouseRecord }) {
                 .filter((room) => room.bed?.paymentChoice === "later")
                 .map((room) => (
                   <p className="guest-stay-charge-later" key={room.key}>
-                    <span>Extra Bed · Room {room.number}</span>
+                    <span>{t("inHouseDetail.extraBedRoomLine", { room: room.number })}</span>
                     <strong>
-                      Bayar Nanti · {formatRupiah(room.bed!.chargeAmount)}
+                      {t("inHouseDetail.payLaterLine", { amount: formatRupiah(room.bed!.chargeAmount) })}
                     </strong>
                   </p>
                 ))}
@@ -997,24 +998,24 @@ function GuestStay({ guest }: { guest: InHouseRecord }) {
                     <span>
                       {extras.find((option) => option.id === item.id)?.label}
                     </span>
-                    <strong>Bayar Nanti · {formatRupiah(item.amount)}</strong>
+                    <strong>{t("inHouseDetail.payLaterLine", { amount: formatRupiah(item.amount) })}</strong>
                   </p>
                 ))}
           </Section>
-          <Section title="Security Deposit">
+          <Section title={t("inHouseDetail.securityDeposit")}>
             <div className="guest-stay-deposit">
               <div>
                 <strong>
                   {guest.deposit > 0
                     ? formatRupiah(guest.deposit)
-                    : "No Deposit"}
+                    : t("inHouseDetail.noDeposit")}
                 </strong>
                 <p>
                   {guest.deposit > 0
                     ? isCheckedOut
-                      ? "Settlement required after check-out."
-                      : "Held separately from room and add-on charges."
-                    : "No security deposit recorded for this booking."}
+                      ? t("inHouseDetail.depositSettlement")
+                      : t("inHouseDetail.depositHeldNote")
+                    : t("inHouseDetail.depositNone")}
                 </p>
               </div>
               <span
@@ -1023,19 +1024,19 @@ function GuestStay({ guest }: { guest: InHouseRecord }) {
                   (guest.deposit > 0 ? "info" : "neutral")
                 }
               >
-                {guest.deposit > 0 ? "Held" : "None"}
+                {guest.deposit > 0 ? t("inHouseDetail.depositHeld") : t("inHouseDetail.depositNoneBadge")}
               </span>
             </div>
           </Section>
-          <Section title="Internal Operational Notes">
+          <Section title={t("inHouseDetail.internalNotes")}>
             <p className="guest-stay-empty">
-              No internal notes have been recorded.
+              {t("inHouseDetail.internalNotesEmpty")}
             </p>
           </Section>
         </div>
         <aside className="guest-stay-summary">
           <div className="guest-stay-summary-head">
-            <h2>Stay Summary</h2>
+            <h2>{t("inHouseDetail.staySummary")}</h2>
             <span
               className={
                 "reservations-badge reservations-badge--" +
@@ -1046,29 +1047,29 @@ function GuestStay({ guest }: { guest: InHouseRecord }) {
             </span>
           </div>
           <div className="guest-stay-summary-block">
-            <Info label="Guest" value={guest.guestName} />
+            <Info label={t("inHouseDetail.guest")} value={guest.guestName} />
             <Info
-              label="Assigned Rooms"
-              value={`${assignedRooms.length} Rooms · ${assignedRooms.map((room) => room.number).join(", ")}`}
+              label={t("inHouseDetail.assignedRooms")}
+              value={t("inHouseDetail.assignedRoomsValue", { count: assignedRooms.length, numbers: assignedRooms.map((room) => room.number).join(", ") })}
             />
             <Info
-              label="Stay"
-              value={`${dateLabel(guest.checkIn)} – ${dateLabel(checkOut)}`}
+              label={t("inHouseDetail.stay")}
+              value={t("inHouseDetail.dateRange", { from: dateLabel(guest.checkIn), to: dateLabel(checkOut) })}
             />
-            <Info label="Booking Total" value={formatRupiah(total)} />
+            <Info label={t("inHouseDetail.bookingTotal")} value={formatRupiah(total)} />
             {pendingBill !== 0 && (
-              <Info label="Pending Bill" value={formatRupiah(pendingBill)} />
+              <Info label={t("inHouseDetail.pendingBill")} value={formatRupiah(pendingBill)} />
             )}
-            <Info label="Total Paid" value={formatRupiah(amountPaid)} />
+            <Info label={t("inHouseDetail.totalPaid")} value={formatRupiah(amountPaid)} />
             <Info
-              label="Security Deposit"
+              label={t("inHouseDetail.securityDeposit")}
               value={
-                guest.deposit > 0 ? formatRupiah(guest.deposit) : "No Deposit"
+                guest.deposit > 0 ? formatRupiah(guest.deposit) : t("inHouseDetail.noDeposit")
               }
             />
           </div>
           <div className="guest-stay-summary-balance">
-            <span>{refundDue > 0 ? "Refund Due" : "Remaining Balance"}</span>
+            <span>{refundDue > 0 ? t("inHouseDetail.refundDue") : t("inHouseDetail.remainingBalance")}</span>
             <strong>{formatRupiah(refundDue > 0 ? refundDue : balance)}</strong>
           </div>
           <div className="guest-stay-summary-actions">
@@ -1080,7 +1081,7 @@ function GuestStay({ guest }: { guest: InHouseRecord }) {
                     className="guest-stay-button guest-stay-button--primary"
                     onClick={openPayment}
                   >
-                    Record Payment
+                    {t("inHouseDetail.recordPayment")}
                   </button>
                 )}
                 <button
@@ -1089,7 +1090,7 @@ function GuestStay({ guest }: { guest: InHouseRecord }) {
                   onClick={saveBill}
                   disabled={!hasPendingBillChanges}
                 >
-                  Save Bill
+                  {t("inHouseDetail.saveBill")}
                 </button>
                 {(isDueOut || isOverdue) && (
                   <button
@@ -1103,7 +1104,7 @@ function GuestStay({ guest }: { guest: InHouseRecord }) {
                     onClick={openCheckout}
                     disabled={hasPendingBillChanges}
                   >
-                    Check Out Guest
+                    {t("inHouseDetail.checkOutGuest")}
                   </button>
                 )}
                 <button
@@ -1111,29 +1112,29 @@ function GuestStay({ guest }: { guest: InHouseRecord }) {
                   className="guest-stay-button guest-stay-button--outline"
                   onClick={openExtend}
                 >
-                  Extend Stay
+                  {t("inHouseDetail.extendStay")}
                 </button>
               </>
             )}
             {isCheckedOut && (
               <p className="guest-stay-empty">
-                Guest stay has been concluded for this demo view.
+                {t("inHouseDetail.concludedDemo")}
               </p>
             )}
           </div>
           {balance > 0 && (
             <p className="guest-stay-summary-note">
-              Check-out dengan sisa tagihan memerlukan konfirmasi dan alasan petugas.
+              {t("inHouseDetail.checkoutBalanceNote")}
             </p>
           )}
           {hasPendingBillChanges && (
             <p className="guest-stay-summary-note">
-              Simpan perubahan tagihan sebelum menyelesaikan check-out.
+              {t("inHouseDetail.saveBillBeforeCheckout")}
             </p>
           )}
           {refundDue > 0 && (
             <p className="guest-stay-summary-note">
-              Selisih pembayaran perlu direfund secara manual.
+              {t("inHouseDetail.refundManualNote")}
             </p>
           )}
         </aside>
@@ -1155,15 +1156,15 @@ function GuestStay({ guest }: { guest: InHouseRecord }) {
             <div className="guest-stay-modal-head">
               <h2 id="guest-stay-modal-title">
                 {modal === "payment"
-                  ? "Record Payment"
+                  ? t("inHouseDetail.modal.recordPaymentTitle")
                   : modal === "extend"
-                    ? "Extend Stay"
-                    : "Check Out Guest"}
+                    ? t("inHouseDetail.modal.extendStayTitle")
+                    : t("inHouseDetail.modal.checkOutTitle")}
               </h2>
               <button
                 type="button"
                 onClick={() => setModal(null)}
-                aria-label="Close modal"
+                aria-label={t("common.closeModal")}
               >
                 ×
               </button>
@@ -1175,20 +1176,20 @@ function GuestStay({ guest }: { guest: InHouseRecord }) {
               {modal === "payment" && (
                 <>
                   <p>
-                    Remaining balance: <strong>{formatRupiah(balance)}</strong>
+                    {t("inHouseDetail.modal.remainingBalance")}<strong>{formatRupiah(balance)}</strong>
                   </p>
                   {balance > 0 && <div className="guest-stay-outstanding-checkout">
-                    <p>Sisa tagihan tetap tercatat setelah check-out.</p>
+                    <p>{t("inHouseDetail.modal.outstandingNote")}</p>
                     <label className="guest-stay-modal-check">
                       <input type="checkbox" checked={checkoutBalanceAcknowledged} onChange={(event) => setCheckoutBalanceAcknowledged(event.target.checked)} />
-                      <span>Saya menyetujui check-out dengan pembayaran belum lunas.</span>
+                      <span>{t("inHouseDetail.modal.outstandingAcknowledge")}</span>
                     </label>
-                    <label className="guest-stay-outstanding-reason">Alasan <span>*</span>
-                      <textarea value={checkoutOutstandingReason} onChange={(event) => setCheckoutOutstandingReason(event.target.value)} placeholder="Jelaskan alasan check-out sebelum pelunasan" rows={3} />
+                    <label className="guest-stay-outstanding-reason">{t("inHouseDetail.modal.reason")} <span>*</span>
+                      <textarea value={checkoutOutstandingReason} onChange={(event) => setCheckoutOutstandingReason(event.target.value)} placeholder={t("inHouseDetail.modal.reasonPlaceholder")} rows={3} />
                     </label>
                   </div>}
                   <label>
-                    Payment amount
+                    {t("inHouseDetail.modal.paymentAmount")}
                     <input
                       type="number"
                       min="1"
@@ -1198,17 +1199,17 @@ function GuestStay({ guest }: { guest: InHouseRecord }) {
                     />
                   </label>
                   <small>
-                    Pembayaran dicatat hanya selama tampilan demo ini terbuka.
+                    {t("inHouseDetail.modal.paymentDemoNote")}
                   </small>
                 </>
               )}
               {modal === "extend" && (
                 <>
                   <p>
-                    Current check-out: <strong>{dateLabel(checkOut)}</strong>
+                    {t("inHouseDetail.modal.currentCheckOut")}<strong>{dateLabel(checkOut)}</strong>
                   </p>
                   <label>
-                    New check-out date
+                    {t("inHouseDetail.modal.newCheckOutDate")}
                     <input
                       type="date"
                       value={extensionDate}
@@ -1216,28 +1217,26 @@ function GuestStay({ guest }: { guest: InHouseRecord }) {
                     />
                   </label>
                   <small>
-                    Tambahan malam menggunakan tarif kamar{" "}
-                    {formatRupiah(roomRate)} per malam.
+                    {t("inHouseDetail.modal.extendRateNote", { rate: formatRupiah(roomRate) })}
                   </small>
                 </>
               )}
               {modal === "checkout" && (
                 <>
                   <p>
-                    Remaining balance: <strong>{formatRupiah(balance)}</strong>
+                    {t("inHouseDetail.modal.remainingBalance")}<strong>{formatRupiah(balance)}</strong>
                   </p>
                   <p>
-                    Security deposit:{" "}
+                    {t("inHouseDetail.modal.securityDeposit")}
                     <strong>
                       {guest.deposit > 0
                         ? formatRupiah(guest.deposit)
-                        : "No Deposit"}
+                        : t("inHouseDetail.noDeposit")}
                     </strong>
                   </p>
                   {guest.deposit > 0 && (
                     <p>
-                      Deposit perlu direfund atau diselesaikan oleh petugas
-                      setelah check-out.
+                      {t("inHouseDetail.modal.depositRefundNote")}
                     </p>
                   )}
                   {isOverdue && (
@@ -1250,8 +1249,7 @@ function GuestStay({ guest }: { guest: InHouseRecord }) {
                         }
                       />
                       <span>
-                        Saya sudah meninjau potensi biaya lewat waktu bersama
-                        supervisor.
+                        {t("inHouseDetail.modal.overstayReviewed")}
                       </span>
                     </label>
                   )}
@@ -1269,7 +1267,7 @@ function GuestStay({ guest }: { guest: InHouseRecord }) {
                 className="guest-stay-button guest-stay-button--secondary"
                 onClick={() => setModal(null)}
               >
-                Cancel
+                {t("inHouseDetail.modal.cancel")}
               </button>
               <button
                 type="button"
@@ -1284,10 +1282,10 @@ function GuestStay({ guest }: { guest: InHouseRecord }) {
                 }
               >
                 {modal === "payment"
-                  ? "Save Payment"
+                  ? t("inHouseDetail.modal.savePayment")
                   : modal === "extend"
-                    ? "Confirm Extension"
-                    : "Confirm Check-out"}
+                    ? t("inHouseDetail.modal.confirmExtension")
+                    : t("inHouseDetail.modal.confirmCheckout")}
               </button>
             </div>
           </section>
@@ -1307,18 +1305,18 @@ function GuestStay({ guest }: { guest: InHouseRecord }) {
             aria-labelledby="guest-stay-extra-title"
           >
             <div className="guest-stay-modal-head">
-              <h2 id="guest-stay-extra-title">Add Experience or Add-on</h2>
+              <h2 id="guest-stay-extra-title">{t("inHouseDetail.modal.addItemTitle")}</h2>
               <button
                 type="button"
                 onClick={() => setModal(null)}
-                aria-label="Close modal"
+                aria-label={t("common.closeModal")}
               >
                 ×
               </button>
             </div>
             <div className="guest-stay-modal-body">
               <label>
-                Item
+                {t("inHouseDetail.modal.item")}
                 <select
                   value={extraId}
                   onChange={(event) => {
@@ -1340,15 +1338,15 @@ function GuestStay({ guest }: { guest: InHouseRecord }) {
                 </select>
               </label>
               <p>
-                Harga satuan:{" "}
+                {t("inHouseDetail.modal.unitPrice")}
                 <strong>
                   {chosenExtra
                     ? `${formatRupiah(chosenExtra.price)} ${chosenExtra.unit}`
-                    : "—"}
+                    : t("common.emptyDash")}
                 </strong>
               </p>
               <label>
-                Jumlah
+                {t("inHouseDetail.modal.quantity")}
                 <input
                   type="number"
                   min="1"
@@ -1361,7 +1359,7 @@ function GuestStay({ guest }: { guest: InHouseRecord }) {
               </label>
               {chosenExtra?.perNight && (
                 <label>
-                  Jumlah malam
+                  {t("inHouseDetail.modal.nightsCount")}
                   <input
                     type="number"
                     min="1"
@@ -1373,7 +1371,7 @@ function GuestStay({ guest }: { guest: InHouseRecord }) {
                 </label>
               )}
               <div className="guest-stay-extra-preview">
-                <span>Tambahan ke tagihan</span>
+                <span>{t("inHouseDetail.modal.addToBill")}</span>
                 <strong>{formatRupiah(extraPreview)}</strong>
               </div>
               {error && (
@@ -1388,14 +1386,14 @@ function GuestStay({ guest }: { guest: InHouseRecord }) {
                 className="guest-stay-button guest-stay-button--secondary"
                 onClick={() => setModal(null)}
               >
-                Cancel
+                {t("inHouseDetail.modal.cancel")}
               </button>
               <button
                 type="button"
                 className="guest-stay-button guest-stay-button--primary"
                 onClick={addExtra}
               >
-                Add Item
+                {t("inHouseDetail.modal.addItem")}
               </button>
             </div>
           </section>
@@ -1415,29 +1413,28 @@ function GuestStay({ guest }: { guest: InHouseRecord }) {
             aria-labelledby="guest-stay-room-title"
           >
             <div className="guest-stay-modal-head">
-              <h2 id="guest-stay-room-title">Change Room</h2>
+              <h2 id="guest-stay-room-title">{t("inHouseDetail.modal.changeRoomTitle")}</h2>
               <button
                 type="button"
                 onClick={() => setModal(null)}
-                aria-label="Close modal"
+                aria-label={t("common.closeModal")}
               >
                 ×
               </button>
             </div>
             <div className="guest-stay-modal-body">
               <p>
-                Current room:{" "}
+                {t("inHouseDetail.modal.currentRoom")}
                 <strong>
-                  {activeRoom.name} · {activeRoom.number}
-                </strong>{" "}
-                ({formatRupiah(roomRate)} / malam)
+                  {t("inHouseDetail.modal.currentRoomValue", { roomType: activeRoom.name, roomNumber: activeRoom.number })}
+                </strong>
+                {t("inHouseDetail.modal.currentRoomRate", { rate: formatRupiah(roomRate) })}
               </p>
               <p>
-                Pilihan kamar untuk periode {dateLabel(guest.checkIn)} –{" "}
-                {dateLabel(checkOut)}.
+                {t("inHouseDetail.modal.roomChoicesForPeriod", { from: dateLabel(guest.checkIn), to: dateLabel(checkOut) })}
               </p>
               <label>
-                New room
+                {t("inHouseDetail.modal.newRoom")}
                 <select
                   value={selectedRoomNumber}
                   onChange={(event) => {
@@ -1447,14 +1444,13 @@ function GuestStay({ guest }: { guest: InHouseRecord }) {
                 >
                   {availableRooms.map((option) => (
                     <option key={option.number} value={option.number}>
-                      {option.type} · {option.number} ·{" "}
-                      {formatRupiah(option.rate)} / malam
+                      {t("inHouseDetail.modal.roomOption", { roomType: option.type, roomNumber: option.number, rate: formatRupiah(option.rate) })}
                     </option>
                   ))}
                 </select>
               </label>
               <label>
-                Jumlah malam yang disesuaikan
+                {t("inHouseDetail.modal.adjustedNights")}
                 <input
                   type="number"
                   min="1"
@@ -1466,21 +1462,16 @@ function GuestStay({ guest }: { guest: InHouseRecord }) {
               </label>
               {activeRoom.bed && (
                 <small>
-                  Tarif extra bed untuk kamar baru juga ikut disesuaikan:{" "}
-                  {formatRupiah(
-                    extraBedRates[selectedRoom?.type ?? activeRoom.name] ??
-                      150000,
-                  )}{" "}
-                  / malam.
+                  {t("inHouseDetail.modal.extraBedAdjustNote", { rate: formatRupiah(extraBedRates[selectedRoom?.type ?? activeRoom.name] ?? 150000) })}
                 </small>
               )}
               <div className="guest-stay-extra-preview">
                 <span>
                   {roomDifference < 0
-                    ? "Kredit downgrade"
+                    ? t("inHouseDetail.modal.creditDowngrade")
                     : roomDifference > 0
-                      ? "Tambahan upgrade"
-                      : "Selisih harga"}
+                      ? t("inHouseDetail.modal.upgradeAddition")
+                      : t("inHouseDetail.modal.priceDifference")}
                 </span>
                 <strong>
                   {roomDifference < 0 ? "−" : roomDifference > 0 ? "+" : ""}
@@ -1489,8 +1480,7 @@ function GuestStay({ guest }: { guest: InHouseRecord }) {
               </div>
               {roomDifference < 0 && (
                 <small>
-                  Jika pembayaran melebihi total baru, selisih ditampilkan
-                  sebagai Refund Due.
+                  {t("inHouseDetail.modal.refundIfExceeds")}
                 </small>
               )}
               {error && (
@@ -1505,7 +1495,7 @@ function GuestStay({ guest }: { guest: InHouseRecord }) {
                 className="guest-stay-button guest-stay-button--secondary"
                 onClick={() => setModal(null)}
               >
-                Cancel
+                {t("inHouseDetail.modal.cancel")}
               </button>
               <button
                 type="button"
@@ -1513,7 +1503,7 @@ function GuestStay({ guest }: { guest: InHouseRecord }) {
                 onClick={changeRoom}
                 disabled={!selectedRoom}
               >
-                Confirm Change
+                {t("inHouseDetail.modal.confirmChange")}
               </button>
             </div>
           </section>
@@ -1533,34 +1523,34 @@ function GuestStay({ guest }: { guest: InHouseRecord }) {
             aria-labelledby="guest-stay-bed-title"
           >
             <div className="guest-stay-modal-head">
-              <h2 id="guest-stay-bed-title">Manage Extra Bed</h2>
+              <h2 id="guest-stay-bed-title">{t("inHouseDetail.modal.manageBedTitle")}</h2>
               <button
                 type="button"
                 onClick={() => setModal(null)}
-                aria-label="Close modal"
+                aria-label={t("common.closeModal")}
               >
                 ×
               </button>
             </div>
             <div className="guest-stay-modal-body">
               <p>
-                {activeRoom.name} · {activeRoom.number} · 1 extra bed maksimum
+                {t("inHouseDetail.modal.bedMaxNote", { roomType: activeRoom.name, roomNumber: activeRoom.number })}
               </p>
               <label>
-                Extra bed
+                {t("inHouseDetail.modal.extraBed")}
                 <select
                   value={bedEnabled ? "1" : "0"}
                   onChange={(event) =>
                     setBedEnabled(event.target.value === "1")
                   }
                 >
-                  <option value="1">1 Extra Bed</option>
-                  <option value="0">No Extra Bed</option>
+                  <option value="1">{t("inHouseDetail.modal.oneExtraBed")}</option>
+                  <option value="0">{t("inHouseDetail.modal.noExtraBed")}</option>
                 </select>
               </label>
               {bedEnabled && (
                 <label>
-                  Jumlah malam
+                  {t("inHouseDetail.modal.nightsCount")}
                   <input
                     type="number"
                     min="1"
@@ -1572,11 +1562,11 @@ function GuestStay({ guest }: { guest: InHouseRecord }) {
                 </label>
               )}
               <p>
-                Tarif {activeRoom.name}:{" "}
-                <strong>{formatRupiah(bedRate)} / bed / malam</strong>
+                {t("inHouseDetail.modal.bedRateNote", { roomType: activeRoom.name })}
+                <strong>{t("inHouseDetail.modal.bedRateValue", { rate: formatRupiah(bedRate) })}</strong>
               </p>
               <div className="guest-stay-extra-preview">
-                <span>Perubahan tagihan</span>
+                <span>{t("inHouseDetail.modal.billChange")}</span>
                 <strong>
                   {formatRupiah(
                     (bedEnabled ? bedRate * bedNights : 0) -
@@ -1596,14 +1586,14 @@ function GuestStay({ guest }: { guest: InHouseRecord }) {
                 className="guest-stay-button guest-stay-button--secondary"
                 onClick={() => setModal(null)}
               >
-                Cancel
+                {t("inHouseDetail.modal.cancel")}
               </button>
               <button
                 type="button"
                 className="guest-stay-button guest-stay-button--primary"
                 onClick={manageBed}
               >
-                Save Extra Bed
+                {t("inHouseDetail.modal.saveExtraBed")}
               </button>
             </div>
           </section>

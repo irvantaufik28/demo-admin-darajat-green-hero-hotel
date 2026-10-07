@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Icon } from "../ui/Icon";
+import { LanguageSwitcher } from "./LanguageSwitcher";
 import type { AuthUser } from "../../lib/auth";
 
 type Props = {
@@ -66,6 +67,7 @@ export function Navbar({
             Shift A (07:00 - 15:00)
           </span>
         )}
+        <LanguageSwitcher />
         <div className="navbar-popover-anchor">
           <button
             type="button"
@@ -98,7 +100,14 @@ export function Navbar({
               setMenu((value) => (value === "profile" ? null : "profile"))
             }
           >
-            <span className="navbar-avatar">{user?.name.split(" ").map((part) => part[0]).slice(0, 2).join("").toUpperCase() || "GH"}</span>
+            <span className="navbar-avatar">
+              {user?.name
+                .split(" ")
+                .map((part) => part[0])
+                .slice(0, 2)
+                .join("")
+                .toUpperCase() || "GH"}
+            </span>
             <span className="navbar-profile__text">
               <strong>{user?.name ?? "User"}</strong>
               <small>{user?.roleName ?? "Green Hero Darajat"}</small>
@@ -107,8 +116,12 @@ export function Navbar({
           {menu === "profile" && (
             <div className="navbar-popover navbar-popover--profile">
               <strong>{user?.name ?? "User"}</strong>
-              <Link href="/profile" onClick={() => setMenu(null)}>Profile</Link>
-              <Link href="/change-password" onClick={() => setMenu(null)}>Change Password</Link>
+              <Link href="/profile" onClick={() => setMenu(null)}>
+                Profile
+              </Link>
+              <Link href="/change-password" onClick={() => setMenu(null)}>
+                Change Password
+              </Link>
               <button type="button" onClick={onSignOut}>
                 <Icon name="logout" width={16} height={16} />
                 Keluar

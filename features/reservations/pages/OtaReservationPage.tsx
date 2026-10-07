@@ -26,6 +26,9 @@ import {
 } from "../services/ota";
 import type { ReservationQuote } from "../services/create";
 import type { RoomTypeRecord } from "../../rooms/services/room-types";
+import { useTranslations } from "../../../lib/i18n";
+import en from "../locales/en.json";
+import id from "../locales/id.json";
 
 type RoomConfiguration = { adults: number; children: number; extraBeds: number };
 type RoomRow = {
@@ -42,6 +45,7 @@ function parseCurrency(value: string) {
 }
 
 export function OtaReservationPage() {
+  const { t } = useTranslations({ en, id });
   const [minimumCheckIn, setMinimumCheckIn] = useState("");
   const [channels, setChannels] = useState<OtaChannel[]>([]);
   const [roomTypeOptions, setRoomTypeOptions] = useState<RoomTypeRecord[]>([]);
@@ -131,7 +135,7 @@ export function OtaReservationPage() {
           id: variant.id,
           label: `${experience.name} – ${variant.subName}`,
           price: variant.price,
-          unit: "/ paket",
+          unit: t("form.experiences.perPackage"),
         })),
       ));
       setChannel((current) => current || result.channels[0]?.id || "");
@@ -139,7 +143,7 @@ export function OtaReservationPage() {
         ? [{ id: 1, type: result.roomTypes[0].id, quantity: 1, rate: 0, configurations: [{ adults: 2, children: 0, extraBeds: 0 }] }]
         : []);
     }).catch((cause) => {
-      if (!controller.signal.aborted) setFeedback({ kind: "error", text: cause instanceof Error ? cause.message : "Pilihan OTA gagal dimuat." });
+      if (!controller.signal.aborted) setFeedback({ kind: "error", text: cause instanceof Error ? cause.message : t("ota.feedback.optionsLoadError") });
     }).finally(() => { if (!controller.signal.aborted) setOptionsLoading(false); });
     return () => controller.abort();
   }, []);
@@ -162,7 +166,7 @@ export function OtaReservationPage() {
         experiences: experienceSelections,
       }, controller.signal).then((value) => setQuoteState({ key: quoteKey, value }))
         .catch((cause) => {
-          if (!controller.signal.aborted) setQuoteError(cause instanceof Error ? cause.message : "Quote OTA gagal dimuat.");
+          if (!controller.signal.aborted) setQuoteError(cause instanceof Error ? cause.message : t("ota.feedback.quoteLoadError"));
         }).finally(() => { if (!controller.signal.aborted) setQuoteBusy(false); });
     }, 300);
     return () => { window.clearTimeout(timer); controller.abort(); };
@@ -202,7 +206,7 @@ export function OtaReservationPage() {
     if (!nextType) {
       setFeedback({
         kind: "info",
-        text: "Semua tipe kamar sudah tercatat. Gunakan jumlah unit untuk menambah kamar.",
+        text: t("ota.feedback.allRoomsRecorded"),
       });
       return;
     }
@@ -242,38 +246,38 @@ export function OtaReservationPage() {
 
   async function saveReservation() {
     if (minimumCheckIn && checkIn < minimumCheckIn)
-      return setFeedback({ kind: "error", text: "Tanggal check-in tidak boleh sebelum hari ini." });
+      return setFeedback({ kind: "error", text: t("ota.feedback.checkInBeforeToday") });
     if (nights < 1)
       return setFeedback({
         kind: "error",
-        text: "Tanggal check-out harus setelah check-in.",
+        text: t("ota.feedback.checkOutAfterCheckIn"),
       });
     if (selectedRooms < 1)
       return setFeedback({
         kind: "error",
-        text: "Tambahkan minimal satu kamar dari voucher OTA.",
+        text: t("ota.feedback.selectRoom"),
       });
     if (selectedRooms > 20)
-      return setFeedback({ kind: "error", text: "Maksimal 20 kamar dalam satu reservasi." });
+      return setFeedback({ kind: "error", text: t("ota.feedback.maxRooms") });
     if (rooms.some((room) => room.rate < 1))
       return setFeedback({
         kind: "error",
-        text: "Tarif voucher per malam wajib lebih dari Rp0.",
+        text: t("ota.feedback.rateRequired"),
       });
     if (!channel)
-      return setFeedback({ kind: "error", text: "Pilih channel OTA yang aktif." });
+      return setFeedback({ kind: "error", text: t("ota.feedback.channelRequired") });
     if (!reference.trim())
       return setFeedback({
         kind: "error",
-        text: "Nomor referensi OTA wajib diisi.",
+        text: t("ota.feedback.referenceRequired"),
       });
     if (!guestName.trim() || !whatsapp.trim())
       return setFeedback({
         kind: "error",
-        text: "Nama tamu dan nomor WhatsApp wajib diisi.",
+        text: t("ota.feedback.guestRequired"),
       });
     if (!quote || quoteBusy || quoteError)
-      return setFeedback({ kind: "error", text: quoteError || "Tunggu hingga total voucher selesai dihitung oleh API." });
+      return setFeedback({ kind: "error", text: quoteError || t("ota.feedback.waitQuote") });
     if (!idempotency.current || idempotency.current.key !== requestKey) {
       idempotency.current = { key: requestKey, value: crypto.randomUUID() };
     }
@@ -299,7 +303,7 @@ export function OtaReservationPage() {
     } catch (cause) {
       setFeedback({
         kind: "error",
-        text: cause instanceof Error ? cause.message : "Reservasi OTA gagal disimpan.",
+        text: cause instanceof Error ? cause.message : t("ota.feedback.saveError"),
       });
     } finally {
       setSaveBusy(false);
@@ -307,14 +311,13 @@ export function OtaReservationPage() {
   }
 
   return (
-    <AdminShell title="Reservations" context="New Reservation" badge="OTA MODE">
+    <AdminShell title={t("shell.title")} context={t("shell.newReservation")} badge={t("shell.otaMode")}>
       <div className="walkin-page">
         <div className="walkin-heading">
           <div>
-            <h1>Create Reservation — OTA</h1>
+            <h1>{t("ota.title")}</h1>
             <p>
-              Catat reservasi dari Online Travel Agency (Agoda, Traveloka,
-              Booking.com, dll)
+              {t("ota.description")}
             </p>
           </div>
           <button
@@ -322,7 +325,7 @@ export function OtaReservationPage() {
             className="reservation-secondary-button reset-button"
             onClick={resetForm}
           >
-            ↻ &nbsp; Reset Form
+            ↻ &nbsp; {t("ota.resetForm")}
           </button>
         </div>
         {feedback && (
@@ -336,7 +339,7 @@ export function OtaReservationPage() {
             <button
               type="button"
               onClick={() => setFeedback(null)}
-              aria-label="Tutup pesan"
+              aria-label={t("common.closeMessage")}
             >
               ×
             </button>
@@ -347,36 +350,36 @@ export function OtaReservationPage() {
           <div className="walkin-form-column">
             <section className="reservation-panel ota-source-panel">
               <div className="reservation-panel__heading">
-                <h2>Reservation Source</h2>
+                <h2>{t("ota.sourceSection")}</h2>
                 <div
                   className="source-tabs"
                   role="group"
-                  aria-label="Reservation Source"
+                  aria-label={t("ota.sourceSection")}
                 >
                   <Link
                     href="/reservations/create-reservation-walkin"
                     className="source-tab"
                   >
-                    Walk-in
+                    {t("form.sourceTabs.walkIn")}
                   </Link>
                   <Link
                     href="/reservations/create-reservation-phone"
                     className="source-tab"
                   >
-                    Phone
+                    {t("form.sourceTabs.phone")}
                   </Link>
                   <Link
                     href="/reservations/create-reservation-ota"
                     className="source-tab source-tab--active"
                     aria-current="page"
                   >
-                    OTA
+                    {t("form.sourceTabs.ota")}
                   </Link>
                 </div>
               </div>
               <div className="ota-source-fields">
                 <ReservationField
-                  label="OTA Channel"
+                  label={t("ota.channelLabel")}
                   htmlFor="ota-channel"
                   required
                 >
@@ -385,14 +388,14 @@ export function OtaReservationPage() {
                     value={channel}
                     onChange={(event) => setChannel(event.target.value)}
                   >
-                    <option value="">Pilih OTA channel</option>
+                    <option value="">{t("ota.channelPlaceholder")}</option>
                     {channels.map((item) => (
                       <option key={item.id} value={item.id}>{item.name}</option>
                     ))}
                   </select>
                 </ReservationField>
                 <ReservationField
-                  label="OTA Booking Reference"
+                  label={t("ota.referenceLabel")}
                   htmlFor="ota-reference"
                   required
                 >
@@ -400,23 +403,23 @@ export function OtaReservationPage() {
                     id="ota-reference"
                     value={reference}
                     onChange={(event) => setReference(event.target.value)}
-                    placeholder="e.g. AGD-849215763"
+                    placeholder={t("ota.referencePlaceholder")}
                   />
                 </ReservationField>
               </div>
               <p className="ota-field-hint">
-                Nomor referensi atau booking ID dari portal OTA.
+                {t("ota.referenceHint")}
               </p>
             </section>
             <section className="reservation-panel">
               <div className="reservation-panel__heading">
-                <h2>Stay</h2>
+                <h2>{t("ota.stay.title")}</h2>
                 <span className="status-badge status-badge--success">
-                  {nights} {nights === 1 ? "night" : "nights"}
+                  {nights === 1 ? t("ota.stay.nightBadge", { nights }) : t("ota.stay.nightsBadge", { nights })}
                 </span>
               </div>
               <div className="stay-fields">
-                <ReservationField label="Check-in" htmlFor="ota-check-in">
+                <ReservationField label={t("ota.stay.checkIn")} htmlFor="ota-check-in">
                   <input
                     id="ota-check-in"
                     type="date"
@@ -430,7 +433,7 @@ export function OtaReservationPage() {
                     }}
                   />
                 </ReservationField>
-                <ReservationField label="Check-out" htmlFor="ota-check-out">
+                <ReservationField label={t("ota.stay.checkOut")} htmlFor="ota-check-out">
                   <input
                     id="ota-check-out"
                     type="date"
@@ -439,7 +442,7 @@ export function OtaReservationPage() {
                     onChange={(event) => setCheckOut(event.target.value)}
                   />
                 </ReservationField>
-                <ReservationField label="Default Adults / Room" htmlFor="ota-adults">
+                <ReservationField label={t("ota.stay.defaultAdults")} htmlFor="ota-adults">
                   <select
                     id="ota-adults"
                     value={adults}
@@ -457,7 +460,7 @@ export function OtaReservationPage() {
                     ))}
                   </select>
                 </ReservationField>
-                <ReservationField label="Default Children / Room" htmlFor="ota-children">
+                <ReservationField label={t("ota.stay.defaultChildren")} htmlFor="ota-children">
                   <select
                     id="ota-children"
                     value={children}
@@ -484,33 +487,29 @@ export function OtaReservationPage() {
                         ? {
                             kind: "info",
                             text:
-                              "Tanggal menginap sesuai voucher OTA: " +
-                              nights +
-                              " malam. Stok internal tidak diperiksa.",
+                              t("ota.feedback.availabilityOk", { nights }),
                           }
                         : {
                             kind: "error",
-                            text: "Pilih tanggal menginap yang valid.",
+                            text: t("ota.feedback.availabilityInvalid"),
                           },
                     )
                   }
                 >
-                  ⌕ &nbsp; Check
+                  ⌕ &nbsp; {t("ota.stay.check")}
                 </button>
               </div>
             </section>
             <section className="reservation-panel">
               <div className="reservation-panel__heading ota-rooms-heading">
                 <div>
-                  <h2>Rooms from OTA Booking</h2>
+                  <h2>{t("ota.rooms.title")}</h2>
                   <p>
-                    Catat tipe kamar dan tarif per malam sesuai konfirmasi
-                    voucher OTA.
+                    {t("ota.rooms.description")}
                   </p>
                 </div>
                 <span className="status-badge status-badge--success">
-                  Terpilih: {rooms.length} Tipe Kamar (Total {selectedRooms}{" "}
-                  Unit)
+                  {t("ota.rooms.selectedBadge", { types: rooms.length, units: selectedRooms })}
                 </span>
               </div>
               <div className="ota-room-list">
@@ -519,7 +518,7 @@ export function OtaReservationPage() {
                   return (
                     <div className="ota-room-row" key={room.id}>
                       <ReservationField
-                        label="Room Type"
+                        label={t("ota.rooms.roomType")}
                         htmlFor={"ota-room-" + room.id}
                       >
                         <select
@@ -546,9 +545,9 @@ export function OtaReservationPage() {
                         </select>
                       </ReservationField>
                       <div className="reservation-field">
-                        <label>Quantity</label>
+                        <label>{t("ota.rooms.quantity")}</label>
                         <QuantityControl
-                          label={type?.name ?? "Room"}
+                          label={type?.name ?? t("ota.rooms.roomDefault")}
                           value={room.quantity}
                           min={1}
                           max={20}
@@ -558,7 +557,7 @@ export function OtaReservationPage() {
                         />
                       </div>
                       <ReservationField
-                        label="OTA Rate / Night (Voucher)"
+                        label={t("ota.rooms.rateLabel")}
                         htmlFor={"ota-rate-" + room.id}
                       >
                         <input
@@ -574,7 +573,7 @@ export function OtaReservationPage() {
                         />
                       </ReservationField>
                       <div className="ota-room-subtotal">
-                        <small>Subtotal ({nights} mlm)</small>
+                        <small>{t("ota.rooms.subtotal", { nights })}</small>
                         <strong>
                           {formatRupiah(room.rate * room.quantity * nights)}
                         </strong>
@@ -582,7 +581,7 @@ export function OtaReservationPage() {
                       <button
                         type="button"
                         className="ota-remove-room"
-                        aria-label={"Hapus " + (type?.name ?? "kamar")}
+                        aria-label={t("ota.rooms.removeAriaLabel", { name: type?.name ?? t("ota.rooms.roomDefault") })}
                         onClick={() =>
                           setRooms((current) =>
                             current.filter((item) => item.id !== room.id),
@@ -594,22 +593,22 @@ export function OtaReservationPage() {
                       <div className="ota-room-unit-configs">
                         {room.configurations.map((configuration, index) => (
                           <div className="ota-room-unit-config" key={`${room.id}-${index}`}>
-                            <strong>Room {index + 1}</strong>
-                            <label>Adults
+                            <strong>{t("ota.rooms.unitRoom", { index: index + 1 })}</strong>
+                            <label>{t("ota.rooms.adults")}
                               <select value={configuration.adults} onChange={(event) => updateRoomConfiguration(room.id, index, { adults: Number(event.target.value) })}>
                                 {[0, 1, 2, 3, 4, 5, 6, 7, 8].map((value) => <option key={value} value={value}>{value}</option>)}
                               </select>
                             </label>
-                            <label>Children
+                            <label>{t("ota.rooms.children")}
                               <select value={configuration.children} onChange={(event) => updateRoomConfiguration(room.id, index, { children: Number(event.target.value) })}>
                                 {[0, 1, 2, 3, 4].map((value) => <option key={value} value={value}>{value}</option>)}
                               </select>
                             </label>
                             {type?.extraBedEnabled && type.maxExtraBeds > 0 && (
                               <div className="reservation-field">
-                                <label>Extra Bed · {formatRupiah(type.extraBedPricePerNight)} / night</label>
+                                <label>{t("ota.rooms.extraBedLabel", { price: formatRupiah(type.extraBedPricePerNight) })}</label>
                                 <QuantityControl
-                                  label={`Extra bed room ${index + 1}`}
+                                  label={t("ota.rooms.extraBedAriaLabel", { index: index + 1 })}
                                   value={configuration.extraBeds}
                                   min={0}
                                   max={type.maxExtraBeds}
@@ -630,23 +629,21 @@ export function OtaReservationPage() {
                   className="reservation-secondary-button"
                   onClick={addRoomType}
                 >
-                  ＋ Add Room Type
+                  ＋ {t("ota.rooms.addRoomType")}
                 </button>
                 <span>
-                  Subtotal Kamar OTA:{" "}
-                  <strong>{formatRupiah(roomsTotal)}</strong>
+                  {t("ota.rooms.subtotalOta", { amount: formatRupiah(roomsTotal) })}
                 </span>
               </div>
               <p className="ota-operational-note">
-                ⓘ &nbsp; Reservasi OTA dicatat dari voucher. Tarif voucher digunakan
-                untuk total booking dan reservasi ikut tercatat dalam kamar terjual.
+                ⓘ &nbsp; {t("ota.rooms.operationalNote")}
               </p>
             </section>
             <section className="reservation-panel">
-              <h2>Guest Information</h2>
+              <h2>{t("ota.guest.title")}</h2>
               <div className="guest-fields">
                 <ReservationField
-                  label="Full Name"
+                  label={t("ota.guest.fullName")}
                   htmlFor="ota-guest-name"
                   required
                 >
@@ -657,7 +654,7 @@ export function OtaReservationPage() {
                   />
                 </ReservationField>
                 <ReservationField
-                  label="WhatsApp"
+                  label={t("ota.guest.whatsapp")}
                   htmlFor="ota-whatsapp"
                   required
                 >
@@ -668,7 +665,7 @@ export function OtaReservationPage() {
                     onChange={(event) => setWhatsapp(event.target.value)}
                   />
                 </ReservationField>
-                <ReservationField label="Email" htmlFor="ota-email" optional>
+                <ReservationField label={t("ota.guest.email")} htmlFor="ota-email" optional>
                   <input
                     id="ota-email"
                     type="email"
@@ -676,7 +673,7 @@ export function OtaReservationPage() {
                     onChange={(event) => setEmail(event.target.value)}
                   />
                 </ReservationField>
-                <ReservationField label="Notes" htmlFor="ota-notes" optional>
+                <ReservationField label={t("ota.guest.notes")} htmlFor="ota-notes" optional>
                   <input
                     id="ota-notes"
                     value={notes}
@@ -687,18 +684,18 @@ export function OtaReservationPage() {
             </section>
             <section className="reservation-panel">
               <div className="reservation-panel__heading">
-                <h2>Experiences &amp; Add-ons</h2>
+                <h2>{t("ota.experiences.title")}</h2>
                 <button
                   type="button"
                   className="reservation-secondary-button reservation-add-button"
                   onClick={() => setAddingExtra((value) => !value)}
                 >
-                  ＋ Add
+                  ＋ {t("ota.experiences.add")}
                 </button>
               </div>
               {addingExtra && (
                 <div className="extra-picker">
-                  <label htmlFor="ota-extra-choice">Pilih add-on</label>
+                  <label htmlFor="ota-extra-choice">{t("ota.experiences.pickAddOn")}</label>
                   <select
                     id="ota-extra-choice"
                     value=""
@@ -716,7 +713,7 @@ export function OtaReservationPage() {
                       setAddingExtra(false);
                     }}
                   >
-                    <option value="">Pilih paket</option>
+                    <option value="">{t("ota.experiences.selectPackage")}</option>
                     {experienceOptions
                       .filter((extra) => !selectedExtras.includes(extra.id))
                       .map((extra) => (
@@ -756,7 +753,7 @@ export function OtaReservationPage() {
                         </strong>
                         <button
                           type="button"
-                          aria-label={"Hapus " + extra.label}
+                          aria-label={t("ota.rooms.removeAriaLabel", { name: extra.label })}
                           onClick={() => {
                             setSelectedExtras((current) =>
                               current.filter((value) => value !== id),
@@ -775,65 +772,60 @@ export function OtaReservationPage() {
                   );
                 })}
                 {selectedExtras.length === 0 && (
-                  <p className="reservation-empty">Belum ada add-on.</p>
+                  <p className="reservation-empty">{t("ota.experiences.empty")}</p>
                 )}
               </div>
             </section>
             <section className="reservation-panel">
-              <h2>Payment</h2>
+              <h2>{t("ota.payment.title")}</h2>
               <div className="payment-fields">
                 <div className="reservation-field">
-                  <label>Payment Type</label>
-                  <div className="ota-payment-status">Prepaid by OTA</div>
+                  <label>{t("ota.payment.typeLabel")}</label>
+                  <div className="ota-payment-status">{t("ota.payment.prepaidByOta")}</div>
                 </div>
                 <div className="reservation-field">
-                  <label>Payment Status</label>
+                  <label>{t("ota.payment.statusLabel")}</label>
                   <div
                     className={
                       "ota-payment-status ota-payment-status--" +
                       paymentStatus.toLowerCase()
                     }
                   >
-                    {paymentStatus}
+                    {t("status.paid")}
                   </div>
                 </div>
                 <div className="reservation-field">
-                  <label>Amount Paid</label>
+                  <label>{t("ota.payment.amountPaidLabel")}</label>
                   <div className="ota-payment-status">
                     {formatRupiah(amountPaid)}
                   </div>
                 </div>
               </div>
               <p className="ota-settlement-note">
-                <strong>OTA Settlement Note:</strong> Pembayaran telah
-                diselesaikan melalui {channelName}. Dana dicairkan sesuai jadwal
-                payout OTA.
+                <strong>{t("ota.payment.settlementNote")}</strong>{t("ota.payment.settlementNoteBody", { channel: channelName })}
               </p>
             </section>
           </div>
           <aside className="booking-summary">
             <div className="booking-summary__header">
-              <h2>Booking Summary</h2>
-              <span>OTA · {channelName}</span>
+              <h2>{t("ota.summary.title")}</h2>
+              <span>{t("ota.summary.sourceLabel", { channel: channelName })}</span>
             </div>
             <div className="booking-summary__stay">
-              <span>OTA Reference</span>
-              <strong>{reference.trim() || "—"}</strong>
+              <span>{t("ota.summary.otaReference")}</span>
+              <strong>{reference.trim() || t("common.emptyDash")}</strong>
             </div>
             <div className="booking-summary__stay">
-              <span>Stay</span>
+              <span>{t("ota.summary.stay")}</span>
               <strong>
-                {formatStayDate(checkIn)} → {formatStayDate(checkOut)} ·{" "}
-                {nights} nights
+                {t("ota.summary.stayValue", { from: formatStayDate(checkIn), to: formatStayDate(checkOut), nights })}
               </strong>
             </div>
             <div className="booking-summary__lines">
               {rooms.map((room) => (
                 <div key={room.id}>
                   <span>
-                    {roomTypeOptions.find((type) => type.id === room.type)?.name} ×{" "}
-                    {room.quantity} ({nights} nights × {formatRupiah(room.rate)}
-                    )
+                    {t("ota.summary.roomLine", { roomType: roomTypeOptions.find((type) => type.id === room.type)?.name ?? t("ota.rooms.roomDefault"), quantity: room.quantity, nights, rate: formatRupiah(room.rate) })}
                   </span>
                   <strong>
                     {formatRupiah(room.rate * room.quantity * nights)}
@@ -841,13 +833,13 @@ export function OtaReservationPage() {
                 </div>
               ))}
               <div>
-                <span>Rooms Total</span>
+                <span>{t("ota.summary.roomsTotal")}</span>
                 <strong>{formatRupiah(roomsTotal)}</strong>
               </div>
               {rooms.flatMap((room) => room.configurations.map((configuration, index) =>
                 configuration.extraBeds > 0 ? (
                   <div key={`bed-${room.id}-${index}`}>
-                    <span>Extra Bed ({roomTypeOptions.find((type) => type.id === room.type)?.name}, Room {index + 1}) × {configuration.extraBeds} · {nights} nights</span>
+                    <span>{t("ota.summary.extraBedLine", { roomType: roomTypeOptions.find((type) => type.id === room.type)?.name ?? t("ota.rooms.roomDefault"), index: index + 1, quantity: configuration.extraBeds, nights })}</span>
                     <strong>{formatRupiah((roomTypeOptions.find((type) => type.id === room.type)?.extraBedPricePerNight ?? 0) * configuration.extraBeds * nights)}</strong>
                   </div>
                 ) : null,
@@ -857,7 +849,7 @@ export function OtaReservationPage() {
                 return extra ? (
                   <div key={id}>
                     <span>
-                      {extra.label} × {extraQuantities[id] ?? 1}
+                      {t("ota.summary.experience", { label: extra.label, quantity: extraQuantities[id] ?? 1 })}
                     </span>
                     <strong>
                       {formatRupiah(
@@ -871,30 +863,30 @@ export function OtaReservationPage() {
             <div className="booking-summary__totals">
               {quoteBusy && <LoadingSkeleton variant="inline" />}
               <div>
-                <strong>Booking Total</strong>
+                <strong>{t("ota.summary.bookingTotal")}</strong>
                 <strong>{formatRupiah(total)}</strong>
               </div>
               <div>
-                <span>Payment Arrangement</span>
-                <span>Prepaid by OTA</span>
+                <span>{t("ota.summary.paymentArrangement")}</span>
+                <span>{t("ota.payment.prepaidByOta")}</span>
               </div>
               <div>
-                <span>Payment Status</span>
+                <span>{t("ota.summary.paymentStatus")}</span>
                 <span
                   className={
                     "status-badge status-badge--" +
                     (paymentStatus === "Paid" ? "success" : "warning")
                   }
                 >
-                  {paymentStatus}
+                  {t("status.paid")}
                 </span>
               </div>
               <div>
-                <span>Amount Paid</span>
+                <span>{t("ota.summary.amountPaid")}</span>
                 <span>{formatRupiah(amountPaid)}</span>
               </div>
               <div className="booking-summary__collected">
-                <strong>Remaining Balance</strong>
+                <strong>{t("ota.summary.remainingBalance")}</strong>
                 <strong>{formatRupiah(remainingBalance)}</strong>
               </div>
             </div>
@@ -905,20 +897,19 @@ export function OtaReservationPage() {
                 disabled={saveBusy || quoteBusy || !quote || Boolean(quoteError)}
                 onClick={() => setSaveConfirmationOpen(true)}
               >
-                Save Reservation
+                {t("ota.summary.saveReservation")}
               </button>
               <button
                 type="button"
                 className="reservation-secondary-button"
                 disabled
-                title="Draft OTA belum tersedia di API"
+                title={t("ota.summary.draftUnavailable")}
               >
-                Save as Draft
+                {t("ota.summary.saveAsDraft")}
               </button>
             </div>
             <p className="booking-summary__note booking-summary__note--after">
-              Nomor fisik kamar dan uang jaminan (deposit) akan dialokasikan
-              saat tamu hadir dan melakukan check-in di hotel.
+              {t("ota.summary.note")}
             </p>
           </aside>
         </div>}

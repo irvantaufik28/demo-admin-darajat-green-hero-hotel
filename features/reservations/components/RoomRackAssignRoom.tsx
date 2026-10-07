@@ -8,6 +8,9 @@ import {
   getRoomAssignmentOptions,
   type RoomAssignmentOptions,
 } from "../services/room-assignment";
+import { useTranslations } from "../../../lib/i18n";
+import en from "../locales/en.json";
+import id from "../locales/id.json";
 
 type Props = {
   reservationId: string;
@@ -26,6 +29,7 @@ function dateLabel(value: string): string {
 }
 
 export function RoomRackAssignRoom({ reservationId, reservationRoomId, onUpdated }: Props) {
+  const { t } = useTranslations({ en, id });
   const [open, setOpen] = useState(false);
   const [options, setOptions] = useState<RoomAssignmentOptions | null>(null);
   const [selectedRoomUnitId, setSelectedRoomUnitId] = useState("");
@@ -45,7 +49,7 @@ export function RoomRackAssignRoom({ reservationId, reservationRoomId, onUpdated
     getRoomAssignmentOptions(reservationId, reservationRoomId, controller.signal)
       .then((response) => { if (!controller.signal.aborted) setOptions(response); })
       .catch((cause) => {
-        if (!controller.signal.aborted) setError(cause instanceof Error ? cause.message : "Pilihan kamar gagal dimuat.");
+        if (!controller.signal.aborted) setError(cause instanceof Error ? cause.message : t("assignRoom.errors.optionsLoadError"));
       })
       .finally(() => { if (!controller.signal.aborted) setLoading(false); });
     return () => controller.abort();
@@ -65,9 +69,9 @@ export function RoomRackAssignRoom({ reservationId, reservationRoomId, onUpdated
         options.reservation.version,
       );
       setOpen(false);
-      await onUpdated(`Room ${selected.roomNumber} berhasil ditetapkan. Room Rack diperbarui.`);
+      await onUpdated(t("assignRoom.success", { roomNumber: selected.roomNumber }));
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Penetapan kamar gagal disimpan.");
+      setError(cause instanceof Error ? cause.message : t("assignRoom.errors.saveFailed"));
     } finally {
       setSaving(false);
     }
@@ -79,10 +83,10 @@ export function RoomRackAssignRoom({ reservationId, reservationRoomId, onUpdated
         type="button"
         className="action-button"
         disabled={!allowed}
-        title={allowed ? undefined : "Anda tidak memiliki izin Assign Room"}
+        title={allowed ? undefined : t("assignRoom.noPermissionTitle")}
         onClick={() => setOpen(true)}
       >
-        Assign Room
+        {t("assignRoom.button")}
       </button>
       {open && createPortal(
         <div className="reservation-operation-backdrop" onMouseDown={(event) => {
@@ -90,28 +94,28 @@ export function RoomRackAssignRoom({ reservationId, reservationRoomId, onUpdated
         }}>
           <section className="reservation-operation-modal rr-assign-room-modal" role="dialog" aria-modal="true" aria-labelledby="rr-assign-room-title">
             <div className="reservation-operation-header">
-              <h2 id="rr-assign-room-title">Assign Room</h2>
-              <button type="button" disabled={saving} aria-label="Close modal" onClick={() => setOpen(false)}>×</button>
+              <h2 id="rr-assign-room-title">{t("assignRoom.title")}</h2>
+              <button type="button" disabled={saving} aria-label={t("common.closeModal")} onClick={() => setOpen(false)}>×</button>
             </div>
             <div className="api-reservation-modal-body">
-              {loading && <p>Loading available rooms...</p>}
+              {loading && <p>{t("assignRoom.loading")}</p>}
               {options && (
                 <>
                   <div className="rr-assign-room-context">
                     <div>
-                      <small>Reservation</small>
+                      <small>{t("assignRoom.reservation")}</small>
                       <strong>{options.reservation.bookingCode}</strong>
                     </div>
                     <div>
-                      <small>Room Type</small>
+                      <small>{t("assignRoom.roomType")}</small>
                       <strong>{options.room.roomTypeName}</strong>
                     </div>
                     <div>
-                      <small>Stay Period</small>
+                      <small>{t("assignRoom.stayPeriod")}</small>
                       <strong>{dateLabel(options.reservation.checkInDate)} → {dateLabel(options.reservation.checkOutDate)}</strong>
                     </div>
                   </div>
-                  <p className="rr-assign-room-hint">Pilih kamar yang siap digunakan untuk periode menginap ini.</p>
+                  <p className="rr-assign-room-hint">{t("assignRoom.hint")}</p>
                   <div className="rr-assign-room-options">
                     {availableOptions.map((option) => (
                       <label key={option.id} className="rr-assign-room-option">
@@ -124,22 +128,22 @@ export function RoomRackAssignRoom({ reservationId, reservationRoomId, onUpdated
                           onChange={() => setSelectedRoomUnitId(option.id)}
                         />
                         <span className="rr-assign-room-option__details">
-                          <strong>Room {option.roomNumber}</strong>
-                          <small>{[option.floorName, option.bedConfiguration].filter(Boolean).join(" · ") || "Room unit"}</small>
+                          <strong>{t("assignRoom.roomLabel", { roomNumber: option.roomNumber })}</strong>
+                          <small>{[option.floorName, option.bedConfiguration].filter(Boolean).join(" · ") || t("assignRoom.roomUnitFallback")}</small>
                         </span>
-                        <span className="rr-assign-room-option__status">Available</span>
+                        <span className="rr-assign-room-option__status">{t("assignRoom.available")}</span>
                       </label>
                     ))}
-                    {availableOptions.length === 0 && <p className="rr-assign-room-empty">Tidak ada kamar yang tersedia untuk periode menginap ini.</p>}
+                    {availableOptions.length === 0 && <p className="rr-assign-room-empty">{t("assignRoom.empty")}</p>}
                   </div>
                 </>
               )}
               {error && <p className="api-reservation-error" role="alert">{error}</p>}
             </div>
             <div className="api-reservation-modal-footer">
-              <button type="button" className="reservation-secondary-button" disabled={saving} onClick={() => setOpen(false)}>Cancel</button>
+              <button type="button" className="reservation-secondary-button" disabled={saving} onClick={() => setOpen(false)}>{t("common.cancel")}</button>
               <button type="button" className="action-button" disabled={!options || !selectedRoomUnitId || loading || saving} onClick={() => void save()}>
-                {saving ? "Saving..." : "Save Assignment"}
+                {saving ? t("common.saving") : t("assignRoom.saveAssignment")}
               </button>
             </div>
           </section>

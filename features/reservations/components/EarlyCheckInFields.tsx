@@ -1,6 +1,9 @@
 "use client";
 
 import type { CheckInContext, EarlyCheckInInput } from "../services/api";
+import { useTranslations } from "../../../lib/i18n";
+import en from "../locales/en.json";
+import id from "../locales/id.json";
 
 type PaymentMethod = { id: string; name: string };
 
@@ -15,14 +18,17 @@ export function EarlyCheckInFields({
   onChange: (value: EarlyCheckInInput) => void;
   methods: PaymentMethod[];
 }) {
+  const { t } = useTranslations({ en, id });
   if (!context.required) return null;
 
   return (
     <div className="reservation-operation-deposit">
-      <strong>Early check-in</strong>
+      <strong>{t("earlyCheckIn.title")}</strong>
       <p>
-        Sekarang {context.serverTime} WIB, sebelum jam check-in standar {context.standardCheckInTime} WIB.
-        Biaya tambahan boleh Rp0.
+        {t("earlyCheckIn.description", {
+          serverTime: context.serverTime,
+          standardTime: context.standardCheckInTime,
+        })}
       </p>
       <label className="partial-check-in-confirmation">
         <input
@@ -30,11 +36,11 @@ export function EarlyCheckInFields({
           checked={value.acknowledged}
           onChange={(event) => onChange({ ...value, acknowledged: event.target.checked })}
         />
-        <span>Saya mengonfirmasi early check-in untuk tamu ini.</span>
+        <span>{t("earlyCheckIn.acknowledge")}</span>
       </label>
       <div className="reservation-operation-deposit-fields">
         <label>
-          Biaya early check-in (IDR)
+          {t("earlyCheckIn.chargeLabel")}
           <input
             inputMode="numeric"
             value={value.chargeAmount === 0 ? "" : String(value.chargeAmount)}
@@ -45,23 +51,23 @@ export function EarlyCheckInFields({
         {value.chargeAmount > 0 && (
           <>
             <label>
-              Pembayaran biaya
+              {t("earlyCheckIn.paymentLabel")}
               <select
                 value={value.paymentTiming}
                 onChange={(event) => onChange({ ...value, paymentTiming: event.target.value as "now" | "later" })}
               >
-                <option value="later">Tagih nanti</option>
-                <option value="now">Bayar sekarang</option>
+                <option value="later">{t("earlyCheckIn.payLater")}</option>
+                <option value="now">{t("earlyCheckIn.payNow")}</option>
               </select>
             </label>
             {value.paymentTiming === "now" && (
               <label>
-                Metode pembayaran
+                {t("earlyCheckIn.methodLabel")}
                 <select
                   value={value.paymentMethodId ?? ""}
                   onChange={(event) => onChange({ ...value, paymentMethodId: event.target.value })}
                 >
-                  <option value="">Pilih metode</option>
+                  <option value="">{t("earlyCheckIn.selectMethod")}</option>
                   {methods.map((method) => (
                     <option key={method.id} value={method.id}>{method.name}</option>
                   ))}

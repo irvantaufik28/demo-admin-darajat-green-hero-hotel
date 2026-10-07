@@ -8,6 +8,9 @@ import Link from "next/link";
 import { AdminShell } from "../../../components/layout/AdminShell";
 import { restoreSession } from "../../../lib/auth";
 import { getPayments, type PaymentListItem } from "../services/payments";
+import { useTranslations, type Translate } from "../../../lib/i18n";
+import en from "../locales/en.json";
+import id from "../locales/id.json";
 
 const pageSize = 20;
 const money = (value: number) => `Rp${value.toLocaleString("id-ID")}`;
@@ -34,10 +37,12 @@ function csvCell(value: string | number) {
   return `"${safe.replaceAll('"', '""')}"`;
 }
 
-function exportCsv(rows: PaymentListItem[]) {
+function exportCsv(rows: PaymentListItem[], t: Translate) {
   const columns = [
-    "Booking", "Guest", "Source", "Reservation Status", "Booking Total",
-    "Paid", "Refunded", "Remaining", "Payment Status", "Method",
+    t("csv.columns.booking"), t("csv.columns.guest"), t("csv.columns.source"),
+    t("csv.columns.reservationStatus"), t("csv.columns.bookingTotal"),
+    t("csv.columns.paid"), t("csv.columns.refunded"), t("csv.columns.remaining"),
+    t("csv.columns.paymentStatus"), t("csv.columns.method"),
   ];
   const data = rows.map((row) => [
     row.bookingCode, row.guest.fullName, label(row.source), label(row.reservationStatus),
@@ -48,12 +53,13 @@ function exportCsv(rows: PaymentListItem[]) {
   const url = URL.createObjectURL(new Blob(["\uFEFF", csv], { type: "text/csv;charset=utf-8" }));
   const link = document.createElement("a");
   link.href = url;
-  link.download = "payments.csv";
+  link.download = t("csv.fileName");
   link.click();
   URL.revokeObjectURL(url);
 }
 
 export function PaymentsPage() {
+  const { t } = useTranslations({ en, id });
   const [rows, setRows] = useState<PaymentListItem[]>([]);
   const [methods, setMethods] = useState<{ id: string; name: string }[]>([]);
   const [total, setTotal] = useState(0);
@@ -96,7 +102,7 @@ export function PaymentsPage() {
         }
       } catch (cause) {
         if (!controller.signal.aborted) {
-          setError(cause instanceof Error ? cause.message : "Pembayaran gagal dimuat.");
+          setError(cause instanceof Error ? cause.message : t("list.messages.loadError"));
         }
       } finally {
         if (!controller.signal.aborted) setLoading(false);
@@ -124,74 +130,74 @@ export function PaymentsPage() {
         if (result.items.length === 0) break;
         exportPage += 1;
       } while (allRows.length < count);
-      exportCsv(allRows);
+      exportCsv(allRows, t);
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Export pembayaran gagal.");
+      setError(cause instanceof Error ? cause.message : t("list.messages.exportError"));
     } finally {
       setExporting(false);
     }
   }
 
   return (
-    <AdminShell title="Payments" context="Payments">
+    <AdminShell title={t("shell.title")} context={t("shell.paymentsContext")}>
       <div className="payments-page">
         <div className="payments-heading">
-          <div><h1>Payments</h1><p>Pantau status pembayaran dan catat pembayaran reservasi</p></div>
+          <div><h1>{t("list.heading")}</h1><p>{t("list.description")}</p></div>
           <button type="button" disabled={exporting} onClick={exportFilteredCsv}>
-            {exporting ? "Exporting..." : "↓ Export CSV"}
+            {exporting ? t("list.exporting") : `↓ ${t("list.exportCsv")}`}
           </button>
         </div>
         <div className="payments-filters">
-          <input aria-label="Search payments" placeholder="Search booking, guest, or WhatsApp" value={search} onChange={(event) => { setSearch(event.target.value); setPage(1); }} />
-          <select aria-label="Reservation status" value={reservationStatus} onChange={(event) => { setReservationStatus(event.target.value); setPage(1); }}>
-            <option value="">Res: All Status</option>
+          <input aria-label={t("list.filters.searchAriaLabel")} placeholder={t("list.filters.searchPlaceholder")} value={search} onChange={(event) => { setSearch(event.target.value); setPage(1); }} />
+          <select aria-label={t("list.filters.reservationStatusAriaLabel")} value={reservationStatus} onChange={(event) => { setReservationStatus(event.target.value); setPage(1); }}>
+            <option value="">{t("list.filters.reservationStatusAll")}</option>
             {["pending", "confirmed", "checked_in", "checked_out", "cancelled", "expired"].map((value) => <option key={value} value={value}>{label(value)}</option>)}
           </select>
-          <select aria-label="Payment status" value={paymentStatus} onChange={(event) => { setPaymentStatus(event.target.value); setPage(1); }}>
-            <option value="">Payment: All</option>
+          <select aria-label={t("list.filters.paymentStatusAriaLabel")} value={paymentStatus} onChange={(event) => { setPaymentStatus(event.target.value); setPage(1); }}>
+            <option value="">{t("list.filters.paymentStatusAll")}</option>
             {["unpaid", "partial", "paid", "failed", "refunded", "expired"].map((value) => <option key={value} value={value}>{label(value)}</option>)}
           </select>
-          <select aria-label="Source" value={source} onChange={(event) => { setSource(event.target.value); setPage(1); }}>
-            <option value="">Source: All</option>
+          <select aria-label={t("list.filters.sourceAriaLabel")} value={source} onChange={(event) => { setSource(event.target.value); setPage(1); }}>
+            <option value="">{t("list.filters.sourceAll")}</option>
             {["website", "walk_in", "phone", "ota"].map((value) => <option key={value} value={value}>{label(value)}</option>)}
           </select>
-          <select aria-label="Payment method" value={methodId} onChange={(event) => { setMethodId(event.target.value); setPage(1); }}>
-            <option value="">Method: All</option>
+          <select aria-label={t("list.filters.methodAriaLabel")} value={methodId} onChange={(event) => { setMethodId(event.target.value); setPage(1); }}>
+            <option value="">{t("list.filters.methodAll")}</option>
             {methods.map((method) => <option key={method.id} value={method.id}>{method.name}</option>)}
           </select>
           <div className="payments-date-filter">
-            <input aria-label="From check-in date" type="date" value={from} onChange={(event) => { setFrom(event.target.value); setPage(1); }} />
+            <input aria-label={t("list.filters.fromDateAriaLabel")} type="date" value={from} onChange={(event) => { setFrom(event.target.value); setPage(1); }} />
             <span>–</span>
-            <input aria-label="To check-in date" type="date" value={to} onChange={(event) => { setTo(event.target.value); setPage(1); }} />
+            <input aria-label={t("list.filters.toDateAriaLabel")} type="date" value={to} onChange={(event) => { setTo(event.target.value); setPage(1); }} />
           </div>
-          <button type="button" onClick={reset}>Reset</button>
+          <button type="button" onClick={reset}>{t("list.filters.reset")}</button>
         </div>
         <div className="payments-table-shell">
           <div className="payments-table-scroll">
             <table className="payments-table">
-              <thead><tr><th>Booking</th><th>Guest</th><th>Source</th><th>Reservation Status</th><th>Booking Total</th><th>Paid</th><th>Refunded</th><th>Remaining</th><th>Payment Status</th><th>Method</th><th>Action</th></tr></thead>
+              <thead><tr><th>{t("list.table.booking")}</th><th>{t("list.table.guest")}</th><th>{t("list.table.source")}</th><th>{t("list.table.reservationStatus")}</th><th>{t("list.table.bookingTotal")}</th><th>{t("list.table.paid")}</th><th>{t("list.table.refunded")}</th><th>{t("list.table.remaining")}</th><th>{t("list.table.paymentStatus")}</th><th>{t("list.table.method")}</th><th>{t("list.table.action")}</th></tr></thead>
               <tbody>{!loading && rows.map((row) => <tr key={row.id}>
                 <td><strong className="payments-booking">{row.bookingCode}</strong><small>{dateLabel(row.checkInDate)} – {dateLabel(row.checkOutDate)}</small></td>
                 <td><strong>{row.guest.fullName}</strong><small>{row.guest.phone}</small></td>
                 <td>{row.source === "ota" && row.otaChannel ? `OTA · ${row.otaChannel}` : label(row.source)}</td>
                 <td><span className={`reservations-source payments-reservation-status--${row.reservationStatus}`}>{label(row.reservationStatus)}</span></td>
                 <td>{money(row.bookingTotal)}</td>
-                <td className="payments-paid">{row.paidAmount ? money(row.paidAmount) : "—"}</td>
-                <td className={row.refundedAmount ? "payments-refunded" : ""}>{row.refundedAmount ? money(row.refundedAmount) : "—"}</td>
+                <td className="payments-paid">{row.paidAmount ? money(row.paidAmount) : t("list.table.emptyCell")}</td>
+                <td className={row.refundedAmount ? "payments-refunded" : ""}>{row.refundedAmount ? money(row.refundedAmount) : t("list.table.emptyCell")}</td>
                 <td className={row.remainingBalance ? "payments-remaining" : ""}>{money(row.remainingBalance)}</td>
                 <td><span className={`reservations-source payments-badge--${badgeTone(label(row.paymentStatus))}`}>{label(row.paymentStatus)}</span></td>
-                <td>{row.method?.name ?? "—"}</td>
-                <td><Link href={`/payments/${encodeURIComponent(row.id)}`}>View</Link></td>
+                <td>{row.method?.name ?? t("list.table.emptyCell")}</td>
+                <td><Link href={`/payments/${encodeURIComponent(row.id)}`}>{t("list.table.view")}</Link></td>
               </tr>)}</tbody>
             </table>
-            {(loading || error || rows.length === 0) && <div className="payments-empty">{loading ? <LoadingSkeleton /> : error || "Tidak ada pembayaran yang sesuai filter."}</div>}
+            {(loading || error || rows.length === 0) && <div className="payments-empty">{loading ? <LoadingSkeleton /> : error || t("list.messages.empty")}</div>}
           </div>
           <div className="payments-footer">
-            Menampilkan <strong>{rows.length}</strong> dari <strong>{total}</strong> transaksi reservasi
-            {total > pageSize && <span> · <button type="button" disabled={page === 1} onClick={() => setPage((value) => value - 1)}>Previous</button> Page {page} of {Math.ceil(total / pageSize)} <button type="button" disabled={page * pageSize >= total} onClick={() => setPage((value) => value + 1)}>Next</button></span>}
+            {t("list.pagination.showing", { count: rows.length, total })}
+            {total > pageSize && <span> · <button type="button" disabled={page === 1} onClick={() => setPage((value) => value - 1)}>{t("list.pagination.previous")}</button> {t("list.pagination.pageInfo", { page, total: Math.ceil(total / pageSize) })} <button type="button" disabled={page * pageSize >= total} onClick={() => setPage((value) => value + 1)}>{t("list.pagination.next")}</button></span>}
           </div>
         </div>
-        <div className="payments-note">Deposit jaminan dicatat terpisah dari saldo pembayaran reservasi.</div>
+        <div className="payments-note">{t("list.note")}</div>
       </div>
     </AdminShell>
   );

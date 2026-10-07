@@ -30,17 +30,20 @@ import { DateRangePicker } from "../../campaigns/components/DateRangePicker";
 import { reservationDetailPresentation } from "../utils/detail-rules";
 import { getCurrentUser } from "../../../lib/auth";
 import { formatStayDate } from "../constants/walk-in-data";
+import { useTranslations } from "../../../lib/i18n";
+import en from "../locales/en.json";
+import idLocale from "../locales/id.json";
 
 type Action = "confirm" | "payment" | "check_in" | "check_out" | "cancel" | "extend";
 type DepositMode = "defer" | "refund" | "deduct_balance" | "deduct_damage";
 
-const actionLabels: Record<Action, string> = {
-  confirm: "Confirm Reservation",
-  payment: "Record Payment",
-  check_in: "Check-in Guest",
-  check_out: "Check Out Guest",
-  cancel: "Cancel Reservation",
-  extend: "Extend Stay",
+const actionLabelKeys: Record<Action, string> = {
+  confirm: "detailActions.labels.confirm",
+  payment: "detailActions.labels.payment",
+  check_in: "detailActions.labels.checkIn",
+  check_out: "detailActions.labels.checkOut",
+  cancel: "detailActions.labels.cancel",
+  extend: "detailActions.labels.extend",
 };
 
 const actionPermissions: Record<Action, string> = {
@@ -63,6 +66,7 @@ export function ReservationDetailActions({
   detail: ApiReservationDetail;
   onUpdated: (message: string) => Promise<void>;
 }) {
+  const { t } = useTranslations({ en, id: idLocale });
   const [action, setAction] = useState<Action | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -119,7 +123,7 @@ export function ReservationDetailActions({
         .catch((cause) => {
           if (!active) return;
           setExtensionQuote(null);
-          setError(cause instanceof Error ? cause.message : "Perpanjangan tidak tersedia.");
+          setError(cause instanceof Error ? cause.message : t("detailActions.errors.extensionDateRequired"));
         })
         .finally(() => { if (active) setExtensionLoading(false); });
     }, 250);
@@ -179,7 +183,7 @@ export function ReservationDetailActions({
         setMethods(items);
         setMethodId(items[0]?.id ?? "");
       } catch (cause) {
-        setError(cause instanceof Error ? cause.message : "Metode pembayaran gagal dimuat.");
+        setError(cause instanceof Error ? cause.message : t("detailActions.errors.methodsLoadError"));
       }
     }
     if (next === "payment") {
@@ -194,7 +198,7 @@ export function ReservationDetailActions({
         setError(
           cause instanceof Error
             ? cause.message
-            : "Metode pembayaran gagal dimuat.",
+            : t("detailActions.errors.methodsLoadError"),
         );
       }
     }
@@ -239,7 +243,7 @@ export function ReservationDetailActions({
         setDepositMethodId(paymentMethods[0]?.id ?? "");
       } catch (cause) {
         setError(
-          cause instanceof Error ? cause.message : "Nomor kamar gagal dimuat.",
+          cause instanceof Error ? cause.message : t("detailActions.errors.roomsLoadError"),
         );
       }
     }
@@ -261,7 +265,7 @@ export function ReservationDetailActions({
         setCheckOutContext(context);
         setMethods(paymentMethods);
       } catch (cause) {
-        setError(cause instanceof Error ? cause.message : "Aturan checkout gagal dimuat.");
+        setError(cause instanceof Error ? cause.message : t("detailActions.errors.checkoutRulesLoadError"));
       }
     }
   }
@@ -277,7 +281,7 @@ export function ReservationDetailActions({
       (!methodId || paymentAmount < 1 || paymentAmount > balance)
     ) {
       setError(
-        "Pilih metode dan isi pembayaran antara Rp1 sampai sisa tagihan.",
+        t("detailActions.errors.paymentInvalid"),
       );
       return;
     }
@@ -287,47 +291,47 @@ export function ReservationDetailActions({
         selected.some((value) => !value) ||
         new Set(selected).size !== selected.length
       ) {
-        setError("Pilih nomor kamar berbeda untuk setiap kamar reservasi.");
+        setError(t("detailActions.errors.roomsRequired"));
         return;
       }
       if (balance > 0 && !acknowledged) {
-        setError("Konfirmasi sisa tagihan sebelum check-in.");
+        setError(t("detailActions.errors.balanceConfirmRequired"));
         return;
       }
       if (!checkInContext || (checkInContext.required && !earlyCheckIn.acknowledged)) {
-        setError("Konfirmasi early check-in sebelum melanjutkan.");
+        setError(t("detailActions.errors.earlyCheckInRequired"));
         return;
       }
       if (checkInContext.required && earlyCheckIn.chargeAmount > 0 && earlyCheckIn.paymentTiming === "now" && !earlyCheckIn.paymentMethodId) {
-        setError("Pilih metode pembayaran biaya early check-in.");
+        setError(t("detailActions.errors.earlyCheckInMethodRequired"));
         return;
       }
       if (requireDeposit && (depositAmount < 1 || !depositMethodId)) {
-        setError("Isi jumlah deposit dan pilih metode pembayaran deposit.");
+        setError(t("detailActions.errors.depositRequired"));
         return;
       }
     }
     if (action === "check_out") {
       if (!checkOutContext) {
-        setError("Aturan checkout belum dimuat.");
+        setError(t("detailActions.errors.checkoutRulesNotLoaded"));
         return;
       }
       if (checkOutContext.kind === "early_departure" && !earlyDepartureAcknowledged) {
-        setError("Konfirmasi checkout lebih awal sebelum melanjutkan.");
+        setError(t("detailActions.errors.earlyDepartureRequired"));
         return;
       }
       if (checkOutContext.kind === "late_checkout" && !lateCheckOut.acknowledged) {
-        setError("Konfirmasi late checkout sebelum melanjutkan.");
+        setError(t("detailActions.errors.lateCheckoutRequired"));
         return;
       }
       if (checkOutContext.kind === "late_checkout" && lateCheckOut.chargeAmount > 0 && lateCheckOut.paymentTiming === "now" && !lateCheckOut.paymentMethodId) {
-        setError("Pilih metode pembayaran biaya late checkout.");
+        setError(t("detailActions.errors.lateCheckoutMethodRequired"));
         return;
       }
       const willRemainOutstanding = checkoutRemainingAfterDeductions > 0;
       if (willRemainOutstanding && !canOverrideCheckout) {
         setError(
-          "Saldo setelah pemotongan deposit harus lunas, atau checkout dilakukan oleh Owner/Manager.",
+          t("detailActions.errors.checkoutOverrideRequired"),
         );
         return;
       }
@@ -336,7 +340,7 @@ export function ReservationDetailActions({
         (!acknowledged || !reason.trim())
       ) {
         setError(
-          "Centang konfirmasi dan tulis alasan checkout dengan sisa tagihan.",
+          t("detailActions.errors.checkoutReasonRequired"),
         );
         return;
       }
@@ -348,22 +352,22 @@ export function ReservationDetailActions({
         )
       ) {
         setError(
-          "Isi referensi refund untuk setiap deposit yang dikembalikan.",
+          t("detailActions.errors.refundReferenceRequired"),
         );
         return;
       }
     }
     if (action === "cancel" && !reason.trim()) {
-      setError("Alasan pembatalan wajib diisi.");
+      setError(t("detailActions.errors.cancelReasonRequired"));
       return;
     }
     if (action === "extend") {
       if (!extensionQuote || extensionQuote.newCheckOutDate !== newCheckOutDate) {
-        setError("Pilih tanggal dan tunggu rincian perpanjangan tersedia.");
+        setError(t("detailActions.errors.extensionNotReady"));
         return;
       }
       if (extensionPaymentTiming === "now" && (!methodId || extensionPaymentAmount < 1 || extensionPaymentAmount > extensionQuote.projectedBalance)) {
-        setError("Pilih metode pembayaran dan jumlah yang valid.");
+        setError(t("detailActions.errors.extensionPaymentInvalid"));
         return;
       }
     }
@@ -448,7 +452,7 @@ export function ReservationDetailActions({
           ...(extensionPaymentTiming === "now" ? { payment: { methodId, amount: extensionPaymentAmount } } : {}),
         });
       }
-      const message = `${actionLabels[action]} berhasil.`;
+      const message = t("detailActions.errors.actionSuccess", { action: t(actionLabelKeys[action]) });
       setAction(null);
       await onUpdated(message);
     } catch (cause) {
@@ -462,7 +466,7 @@ export function ReservationDetailActions({
       setError(
         cause instanceof Error
           ? cause.message
-          : "Aksi gagal. Silakan coba lagi.",
+          : t("detailActions.errors.actionFailed"),
       );
     } finally {
       setBusy(false);
@@ -476,9 +480,9 @@ export function ReservationDetailActions({
           <button
             type="button"
             className="action-button reservation-detail-main-action"
-            title="Check-in memerlukan status Confirmed dari API"
+            title={t("detailActions.checkInNeedsConfirmed")}
           >
-            Confirm &amp; Check-in
+            {t("detailActions.confirmAndCheckIn")}
           </button>
         )}
         {presentation.actions
@@ -496,8 +500,8 @@ export function ReservationDetailActions({
                 onClick={() => void openAction(item)}
               >
                 {item === "check_in" && hasBalance
-                  ? "Confirm & Check-in"
-                  : actionLabels[item]}
+                  ? t("detailActions.confirmAndCheckIn")
+                  : t(actionLabelKeys[item])}
               </button>
             );
           })}
@@ -509,7 +513,7 @@ export function ReservationDetailActions({
               onClick={() => void openAction("extend")}
               disabled={!userPermissions.includes("reservations.extend_stay")}
             >
-              Extend Stay
+              {t("detailActions.extendStay")}
             </button>
             <ReservationExperienceBillActions detail={detail} onUpdated={onUpdated} />
           </>
@@ -518,8 +522,7 @@ export function ReservationDetailActions({
           detail.summary.remainingBalance > 0 &&
           !canOverrideCheckout && (
             <p className="reservation-detail-summary-hint">
-              Sisa tagihan harus dilunasi atau dipotong dari deposit. Checkout
-              dengan saldo tersisa memerlukan izin Owner atau Manager.
+              {t("detailActions.checkoutHint")}
             </p>
           )}
       </div>
@@ -542,18 +545,14 @@ export function ReservationDetailActions({
               <div className="reservation-operation-header">
                 <h2 id="api-action-title">
                   {action === "check_in" && hasBalance
-                    ? "Confirm Check-in with Outstanding Balance"
-                    : actionLabels[action]}
+                    ? t("detailActions.modal.checkInWithBalanceTitle")
+                    : t(actionLabelKeys[action])}
                 </h2>
                 <button
                   type="button"
                   disabled={busy}
                   onClick={() => setAction(null)}
-                  aria-label={
-                    action === "check_in" && !hasBalance
-                      ? "Tutup modal"
-                      : "Close modal"
-                  }
+                  aria-label={t("common.closeModal")}
                 >
                   ×
                 </button>
@@ -573,8 +572,8 @@ export function ReservationDetailActions({
                     </div>
                     <small>
                       {hasBalance
-                        ? `Paid ${rupiah(detail.summary.paidAmount)} · Remaining ${rupiah(detail.summary.remainingBalance)}`
-                        : `${detail.rooms.map((room) => room.roomTypeNameSnapshot).join(", ")} · ${formatStayDate(detail.reservation.checkInDate)} → ${formatStayDate(detail.reservation.checkOutDate)} (${detail.summary.nights} ${detail.summary.nights === 1 ? "night" : "nights"})`}
+                        ? t("detailActions.modal.paidRemaining", { paid: rupiah(detail.summary.paidAmount), remaining: rupiah(detail.summary.remainingBalance) })
+                        : `${detail.rooms.map((room) => room.roomTypeNameSnapshot).join(", ")} · ${formatStayDate(detail.reservation.checkInDate)} → ${formatStayDate(detail.reservation.checkOutDate)} (${detail.summary.nights} ${detail.summary.nights === 1 ? t("common.nightLower") : t("common.nightsLower")})`}
                     </small>
                   </div>
                 ) : (
@@ -585,19 +584,17 @@ export function ReservationDetailActions({
 
                 {action === "confirm" && (
                   <p>
-                    Konfirmasi reservasi ini dengan status pembayaran{" "}
-                    {detail.reservation.paymentStatus}?
+                    {t("detailActions.modal.confirmQuestion", { status: detail.reservation.paymentStatus })}
                   </p>
                 )}
 
                 {action === "payment" && (
                   <>
                     <p>
-                      Sisa tagihan:{" "}
-                      <strong>{rupiah(balanceValue(detail))}</strong>
+                      {t("detailActions.modal.paymentRemaining", { amount: rupiah(balanceValue(detail)) })}
                     </p>
                     <label>
-                      Jumlah pembayaran (IDR)
+                      {t("detailActions.modal.paymentAmountLabel")}
                       <input
                         type="number"
                         min={1}
@@ -609,7 +606,7 @@ export function ReservationDetailActions({
                       />
                     </label>
                     <label>
-                      Metode pembayaran
+                      {t("detailActions.modal.paymentMethodLabel")}
                       <select
                         value={methodId}
                         onChange={(event) => setMethodId(event.target.value)}
@@ -622,7 +619,7 @@ export function ReservationDetailActions({
                       </select>
                     </label>
                     <label>
-                      Catatan
+                      {t("detailActions.modal.notesLabel")}
                       <textarea
                         value={paymentNotes}
                         onChange={(event) =>
@@ -636,11 +633,11 @@ export function ReservationDetailActions({
 
                 {action === "extend" && (
                   <>
-                    <p>Perpanjang seluruh {detail.rooms.length} kamar dalam reservasi ini.</p>
+                    <p>{t("detailActions.modal.extendRoomsNote", { count: detail.rooms.length })}</p>
                     <div className="api-extension-date-field">
-                      <span>Periode tambahan · check-out lama → check-out baru</span>
+                      <span>{t("detailActions.modal.extensionPeriodLabel")}</span>
                       <DateRangePicker
-                        label="Periode tambahan"
+                        label={t("detailActions.modal.extensionPeriodPickerLabel")}
                         start={detail.reservation.checkOutDate}
                         end={newCheckOutDate}
                         minDate={detail.reservation.checkOutDate}
@@ -649,42 +646,42 @@ export function ReservationDetailActions({
                         onChange={(_, end) => { setNewCheckOutDate(end); setExtensionQuote(null); setError(""); }}
                       />
                     </div>
-                    {extensionLoading && <p>Menghitung harga dan ketersediaan...</p>}
+                    {extensionLoading && <p>{t("detailActions.modal.calculating")}</p>}
                     {extensionQuote && (
                       <div className="api-extension-quote">
-                        <strong>{extensionQuote.nights} malam tambahan</strong>
+                        <strong>{t("detailActions.modal.extraNights", { nights: extensionQuote.nights })}</strong>
                         {extensionQuote.rooms.map((room) => (
                           <div key={room.reservationRoomId} className="api-extension-room">
-                            <strong>{room.roomTypeName} · {room.roomNumber ?? "—"}</strong>
-                            <span>Harga kamar: {rupiah(room.roomAmount)}</span>
+                            <strong>{room.roomTypeName} · {room.roomNumber ?? t("common.emptyDash")}</strong>
+                            <span>{t("detailActions.modal.roomRate", { amount: rupiah(room.roomAmount) })}</span>
                             {room.nights.map((night) => (
-                              <small key={night.stayDate}>{formatStayDate(night.stayDate)} · {rupiah(night.finalPrice)}{night.discountAmount > 0 ? ` (diskon ${rupiah(night.discountAmount)}${night.campaignSnapshot ? ` · ${night.campaignSnapshot.name}` : ""})` : ""}</small>
+                              <small key={night.stayDate}>{t("detailActions.modal.nightLine", { date: formatStayDate(night.stayDate), price: rupiah(night.finalPrice) })}{night.discountAmount > 0 ? t("detailActions.modal.nightDiscount", { amount: rupiah(night.discountAmount), campaign: night.campaignSnapshot ? t("detailActions.modal.campaignSuffix", { name: night.campaignSnapshot.name }) : "" }) : ""}</small>
                             ))}
-                            {room.extraBeds && <span>Extra bed {room.extraBeds.quantity} × {extensionQuote.nights} malam: {rupiah(room.extraBeds.amount)}</span>}
-                            {room.breakfastAmount > 0 && <span>Breakfast: {rupiah(room.breakfastAmount)}</span>}
-                            <strong>Subtotal {rupiah(room.total)}</strong>
+                            {room.extraBeds && <span>{t("detailActions.modal.extraBedLine", { quantity: room.extraBeds.quantity, nights: extensionQuote.nights, amount: rupiah(room.extraBeds.amount) })}</span>}
+                            {room.breakfastAmount > 0 && <span>{t("detailActions.modal.breakfastLine", { amount: rupiah(room.breakfastAmount) })}</span>}
+                            <strong>{t("detailActions.modal.subtotal", { amount: rupiah(room.total) })}</strong>
                           </div>
                         ))}
-                        <p>Diskon malam tambahan: <strong>{rupiah(extensionQuote.discountTotal)}</strong></p>
-                        <p>Biaya perpanjangan: <strong>{rupiah(extensionQuote.extensionTotal)}</strong></p>
-                        {extensionQuote.existingBalance > 0 && <p className="api-extension-warning">Sisa tagihan sebelumnya: {rupiah(extensionQuote.existingBalance)}</p>}
-                        <p>Total tagihan setelah perpanjangan: <strong>{rupiah(extensionQuote.projectedBalance)}</strong></p>
+                        <p>{t("detailActions.modal.additionalNightDiscount", { amount: rupiah(extensionQuote.discountTotal) })}</p>
+                        <p>{t("detailActions.modal.extensionCharge", { amount: rupiah(extensionQuote.extensionTotal) })}</p>
+                        {extensionQuote.existingBalance > 0 && <p className="api-extension-warning">{t("detailActions.modal.existingBalance", { amount: rupiah(extensionQuote.existingBalance) })}</p>}
+                        <p>{t("detailActions.modal.projectedBalance", { amount: rupiah(extensionQuote.projectedBalance) })}</p>
                       </div>
                     )}
                     <label>
-                      Pembayaran
+                      {t("detailActions.modal.paymentTimingLabel")}
                       <select value={extensionPaymentTiming} onChange={(event) => setExtensionPaymentTiming(event.target.value as "later" | "now")}>
-                        <option value="later">Jadikan tagihan bayar nanti</option>
-                        <option value="now">Record Payment sekarang</option>
+                        <option value="later">{t("detailActions.modal.paymentTimingLater")}</option>
+                        <option value="now">{t("detailActions.modal.paymentTimingNow")}</option>
                       </select>
                     </label>
                     {extensionPaymentTiming === "now" && extensionQuote && (
                       <>
-                        <label>Jumlah pembayaran (IDR)
+                        <label>{t("detailActions.modal.paymentAmountLabel")}
                           <input type="number" min={1} max={extensionQuote.projectedBalance} value={extensionPaymentAmount}
                             onChange={(event) => setExtensionPaymentAmount(Number(event.target.value))} />
                         </label>
-                        <label>Metode pembayaran
+                        <label>{t("detailActions.modal.paymentMethodLabel")}
                           <select value={methodId} onChange={(event) => setMethodId(event.target.value)}>
                             {methods.map((method) => <option key={method.id} value={method.id}>{method.name}</option>)}
                           </select>
@@ -712,7 +709,7 @@ export function ReservationDetailActions({
                             : [];
                         return (
                           <label key={room.id}>
-                            Assign {room.roomTypeNameSnapshot}
+                            {t("detailActions.modal.assignRoom", { roomType: room.roomTypeNameSnapshot })}
                             {detail.rooms.length > 1
                               ? ` #${index + 1}`
                               : ""}{" "}
@@ -726,7 +723,7 @@ export function ReservationDetailActions({
                                 }))
                               }
                             >
-                              <option value="">Select room</option>
+                              <option value="">{t("detailActions.modal.selectRoom")}</option>
                               {[...assigned, ...choices].map((unit) => (
                                 <option
                                   key={unit.id}
@@ -737,7 +734,7 @@ export function ReservationDetailActions({
                                       roomSelections[other.id] === unit.id,
                                   )}
                                 >
-                                  {unit.roomNumber} — Available
+                                  {t("detailActions.modal.roomAvailable", { roomNumber: unit.roomNumber })}
                                 </option>
                               ))}
                             </select>
@@ -747,7 +744,7 @@ export function ReservationDetailActions({
                     </div>
                     {!hasBalance && (
                       <p className="reservation-operation-hint">
-                        Pilih nomor kamar saat tamu tiba di hotel.
+                        {t("detailActions.modal.assignAtArrival")}
                       </p>
                     )}
                     <div className="reservation-operation-deposit">
@@ -759,12 +756,12 @@ export function ReservationDetailActions({
                             setRequireDeposit(event.target.checked)
                           }
                         />
-                        Require Deposit <span>Security guarantee</span>
+                        {t("detailActions.modal.requireDeposit")} <span>{t("detailActions.modal.securityGuarantee")}</span>
                       </label>
                       {requireDeposit && (
                         <div className="reservation-operation-deposit-fields">
                           <label>
-                            Deposit Amount
+                            {t("detailActions.modal.depositAmount")}
                             <input
                               inputMode="numeric"
                               value={rupiah(depositAmount)}
@@ -778,7 +775,7 @@ export function ReservationDetailActions({
                             />
                           </label>
                           <label>
-                            Deposit Method
+                            {t("detailActions.modal.depositMethod")}
                             <select
                               value={depositMethodId}
                               onChange={(event) =>
@@ -793,13 +790,13 @@ export function ReservationDetailActions({
                             </select>
                           </label>
                           <label className="reservation-operation-wide">
-                            Deposit Note (Optional)
+                            {t("detailActions.modal.depositNoteOptional")}
                             <input
                               value={depositNote}
                               onChange={(event) =>
                                 setDepositNote(event.target.value)
                               }
-                              placeholder="e.g. Received at front desk"
+                              placeholder={t("detailActions.modal.depositNotePlaceholder")}
                             />
                           </label>
                         </div>
@@ -818,13 +815,7 @@ export function ReservationDetailActions({
                           }
                         />
                         <span>
-                          Saya mengonfirmasi sisa tagihan{" "}
-                          <strong>
-                            {rupiah(detail.summary.remainingBalance)}
-                          </strong>{" "}
-                          telah dijelaskan kepada tamu. Jika belum lunas saat
-                          check-out, petugas wajib mencatat konfirmasi dan
-                          alasan.
+                          {t("detailActions.modal.balanceAcknowledgement", { amount: rupiah(detail.summary.remainingBalance) })}
                         </span>
                       </label>
                     )}
@@ -853,9 +844,9 @@ export function ReservationDetailActions({
                           className="api-reservation-deposit"
                           key={deposit.id}
                         >
-                          <strong>Deposit {rupiah(amount)}</strong>
+                          <strong>{t("detailActions.modal.depositLabel", { amount: rupiah(amount) })}</strong>
                           <label>
-                            Penanganan deposit
+                            {t("detailActions.modal.depositHandling")}
                             <select
                               value={depositModes[deposit.id] ?? "defer"}
                               onChange={(event) =>
@@ -867,24 +858,24 @@ export function ReservationDetailActions({
                               }
                             >
                               <option value="defer">
-                                Bayar / proses nanti
+                                {t("detailActions.modal.depositDefer")}
                               </option>
                               {canRefund && (
-                                <option value="refund">Refund penuh</option>
+                                <option value="refund">{t("detailActions.modal.depositRefundFull")}</option>
                               )}
                               {checkoutProjectedBalance > 0 && (
                                 <option value="deduct_balance">
-                                  Potong sisa tagihan
+                                  {t("detailActions.modal.depositDeductBalance")}
                                 </option>
                               )}
                               <option value="deduct_damage">
-                                Potong kerusakan
+                                {t("detailActions.modal.depositDeductDamage")}
                               </option>
                             </select>
                           </label>
                           {depositModes[deposit.id] === "refund" && (
                             <label>
-                              Referensi refund
+                              {t("detailActions.modal.refundReference")}
                               <input
                                 value={depositReferences[deposit.id] ?? ""}
                                 onChange={(event) =>
@@ -901,9 +892,9 @@ export function ReservationDetailActions({
                     })}
                     {checkoutRemainingAfterDeductions > 0 && (
                       <>
-                        <p>Sisa tagihan setelah checkout: <strong>{rupiah(checkoutRemainingAfterDeductions)}</strong></p>
+                        <p>{t("detailActions.modal.remainingAfterCheckout", { amount: rupiah(checkoutRemainingAfterDeductions) })}</p>
                         <label>
-                          Alasan checkout dengan sisa tagihan
+                          {t("detailActions.modal.outstandingReasonLabel")}
                           <textarea
                             value={reason}
                             onChange={(event) => setReason(event.target.value)}
@@ -918,8 +909,7 @@ export function ReservationDetailActions({
                               setAcknowledged(event.target.checked)
                             }
                           />{" "}
-                          Saya mengonfirmasi sisa tagihan tetap tercatat di
-                          Payments.
+                          {t("detailActions.modal.outstandingAcknowledge")}
                         </label>
                       </>
                     )}
@@ -928,7 +918,7 @@ export function ReservationDetailActions({
 
                 {action === "cancel" && (
                   <label>
-                    Alasan pembatalan
+                    {t("detailActions.modal.cancelReasonLabel")}
                     <textarea
                       value={reason}
                       onChange={(event) => setReason(event.target.value)}
@@ -963,7 +953,7 @@ export function ReservationDetailActions({
                   disabled={busy}
                   onClick={() => setAction(null)}
                 >
-                  Cancel
+                  {t("common.cancel")}
                 </button>
                 <button
                   type="button"
@@ -977,10 +967,10 @@ export function ReservationDetailActions({
                   onClick={() => void submit()}
                 >
                   {busy
-                    ? "Menyimpan..."
+                    ? t("common.saving")
                     : action === "check_in"
-                      ? "Confirm Check-in"
-                      : actionLabels[action]}
+                      ? t("detailActions.modal.confirmCheckIn")
+                      : t(actionLabelKeys[action])}
                 </button>
               </div>
             </section>

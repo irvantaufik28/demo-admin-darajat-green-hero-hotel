@@ -14,6 +14,9 @@ import {
   type RoomPerformanceMode,
   type RoomPerformanceResponse,
 } from "../services/room-performance";
+import { useTranslations, type Translate } from "../../../lib/i18n";
+import en from "../locales/en.json";
+import id from "../locales/id.json";
 
 type Comparison = "previous" | "last-year" | "none";
 type RoomOption = { id: string; name: string };
@@ -92,11 +95,13 @@ function ComparisonCard({
   current,
   previous,
   format,
+  t,
 }: {
   label: string;
   current: number;
   previous: number;
   format: (value: number) => string;
+  t: Translate;
 }) {
   const change = previous ? ((current - previous) / previous) * 100 : null;
   return (
@@ -105,14 +110,15 @@ function ComparisonCard({
       <strong>{format(current)}</strong>
       <small>
         {change === null
-          ? "— no baseline data"
-          : `${change >= 0 ? "+" : ""}${percent(change)} vs comparison week`}
+          ? t("roomPerformance.comparisonSection.noBaseline")
+          : t("roomPerformance.comparisonSection.changeVsComparison", { change: `${change >= 0 ? "+" : ""}${percent(change)}` })}
       </small>
     </div>
   );
 }
 
 export function RoomPerformancePage() {
+  const { t } = useTranslations({ en, id });
   const [weekStart, setWeekStart] = useState("2026-09-29");
   const [roomId, setRoomId] = useState("");
   const [source, setSource] = useState("");
@@ -179,7 +185,7 @@ export function RoomPerformancePage() {
         }
       } catch (cause) {
         if (!controller.signal.aborted) {
-          setError(cause instanceof Error ? cause.message : "Laporan gagal dimuat.");
+          setError(cause instanceof Error ? cause.message : t("common.loadFailed"));
           setResult(null);
           setBaseline(null);
         }
@@ -207,30 +213,30 @@ export function RoomPerformancePage() {
   const baseTotal = baseline?.total;
 
   return (
-    <AdminShell title="Reports" context="Room Performance">
+    <AdminShell title={t("shell.title")} context={t("shell.roomPerformanceContext")}>
       <main className="room-performance-page">
         <header className="room-performance-heading">
           <div>
-            <h1>Room Performance</h1>
-            <p>Occupancy, room nights, and room revenue by room type for a seven-day period.</p>
+            <h1>{t("roomPerformance.title")}</h1>
+            <p>{t("roomPerformance.description")}</p>
           </div>
           <div className="room-performance-actions">
             <button type="button" onClick={() => window.print()}>
-              Print Audit Sheet
+              {t("roomPerformance.printAuditSheet")}
             </button>
             <button
               type="button"
               onClick={() => result && downloadCsv(result)}
               disabled={!result || loading}
             >
-              Export CSV
+              {t("common.exportCsv")}
             </button>
           </div>
         </header>
 
-        <section className="room-performance-filters" aria-label="Report filters">
+        <section className="room-performance-filters" aria-label={t("roomPerformance.filters.ariaLabel")}>
           <label>
-            Week starting
+            {t("roomPerformance.filters.weekStarting")}
             <input
               type="date"
               value={weekStart}
@@ -238,9 +244,9 @@ export function RoomPerformancePage() {
             />
           </label>
           <label>
-            Room Type
+            {t("roomPerformance.filters.roomType")}
             <select value={roomId} onChange={(event) => setRoomId(event.target.value)}>
-              <option value="">All Room Types</option>
+              <option value="">{t("common.allRoomTypes")}</option>
               {roomOptions.map((room) => (
                 <option key={room.id} value={room.id}>
                   {room.name}
@@ -249,35 +255,35 @@ export function RoomPerformancePage() {
             </select>
           </label>
           <label>
-            Source
+            {t("roomPerformance.filters.source")}
             <select value={source} onChange={(event) => setSource(event.target.value)}>
-              <option value="">All Sources</option>
+              <option value="">{t("common.allSources")}</option>
               {sourceFilterOptions.map((item) => (
                 <option key={item.value} value={item.value}>
-                  {item.label}
+                  {t(`source.${item.value}`)}
                 </option>
               ))}
             </select>
           </label>
           <label>
-            Occupancy Mode
+            {t("roomPerformance.filters.occupancyMode")}
             <select
               value={mode}
               onChange={(event) => setMode(event.target.value as RoomPerformanceMode)}
             >
-              <option value="actual">Actual Occupied</option>
-              <option value="projected">Actual + Confirmed</option>
+              <option value="actual">{t("roomPerformance.occupancyMode.actual")}</option>
+              <option value="projected">{t("roomPerformance.occupancyMode.projected")}</option>
             </select>
           </label>
           <label>
-            Compare With
+            {t("roomPerformance.filters.compareWith")}
             <select
               value={comparison}
               onChange={(event) => setComparison(event.target.value as Comparison)}
             >
-              <option value="previous">Previous Week</option>
-              <option value="last-year">Same Week Last Year</option>
-              <option value="none">No Comparison</option>
+              <option value="previous">{t("roomPerformance.comparison.previous")}</option>
+              <option value="last-year">{t("roomPerformance.comparison.lastYear")}</option>
+              <option value="none">{t("roomPerformance.comparison.none")}</option>
             </select>
           </label>
           <button
@@ -290,13 +296,16 @@ export function RoomPerformancePage() {
               setComparison("previous");
             }}
           >
-            Reset
+            {t("common.reset")}
           </button>
         </section>
 
         <p className="room-performance-period">
-          {dateLabel(dates[0])} – {dateLabel(dates[dates.length - 1])} · {totalRooms} physical rooms
-          · 7 nights
+          {t("roomPerformance.period", {
+            start: dateLabel(dates[0]),
+            end: dateLabel(dates[dates.length - 1]),
+            rooms: totalRooms,
+          })}
         </p>
 
         {error && (
@@ -305,14 +314,14 @@ export function RoomPerformancePage() {
           </div>
         )}
 
-        <section className="room-performance-kpis" aria-label="Performance summary" aria-busy={loading}>
+        <section className="room-performance-kpis" aria-label={t("roomPerformance.kpis.ariaLabel")} aria-busy={loading}>
           {(
             [
-              ["Available Room Nights", total.available.toLocaleString("id-ID")],
-              ["Sold Room Nights", total.sold.toLocaleString("id-ID")],
-              ["Occupancy Rate", percent(total.occupancy)],
-              ["Average Room Rate (ARR)", money(total.arr)],
-              ["Total Room Revenue", money(total.revenue)],
+              [t("roomPerformance.kpis.availableRoomNights"), total.available.toLocaleString("id-ID")],
+              [t("roomPerformance.kpis.soldRoomNights"), total.sold.toLocaleString("id-ID")],
+              [t("roomPerformance.kpis.occupancyRate"), percent(total.occupancy)],
+              [t("roomPerformance.kpis.arr"), money(total.arr)],
+              [t("roomPerformance.kpis.totalRoomRevenue"), money(total.revenue)],
             ] as [string, string][]
           ).map(([label, value]) => (
             <div className="room-performance-kpi" key={label}>
@@ -324,22 +333,22 @@ export function RoomPerformancePage() {
 
         <section className="room-performance-panel">
           <header>
-            <h2>Performance by Room Type</h2>
-            <span>Room nights and actual room revenue</span>
+            <h2>{t("roomPerformance.byRoomType.title")}</h2>
+            <span>{t("roomPerformance.byRoomType.subtitle")}</span>
           </header>
           <div className="room-performance-scroll">
             <table>
               <thead>
                 <tr>
-                  <th>Room Type</th>
-                  <th>Physical Rooms</th>
-                  <th>Available RN</th>
-                  <th>Sold RN</th>
-                  <th>Unsold RN</th>
-                  <th>Occupancy</th>
-                  <th>ARR</th>
-                  <th>Room Revenue</th>
-                  <th>Cancelled RN</th>
+                  <th>{t("roomPerformance.byRoomType.table.roomType")}</th>
+                  <th>{t("roomPerformance.byRoomType.table.physicalRooms")}</th>
+                  <th>{t("roomPerformance.byRoomType.table.availableRN")}</th>
+                  <th>{t("roomPerformance.byRoomType.table.soldRN")}</th>
+                  <th>{t("roomPerformance.byRoomType.table.unsoldRN")}</th>
+                  <th>{t("roomPerformance.byRoomType.table.occupancy")}</th>
+                  <th>{t("roomPerformance.byRoomType.table.arr")}</th>
+                  <th>{t("roomPerformance.byRoomType.table.roomRevenue")}</th>
+                  <th>{t("roomPerformance.byRoomType.table.cancelledRN")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -360,7 +369,7 @@ export function RoomPerformancePage() {
                 ))}
                 <tr className="room-performance-total">
                   <td>
-                    <strong>Total</strong>
+                    <strong>{t("roomPerformance.byRoomType.total")}</strong>
                   </td>
                   <td>{totalRooms}</td>
                   <td>{total.available}</td>
@@ -379,36 +388,43 @@ export function RoomPerformancePage() {
         {comparison !== "none" && baseTotal && (
           <section className="room-performance-comparison">
             <header>
-              <h2>Week Comparison</h2>
+              <h2>{t("roomPerformance.comparisonSection.title")}</h2>
               <span>
-                vs {comparison === "previous" ? "Previous Week" : "Same Week Last Year"} (
-                {dateLabel(comparisonStart)} – {dateLabel(shiftDate(comparisonStart, 6))})
+                {t("roomPerformance.comparisonSection.subtitle", {
+                  comparison: comparison === "previous" ? t("roomPerformance.comparison.previous") : t("roomPerformance.comparison.lastYear"),
+                  start: dateLabel(comparisonStart),
+                  end: dateLabel(shiftDate(comparisonStart, 6)),
+                })}
               </span>
             </header>
             <div className="room-performance-compare-grid">
               <ComparisonCard
-                label="Occupancy Rate"
+                label={t("roomPerformance.comparisonSection.cards.occupancyRate")}
                 current={total.occupancy}
                 previous={baseTotal.occupancy}
                 format={percent}
+                t={t}
               />
               <ComparisonCard
-                label="Sold Room Nights"
+                label={t("roomPerformance.comparisonSection.cards.soldRoomNights")}
                 current={total.sold}
                 previous={baseTotal.sold}
                 format={String}
+                t={t}
               />
               <ComparisonCard
-                label="Average Room Rate"
+                label={t("roomPerformance.comparisonSection.cards.averageRoomRate")}
                 current={total.arr}
                 previous={baseTotal.arr}
                 format={money}
+                t={t}
               />
               <ComparisonCard
-                label="Room Revenue"
+                label={t("roomPerformance.comparisonSection.cards.roomRevenue")}
                 current={total.revenue}
                 previous={baseTotal.revenue}
                 format={money}
+                t={t}
               />
             </div>
           </section>
@@ -416,21 +432,21 @@ export function RoomPerformancePage() {
 
         <section className="room-performance-panel">
           <header>
-            <h2>Daily Occupancy Breakdown</h2>
-            <span>Seven-day view</span>
+            <h2>{t("roomPerformance.dailyBreakdown.title")}</h2>
+            <span>{t("roomPerformance.dailyBreakdown.subtitle")}</span>
           </header>
           <div className="room-performance-scroll">
             <table>
               <thead>
                 <tr>
-                  <th>Date</th>
-                  <th>Physical Rooms</th>
-                  <th>Available RN</th>
-                  <th>Sold RN</th>
-                  <th>Occupancy</th>
-                  <th>ARR</th>
-                  <th>Room Revenue</th>
-                  <th>Status</th>
+                  <th>{t("roomPerformance.dailyBreakdown.table.date")}</th>
+                  <th>{t("roomPerformance.dailyBreakdown.table.physicalRooms")}</th>
+                  <th>{t("roomPerformance.dailyBreakdown.table.availableRN")}</th>
+                  <th>{t("roomPerformance.dailyBreakdown.table.soldRN")}</th>
+                  <th>{t("roomPerformance.dailyBreakdown.table.occupancy")}</th>
+                  <th>{t("roomPerformance.dailyBreakdown.table.arr")}</th>
+                  <th>{t("roomPerformance.dailyBreakdown.table.roomRevenue")}</th>
+                  <th>{t("roomPerformance.dailyBreakdown.table.status")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -445,13 +461,13 @@ export function RoomPerformancePage() {
                     <td>{percent(day.occupancy)}</td>
                     <td>{money(day.arr)}</td>
                     <td>{money(day.revenue)}</td>
-                    <td>Recorded</td>
+                    <td>{t("roomPerformance.dailyBreakdown.recorded")}</td>
                   </tr>
                 ))}
                 {daily.length === 0 && (
                   <tr>
                     <td colSpan={8} className="room-performance-empty">
-                      {loading ? "Memuat…" : "Tidak ada data pada periode ini."}
+                      {loading ? t("common.loading") : t("roomPerformance.dailyBreakdown.empty")}
                     </td>
                   </tr>
                 )}
@@ -460,9 +476,7 @@ export function RoomPerformancePage() {
           </div>
         </section>
         <p className="room-performance-note">
-          Figures use recorded room nights and actual booking rates. Revenue excludes deposits and
-          add-ons. Available room nights count operational physical rooms (excludes maintenance and
-          out-of-service units).
+          {t("roomPerformance.note")}
         </p>
       </main>
     </AdminShell>

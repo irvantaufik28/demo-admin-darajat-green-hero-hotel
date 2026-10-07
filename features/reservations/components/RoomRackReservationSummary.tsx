@@ -1,3 +1,4 @@
+"use client";
 import type { ReactNode } from "react";
 import Link from "next/link";
 import { ReservationDetailActions } from "./ReservationDetailActions";
@@ -9,6 +10,9 @@ import {
   type RoomTypeGroup,
   type RoomUnit,
 } from "../constants/room-rack-data";
+import { useTranslations } from "../../../lib/i18n";
+import en from "../locales/en.json";
+import id from "../locales/id.json";
 
 type Props = {
   reservation: Reservation;
@@ -68,6 +72,7 @@ export function RoomRackReservationSummary({
   onUpdated,
   onClose,
 }: Props) {
+  const { t } = useTranslations({ en, id });
   const isMaintenance = reservation.status === "maintenance";
   const nights = detail?.summary.nights ?? nightCount(reservation.checkIn, reservation.checkOut);
   const bookingTotal = detail?.summary.bookingTotal ?? null;
@@ -108,26 +113,28 @@ export function RoomRackReservationSummary({
   return (
     <aside
       className="reservation-detail-summary rr-detail-panel"
-      aria-label={isMaintenance ? "Room maintenance summary" : "Reservation summary"}
+      aria-label={isMaintenance ? t("roomRack.summary.ariaMaintenance") : t("roomRack.summary.ariaReservation")}
     >
       <div className="reservation-detail-section-title rr-detail-panel__header">
         <div>
           <h2>
             {isMaintenance
-              ? "Room Maintenance"
+              ? t("roomRack.summary.roomMaintenance")
               : checkedIn
-                ? "Stay Summary"
-                : "Reservation Summary"}
+                ? t("roomRack.summary.staySummary")
+                : t("roomRack.summary.reservationSummary")}
           </h2>
           <span>
-            {nights} {nights === 1 ? "Night" : "Nights"}
+            {nights === 1
+              ? t("roomRack.summary.nightLabel", { count: nights })
+              : t("roomRack.summary.nightsLabel", { count: nights })}
           </span>
         </div>
         <button
           type="button"
           className="rr-detail__close"
           onClick={onClose}
-          aria-label="Close summary"
+          aria-label={t("roomRack.summary.close")}
         >
           ×
         </button>
@@ -136,43 +143,43 @@ export function RoomRackReservationSummary({
       <div className="reservation-detail-summary-rows">
         {isMaintenance ? (
           <>
-            <SummaryRow label="Room">
-              {group.name} · Room {room?.number ?? "—"}
+            <SummaryRow label={t("roomRack.summary.room")}>
+              {group.name} · Room {room?.number ?? t("common.emptyDash")}
             </SummaryRow>
-            <SummaryRow label="Period">
+            <SummaryRow label={t("roomRack.summary.period")}>
               {dateLabel(reservation.checkIn)} → {dateLabel(reservation.checkOut)}
             </SummaryRow>
-            <SummaryRow label="Status">
-              <Badge label="Maintenance" tone="warning" />
+            <SummaryRow label={t("roomRack.summary.status")}>
+              <Badge label={t("roomRack.summary.maintenance")} tone="warning" />
             </SummaryRow>
-            <SummaryRow label="Reason">
-              {reservation.maintenanceNote || room?.maintenanceNote || "Scheduled maintenance"}
+            <SummaryRow label={t("roomRack.summary.reason")}>
+              {reservation.maintenanceNote || room?.maintenanceNote || t("roomRack.summary.scheduledMaintenance")}
             </SummaryRow>
           </>
         ) : (
           <>
-            <SummaryRow label="Booking ID">{detail?.reservation.bookingCode ?? reservation.id}</SummaryRow>
-            <SummaryRow label="Guest">{detail?.guest.fullName ?? reservation.guestName}</SummaryRow>
-            <SummaryRow label="Source">{detail?.reservation.source === "ota" && detail.otaChannel ? `OTA · ${detail.otaChannel.name}` : reservation.source}</SummaryRow>
-            <SummaryRow label="Stay Period">
+            <SummaryRow label={t("roomRack.summary.bookingId")}>{detail?.reservation.bookingCode ?? reservation.id}</SummaryRow>
+            <SummaryRow label={t("roomRack.summary.guest")}>{detail?.guest.fullName ?? reservation.guestName}</SummaryRow>
+            <SummaryRow label={t("roomRack.summary.source")}>{detail?.reservation.source === "ota" && detail.otaChannel ? `OTA · ${detail.otaChannel.name}` : reservation.source}</SummaryRow>
+            <SummaryRow label={t("roomRack.summary.stayPeriod")}>
               {dateLabel(checkIn)} → {dateLabel(checkOut)}
             </SummaryRow>
-            <SummaryRow label="Room Types">{detail ? detail.rooms.map((item) => item.roomTypeNameSnapshot).join(", ") : group.name}</SummaryRow>
-            <SummaryRow label="Room Numbers">
-              {detail ? detail.rooms.map((item) => item.roomNumber ?? "Not Assigned").join(", ") : room?.number ?? "Not Assigned"}
+            <SummaryRow label={t("roomRack.summary.roomTypes")}>{detail ? detail.rooms.map((item) => item.roomTypeNameSnapshot).join(", ") : group.name}</SummaryRow>
+            <SummaryRow label={t("roomRack.summary.roomNumbers")}>
+              {detail ? detail.rooms.map((item) => item.roomNumber ?? t("roomRack.summary.notAssigned")).join(", ") : room?.number ?? t("roomRack.summary.notAssigned")}
             </SummaryRow>
             <div className="reservation-detail-summary-divider" />
-            <SummaryRow label="Booking Total">
-              {bookingTotal == null ? "—" : formatRupiah(bookingTotal)}
+            <SummaryRow label={t("roomRack.summary.bookingTotal")}>
+              {bookingTotal == null ? t("common.emptyDash") : formatRupiah(bookingTotal)}
             </SummaryRow>
-            <SummaryRow label="Paid Amount">{paidAmount == null ? "—" : formatRupiah(paidAmount)}</SummaryRow>
-            <SummaryRow label="Remaining Balance">
-              {remainingBalance == null ? "—" : formatRupiah(remainingBalance)}
+            <SummaryRow label={t("roomRack.summary.paidAmount")}>{paidAmount == null ? t("common.emptyDash") : formatRupiah(paidAmount)}</SummaryRow>
+            <SummaryRow label={t("roomRack.summary.remainingBalance")}>
+              {remainingBalance == null ? t("common.emptyDash") : formatRupiah(remainingBalance)}
             </SummaryRow>
             {detail && detail.deposits.length > 0 && (
-              <SummaryRow label="Deposit Balance">{formatRupiah(detail.summary.depositBalance)}</SummaryRow>
+              <SummaryRow label={t("detail.fields.depositBalance")}>{formatRupiah(detail.summary.depositBalance)}</SummaryRow>
             )}
-            <SummaryRow label="Payment Status">
+            <SummaryRow label={t("roomRack.summary.paymentStatus")}>
               <Badge
                 label={paymentStatus.charAt(0).toUpperCase() + paymentStatus.slice(1)}
                 tone={
@@ -184,25 +191,25 @@ export function RoomRackReservationSummary({
                 }
               />
             </SummaryRow>
-            <SummaryRow label="Reservation Status">
+            <SummaryRow label={t("roomRack.summary.reservationStatus")}>
               <Badge
                 label={checkedOut ? "Checked-out" : checkedIn ? "Checked-in" : reservationStatus === "pending" ? "Pending" : "Confirmed"}
                 tone={checkedOut ? "neutral" : checkedIn ? "info" : reservationStatus === "pending" ? "warning" : "success"}
               />
             </SummaryRow>
-            <SummaryRow label="Operational Status">
+            <SummaryRow label={t("roomRack.summary.operationalStatus")}>
               <Badge label={operationalStatus} tone={operationalTone} />
             </SummaryRow>
             {detail && detail.rooms.some((item) => !item.roomUnitId) && (
               <p className="pending-detail-summary-warning">
-                Nomor kamar perlu ditetapkan sebelum check-in.
+                {t("roomRack.summary.assignRoomWarning")}
               </p>
             )}
             {detail && remainingBalance != null && remainingBalance > 0 && !checkedOut && (
               <p className="pending-detail-summary-warning">
                 {checkedIn
-                  ? "Tamu sedang menginap dengan sisa tagihan yang perlu ditindaklanjuti."
-                  : "Check-in dengan sisa tagihan memerlukan konfirmasi petugas."}
+                  ? t("roomRack.summary.checkedInBalanceWarning")
+                  : t("roomRack.summary.checkInBalanceWarning")}
               </p>
             )}
           </>
@@ -210,7 +217,7 @@ export function RoomRackReservationSummary({
       </div>
       {!isMaintenance && (
         <div className="rr-detail-panel__actions">
-          {loading && <p className="rr-detail-panel__message">Loading reservation detail...</p>}
+          {loading && <p className="rr-detail-panel__message">{t("roomRack.summary.loadingDetail")}</p>}
           {error && <p className="rr-detail-panel__message rr-detail-panel__message--error" role="alert">{error}</p>}
           {detail && reservation.reservationRoomId &&
             (detail.reservation.reservationStatus === "pending" || detail.reservation.reservationStatus === "confirmed") &&
@@ -223,7 +230,7 @@ export function RoomRackReservationSummary({
             )}
           {detail && <ReservationDetailActions detail={detail} onUpdated={onUpdated} />}
           <Link className="reservation-secondary-button rr-detail-panel__view-link" href={`/reservations/${encodeURIComponent(detail?.reservation.bookingCode ?? reservation.id)}`}>
-            View Reservation
+            {t("roomRack.summary.viewReservation")}
           </Link>
         </div>
       )}

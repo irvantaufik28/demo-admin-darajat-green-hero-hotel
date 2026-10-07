@@ -14,6 +14,9 @@ import {
   type ChangeRoomQuote,
   type ExtraBedQuote,
 } from "../services/api";
+import { useTranslations } from "../../../lib/i18n";
+import en from "../locales/en.json";
+import id from "../locales/id.json";
 
 type Room = ApiReservationDetail["rooms"][number];
 type Operation = "room" | "bed";
@@ -33,6 +36,7 @@ export function ReservationRoomOperations({ detail, room, onUpdated }: {
   room: Room;
   onUpdated: (message: string) => Promise<void>;
 }) {
+  const { t } = useTranslations({ en, id });
   const [operation, setOperation] = useState<Operation | null>(null);
   const [options, setOptions] = useState<ChangeRoomOption[]>([]);
   const [targetRoomUnitId, setTargetRoomUnitId] = useState("");
@@ -60,7 +64,7 @@ export function ReservationRoomOperations({ detail, room, onUpdated }: {
         setBedQuantity(result.previousQuantity);
       }
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Data kamar gagal dimuat.");
+      setError(cause instanceof Error ? cause.message : t("roomOperations.loadError"));
     } finally {
       setLoading(false);
     }
@@ -83,7 +87,7 @@ export function ReservationRoomOperations({ detail, room, onUpdated }: {
         if (!active) return;
         setRoomQuote(null);
         setBedQuote(null);
-        setError(cause instanceof Error ? cause.message : "Perubahan tidak tersedia.");
+        setError(cause instanceof Error ? cause.message : t("roomOperations.changeUnavailable"));
       }).finally(() => { if (active) setLoading(false); });
     }, 200);
     return () => { active = false; clearTimeout(timer); };
@@ -100,17 +104,17 @@ export function ReservationRoomOperations({ detail, room, onUpdated }: {
           expectedVersion: roomQuote.version,
         });
         setOperation(null);
-        await onUpdated("Kamar berhasil diganti. Selisih biaya tercatat di Charges & Payments.");
+        await onUpdated(t("roomOperations.roomChangedSuccess"));
       } else if (operation === "bed" && bedQuote) {
         await changeReservationExtraBeds(detail.reservation.id, room.id, {
           quantity: bedQuote.quantity,
           expectedVersion: bedQuote.version,
         });
         setOperation(null);
-        await onUpdated("Extra bed berhasil diperbarui. Selisih biaya tercatat di Charges & Payments.");
+        await onUpdated(t("roomOperations.extraBedUpdatedSuccess"));
       }
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Perubahan gagal disimpan.");
+      setError(cause instanceof Error ? cause.message : t("roomOperations.saveError"));
     } finally {
       setSaving(false);
     }
@@ -121,10 +125,10 @@ export function ReservationRoomOperations({ detail, room, onUpdated }: {
       <div className="api-reservation-room-actions">
         <button type="button" className="reservation-secondary-button"
           disabled={!permissions.includes("reservations.change_room")}
-          onClick={() => void open("room")}>Change Room</button>
+          onClick={() => void open("room")}>{t("roomOperations.changeRoom")}</button>
         <button type="button" className="reservation-secondary-button"
           disabled={!permissions.includes("reservations.manage_extra_bed")}
-          onClick={() => void open("bed")}>Manage Extra Bed</button>
+          onClick={() => void open("bed")}>{t("roomOperations.manageExtraBed")}</button>
       </div>
       {operation && createPortal(
         <div className="reservation-operation-backdrop" onMouseDown={(event) => {
@@ -133,64 +137,64 @@ export function ReservationRoomOperations({ detail, room, onUpdated }: {
           <section className="reservation-operation-modal api-reservation-modal api-room-operation-modal"
             role="dialog" aria-modal="true" aria-labelledby="room-operation-title">
             <div className="reservation-operation-header">
-              <h2 id="room-operation-title">{operation === "room" ? "Change Room" : "Manage Extra Bed"}</h2>
-              <button type="button" disabled={saving} onClick={() => setOperation(null)} aria-label="Close modal">×</button>
+              <h2 id="room-operation-title">{operation === "room" ? t("roomOperations.changeRoom") : t("roomOperations.manageExtraBed")}</h2>
+              <button type="button" disabled={saving} onClick={() => setOperation(null)} aria-label={t("common.closeModal")}>×</button>
             </div>
             <div className="api-reservation-modal-body">
               <div className="api-room-operation-current">
-                <strong>{room.roomTypeNameSnapshot} · Room {room.roomNumber ?? "—"}</strong>
-                <span>{room.adults} Adults{room.children ? ` · ${room.children} Children` : ""}</span>
+                <strong>{t("roomOperations.current", { roomType: room.roomTypeNameSnapshot, roomNumber: room.roomNumber ?? t("common.emptyDash") })}</strong>
+                <span>{room.adults} {t("common.adults")}{room.children ? ` · ${room.children} ${t("common.children")}` : ""}</span>
               </div>
               {operation === "room" ? (
                 <>
-                  <p>Pilih kamar untuk sisa masa inap. Kamar lama akan berstatus Cleaning.</p>
-                  <label>Available room
+                  <p>{t("roomOperations.changeRoomDescription")}</p>
+                  <label>{t("roomOperations.availableRoom")}
                     <select value={targetRoomUnitId} onChange={(event) => { setTargetRoomUnitId(event.target.value); setRoomQuote(null); setError(""); }}>
-                      <option value="">Select room</option>
+                      <option value="">{t("roomOperations.selectRoom")}</option>
                       {options.map((option) => (
                         <option key={option.id} value={option.id} disabled={!option.available}>
-                          {option.roomTypeName} · Room {option.roomNumber}{option.available ? "" : ` — ${option.reason}`}
+                          {t("roomOperations.roomOption", { roomType: option.roomTypeName, roomNumber: option.roomNumber })}{option.available ? "" : ` — ${option.reason}`}
                         </option>
                       ))}
                     </select>
                   </label>
-                  {!loading && !options.some((option) => option.available) && !error && <p>No rooms available for the remaining stay.</p>}
+                  {!loading && !options.some((option) => option.available) && !error && <p>{t("roomOperations.noRoomsAvailable")}</p>}
                   {roomQuote && <div className="api-room-operation-quote">
-                    <strong>{dateLabel(roomQuote.effectiveDate)} – {dateLabel(roomQuote.checkOutDate)} · {roomQuote.nights} nights</strong>
-                    <div><span>Old room rate</span><strong>{rupiah(roomQuote.oldRoomAmount)}</strong></div>
-                    <div><span>New room rate</span><strong>{rupiah(roomQuote.newRoomAmount)}</strong></div>
-                    {roomQuote.extraBedQuantity > 0 && <div><span>Extra bed rate difference</span><strong>{rupiah(roomQuote.extraBedDifference)}</strong></div>}
-                    <div className="api-room-operation-total"><span>Difference added to Charges & Payments</span><strong>{rupiah(roomQuote.totalDifference)}</strong></div>
-                    {roomQuote.totalDifference < 0 && <small>Credit reduces the outstanding balance. Any excess refund needs separate handling.</small>}
+                    <strong>{t("roomOperations.nightsRange", { from: dateLabel(roomQuote.effectiveDate), to: dateLabel(roomQuote.checkOutDate), nights: roomQuote.nights })}</strong>
+                    <div><span>{t("roomOperations.oldRoomRate")}</span><strong>{rupiah(roomQuote.oldRoomAmount)}</strong></div>
+                    <div><span>{t("roomOperations.newRoomRate")}</span><strong>{rupiah(roomQuote.newRoomAmount)}</strong></div>
+                    {roomQuote.extraBedQuantity > 0 && <div><span>{t("roomOperations.extraBedRateDifference")}</span><strong>{rupiah(roomQuote.extraBedDifference)}</strong></div>}
+                    <div className="api-room-operation-total"><span>{t("roomOperations.differenceAdded")}</span><strong>{rupiah(roomQuote.totalDifference)}</strong></div>
+                    {roomQuote.totalDifference < 0 && <small>{t("roomOperations.creditNote")}</small>}
                   </div>}
                 </>
               ) : (
                 <>
-                  <p>Jumlah extra bed berlaku mulai hari ini sampai tanggal check-out.</p>
-                  <label>Extra beds for this room
+                  <p>{t("roomOperations.extraBedDescription")}</p>
+                  <label>{t("roomOperations.extraBedsLabel")}
                     <select value={bedQuantity} onChange={(event) => { setBedQuantity(Number(event.target.value)); setBedQuote(null); setError(""); }}>
                       {Array.from({ length: (bedQuote?.maxExtraBeds ?? Math.max(0, bedQuantity)) + 1 }, (_, index) => (
-                        <option key={index} value={index}>{index} bed{index === 1 ? "" : "s"}</option>
+                        <option key={index} value={index}>{index === 1 ? t("roomOperations.bedOptionSingular", { count: index }) : t("roomOperations.bedOption", { count: index })}</option>
                       ))}
                     </select>
                   </label>
                   {bedQuote && <div className="api-room-operation-quote">
-                    <strong>{dateLabel(bedQuote.effectiveDate)} – {dateLabel(bedQuote.checkOutDate)} · {bedQuote.nights} nights</strong>
-                    <div><span>Current extra beds</span><strong>{bedQuote.previousQuantity}</strong></div>
-                    <div><span>Price per bed / night</span><strong>{rupiah(bedQuote.unitPricePerNight)}</strong></div>
-                    <div><span>Previously billed for remaining nights</span><strong>{rupiah(bedQuote.previousRemainingAmount)}</strong></div>
-                    <div><span>New amount for remaining nights</span><strong>{rupiah(bedQuote.newAmount)}</strong></div>
-                    <div className="api-room-operation-total"><span>Difference added to Charges & Payments</span><strong>{rupiah(bedQuote.difference)}</strong></div>
+                    <strong>{t("roomOperations.nightsRange", { from: dateLabel(bedQuote.effectiveDate), to: dateLabel(bedQuote.checkOutDate), nights: bedQuote.nights })}</strong>
+                    <div><span>{t("roomOperations.currentExtraBeds")}</span><strong>{bedQuote.previousQuantity}</strong></div>
+                    <div><span>{t("roomOperations.pricePerBedNight")}</span><strong>{rupiah(bedQuote.unitPricePerNight)}</strong></div>
+                    <div><span>{t("roomOperations.previouslyBilled")}</span><strong>{rupiah(bedQuote.previousRemainingAmount)}</strong></div>
+                    <div><span>{t("roomOperations.newAmount")}</span><strong>{rupiah(bedQuote.newAmount)}</strong></div>
+                    <div className="api-room-operation-total"><span>{t("roomOperations.differenceAdded")}</span><strong>{rupiah(bedQuote.difference)}</strong></div>
                   </div>}
                 </>
               )}
-              {loading && <p>Checking availability and charges...</p>}
+              {loading && <p>{t("roomOperations.checkingAvailability")}</p>}
               {error && <p className="api-reservation-error" role="alert">{error}</p>}
             </div>
             <div className="api-reservation-modal-footer">
-              <button type="button" className="reservation-secondary-button" disabled={saving} onClick={() => setOperation(null)}>Cancel</button>
+              <button type="button" className="reservation-secondary-button" disabled={saving} onClick={() => setOperation(null)}>{t("common.cancel")}</button>
               <button type="button" className="action-button" disabled={saving || loading || (operation === "room" ? !roomQuote : !bedQuote || (bedQuote.quantity === bedQuote.previousQuantity && bedQuote.difference === 0))}
-                onClick={() => void save()}>{saving ? "Saving..." : "Save Changes"}</button>
+                onClick={() => void save()}>{saving ? t("common.saving") : t("roomOperations.saveChanges")}</button>
             </div>
           </section>
         </div>, document.body)}

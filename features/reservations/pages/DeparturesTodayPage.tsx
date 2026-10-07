@@ -10,6 +10,9 @@ import { formatStayDate } from "../constants/walk-in-data";
 import { restoreSession } from "../../../lib/auth";
 import { getDeparturesToday, type DepartureTodayItem } from "../services/api";
 import { useOperationalRefresh } from "../hooks/useOperationalRefresh";
+import { useTranslations } from "../../../lib/i18n";
+import en from "../locales/en.json";
+import id from "../locales/id.json";
 
 const pageSize = 20;
 
@@ -31,6 +34,7 @@ function paymentTone(status: string) {
 }
 
 export function DeparturesTodayPage() {
+  const { t } = useTranslations({ en, id });
   const [departures, setDepartures] = useState<DepartureTodayItem[]>([]);
   const [summary, setSummary] = useState({ total: 0, dueOut: 0, overdue: 0, checkedOut: 0 });
   const operationalRefresh = useOperationalRefresh();
@@ -61,7 +65,7 @@ export function DeparturesTodayPage() {
         }
       } catch (cause) {
         if (!controller.signal.aborted) {
-          setError(cause instanceof Error ? cause.message : "Data keberangkatan gagal dimuat.");
+          setError(cause instanceof Error ? cause.message : t("departures.messages.loadError"));
         }
       } finally {
         if (!controller.signal.aborted) setLoading(false);
@@ -71,23 +75,23 @@ export function DeparturesTodayPage() {
   }, [page, search, status, payment, operationalRefresh]);
 
   return (
-    <AdminShell title="Reservations" context="Departures Today">
+    <AdminShell title={t("shell.title")} context={t("shell.departuresToday")}>
       <div className="departures-page">
         <div className="departures-heading">
           <div>
             <div className="departures-heading-title">
-              <h1>Departures Today</h1>
+              <h1>{t("departures.heading")}</h1>
               <span className="departures-count">
-                {summary.total} departures today · {summary.dueOut} Due Out · {summary.overdue} Overdue
+                {t("departures.count", { total: summary.total, dueOut: summary.dueOut, overdue: summary.overdue })}
               </span>
             </div>
-            <p>Tamu yang dijadwalkan atau sudah check-out hari ini.</p>
+            <p>{t("departures.description")}</p>
           </div>
           <Link
             href="/reservations/create-reservation-walkin"
             className="action-button"
           >
-            ＋ New Reservation
+            ＋ {t("departures.newReservation")}
           </Link>
         </div>
         <div className="departures-filters">
@@ -95,28 +99,28 @@ export function DeparturesTodayPage() {
             <input
               value={search}
               onChange={(event) => { setSearch(event.target.value); setPage(1); }}
-              placeholder="Search guest or booking ID"
-              aria-label="Search guest or booking ID"
+              placeholder={t("departures.searchPlaceholder")}
+              aria-label={t("departures.searchAriaLabel")}
             />
             <select
               value={status}
               onChange={(event) => { setStatus(event.target.value); setPage(1); }}
-              aria-label="Filter departure status"
+              aria-label={t("departures.filters.statusAriaLabel")}
             >
-              <option value="all">Status: All</option>
-              <option value="due_out">Due Out</option>
-              <option value="overdue">Overdue</option>
-              <option value="checked_out">Checked Out</option>
+              <option value="all">{t("departures.filters.statusAll")}</option>
+              <option value="due_out">{t("departures.filters.statusDueOut")}</option>
+              <option value="overdue">{t("departures.filters.statusOverdue")}</option>
+              <option value="checked_out">{t("departures.filters.statusCheckedOut")}</option>
             </select>
             <select
               value={payment}
               onChange={(event) => { setPayment(event.target.value); setPage(1); }}
-              aria-label="Filter payment status"
+              aria-label={t("departures.filters.paymentAriaLabel")}
             >
-              <option value="all">Payment: All Payments</option>
-              <option value="unpaid">Unpaid</option>
-              <option value="partial">Partial</option>
-              <option value="paid">Paid</option>
+              <option value="all">{t("departures.filters.paymentAll")}</option>
+              <option value="unpaid">{t("departures.filters.paymentUnpaid")}</option>
+              <option value="partial">{t("departures.filters.paymentPartial")}</option>
+              <option value="paid">{t("departures.filters.paymentPaid")}</option>
             </select>
             <button
               type="button"
@@ -127,11 +131,11 @@ export function DeparturesTodayPage() {
                 setPage(1);
               }}
             >
-              Reset
+              {t("departures.filters.reset")}
             </button>
           </div>
           <span>
-            Showing {departures.length} of {total} entries
+            {t("departures.showingEntries", { count: departures.length, total })}
           </span>
         </div>
         <section className="departures-table-shell">
@@ -139,16 +143,16 @@ export function DeparturesTodayPage() {
             <table className="departures-table">
               <thead>
                 <tr>
-                  <th>NO</th>
-                  <th>GUEST</th>
-                  <th>BOOKING</th>
-                  <th>CHECK-OUT</th>
-                  <th>ROOM</th>
-                  <th>PAYMENT</th>
-                  <th>RESERVATION STATUS</th>
-                  <th>OPERATIONAL STATUS</th>
-                  <th>DEPOSIT</th>
-                  <th>ACTION</th>
+                  <th>{t("departures.table.no")}</th>
+                  <th>{t("departures.table.guest")}</th>
+                  <th>{t("departures.table.booking")}</th>
+                  <th>{t("departures.table.checkOut")}</th>
+                  <th>{t("departures.table.room")}</th>
+                  <th>{t("departures.table.payment")}</th>
+                  <th>{t("departures.table.reservationStatus")}</th>
+                  <th>{t("departures.table.operationalStatus")}</th>
+                  <th>{t("departures.table.deposit")}</th>
+                  <th>{t("departures.table.action")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -171,7 +175,7 @@ export function DeparturesTodayPage() {
                     <td className="departures-booking">{item.bookingCode}</td>
                     <td>{formatStayDate(item.checkOutDate)}</td>
                     <td className="departures-room">
-                      {item.roomSummary || "—"}
+                      {item.roomSummary || t("common.emptyDash")}
                       {item.rooms.some(room => room.roomNumber)
                         ? " · " + item.rooms.map(room => room.roomNumber).filter(Boolean).join(", ")
                         : ""}
@@ -212,7 +216,7 @@ export function DeparturesTodayPage() {
                     </td>
                     <td>
                       {item.deposit.label === "No Deposit" ? (
-                        <span className="departures-muted">No Deposit</span>
+                        <span className="departures-muted">{t("departures.table.noDeposit")}</span>
                       ) : (
                         <span
                           className={
@@ -233,7 +237,7 @@ export function DeparturesTodayPage() {
                         }
                         className="departures-view-link"
                       >
-                        View
+                        {t("common.view")}
                       </Link>
                     </td>
                   </tr>
@@ -241,7 +245,7 @@ export function DeparturesTodayPage() {
                 {(loading || error || departures.length === 0) && (
                   <tr>
                     <td colSpan={10} className="departures-empty">
-                      {loading ? <LoadingSkeleton /> : error || "Tidak ada tamu yang cocok dengan filter."}
+                      {loading ? <LoadingSkeleton /> : error || t("departures.messages.empty")}
                     </td>
                   </tr>
                 )}
@@ -250,12 +254,12 @@ export function DeparturesTodayPage() {
           </div>
           <div className="departures-table-footer">
             <span className="departures-audit-dot" />
-            {total} departures today
+            {t("departures.footer", { total })}
             {total > pageSize && (
               <div>
-                <button type="button" disabled={page === 1} onClick={() => setPage(value => value - 1)}>Previous</button>
-                <span> Page {page} of {Math.ceil(total / pageSize)} </span>
-                <button type="button" disabled={page * pageSize >= total} onClick={() => setPage(value => value + 1)}>Next</button>
+                <button type="button" disabled={page === 1} onClick={() => setPage(value => value - 1)}>{t("common.previous")}</button>
+                <span> {t("common.pageInfo", { page, total: Math.ceil(total / pageSize) })} </span>
+                <button type="button" disabled={page * pageSize >= total} onClick={() => setPage(value => value + 1)}>{t("common.next")}</button>
               </div>
             )}
           </div>

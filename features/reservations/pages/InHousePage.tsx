@@ -10,6 +10,9 @@ import { formatRupiah, formatStayDate } from "../constants/walk-in-data";
 import { restoreSession } from "../../../lib/auth";
 import { getInHouse, type InHouseItem } from "../services/api";
 import { useOperationalRefresh } from "../hooks/useOperationalRefresh";
+import { useTranslations } from "../../../lib/i18n";
+import en from "../locales/en.json";
+import id from "../locales/id.json";
 
 const pageSize = 20;
 
@@ -24,6 +27,7 @@ function paymentTone(status: string) {
 }
 
 export function InHousePage() {
+  const { t } = useTranslations({ en, id });
   const operationalRefresh = useOperationalRefresh();
   const [guests, setGuests] = useState<InHouseItem[]>([]);
   const [summary, setSummary] = useState({ guestsInHouse: 0, roomsOccupied: 0 });
@@ -54,7 +58,7 @@ export function InHousePage() {
         }
       } catch (cause) {
         if (!controller.signal.aborted) {
-          setError(cause instanceof Error ? cause.message : "Data tamu menginap gagal dimuat.");
+          setError(cause instanceof Error ? cause.message : t("inHouse.messages.loadError"));
         }
       } finally {
         if (!controller.signal.aborted) setLoading(false);
@@ -64,24 +68,23 @@ export function InHousePage() {
   }, [page, search, checkOut, payment, operationalRefresh]);
 
   return (
-    <AdminShell title="Reservations" context="In House">
+    <AdminShell title={t("shell.title")} context={t("shell.inHouse")}>
       <div className="in-house-page">
         <div className="in-house-heading">
           <div>
             <div className="in-house-title">
-              <h1>In House</h1>
+              <h1>{t("inHouse.heading")}</h1>
               <span>
-                {summary.guestsInHouse} guests in house · {summary.roomsOccupied} rooms
-                occupied
+                {t("inHouse.summary", { guests: summary.guestsInHouse, rooms: summary.roomsOccupied })}
               </span>
             </div>
-            <p>Tamu yang masih berstatus Checked-in.</p>
+            <p>{t("inHouse.description")}</p>
           </div>
           <Link
             href="/reservations/create-reservation-walkin"
             className="action-button"
           >
-            ＋ New Reservation
+            ＋ {t("inHouse.newReservation")}
           </Link>
         </div>
         <div className="in-house-filters">
@@ -89,28 +92,28 @@ export function InHousePage() {
             <input
               value={search}
               onChange={(event) => { setSearch(event.target.value); setPage(1); }}
-              placeholder="Search guest, room, or booking ID"
-              aria-label="Search in-house guests"
+              placeholder={t("inHouse.searchPlaceholder")}
+              aria-label={t("inHouse.searchAriaLabel")}
             />
             <select
               value={checkOut}
               onChange={(event) => { setCheckOut(event.target.value); setPage(1); }}
-              aria-label="Filter check-out status"
+              aria-label={t("inHouse.filters.checkOutAriaLabel")}
             >
-              <option value="all">Check-out: All</option>
-              <option value="in_house">Check-out: Later</option>
-              <option value="due_out">Check-out: Today</option>
-              <option value="overdue">Check-out: Overdue</option>
+              <option value="all">{t("inHouse.filters.checkOutAll")}</option>
+              <option value="in_house">{t("inHouse.filters.checkOutLater")}</option>
+              <option value="due_out">{t("inHouse.filters.checkOutToday")}</option>
+              <option value="overdue">{t("inHouse.filters.checkOutOverdue")}</option>
             </select>
             <select
               value={payment}
               onChange={(event) => { setPayment(event.target.value); setPage(1); }}
-              aria-label="Filter payment status"
+              aria-label={t("inHouse.filters.paymentAriaLabel")}
             >
-              <option value="all">Payment: All Payments</option>
-              <option value="unpaid">Payment: Unpaid</option>
-              <option value="partial">Payment: Partial</option>
-              <option value="paid">Payment: Paid</option>
+              <option value="all">{t("inHouse.filters.paymentAll")}</option>
+              <option value="unpaid">{t("inHouse.filters.paymentUnpaid")}</option>
+              <option value="partial">{t("inHouse.filters.paymentPartial")}</option>
+              <option value="paid">{t("inHouse.filters.paymentPaid")}</option>
             </select>
             <button
               type="button"
@@ -121,12 +124,11 @@ export function InHousePage() {
                 setPage(1);
               }}
             >
-              Reset
+              {t("inHouse.filters.reset")}
             </button>
           </div>
           <span>
-            Showing <strong>{guests.length}</strong> of{" "}
-            <strong>{total}</strong> entries
+            {t("inHouse.showingEntries", { count: guests.length, total })}
           </span>
         </div>
         <section className="in-house-table-shell">
@@ -134,16 +136,16 @@ export function InHousePage() {
             <table className="in-house-table">
               <thead>
                 <tr>
-                  <th>NO</th>
-                  <th>GUEST</th>
-                  <th>BOOKING</th>
-                  <th>ROOM</th>
-                  <th>CHECK-OUT</th>
-                  <th>PAYMENT</th>
-                  <th>RESERVATION STATUS</th>
-                  <th>OPERATIONAL STATUS</th>
-                  <th>DEPOSIT</th>
-                  <th>ACTION</th>
+                  <th>{t("inHouse.table.no")}</th>
+                  <th>{t("inHouse.table.guest")}</th>
+                  <th>{t("inHouse.table.booking")}</th>
+                  <th>{t("inHouse.table.room")}</th>
+                  <th>{t("inHouse.table.checkOut")}</th>
+                  <th>{t("inHouse.table.payment")}</th>
+                  <th>{t("inHouse.table.reservationStatus")}</th>
+                  <th>{t("inHouse.table.operationalStatus")}</th>
+                  <th>{t("inHouse.table.deposit")}</th>
+                  <th>{t("inHouse.table.action")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -160,7 +162,7 @@ export function InHousePage() {
                       <span className="in-house-booking">{item.bookingCode}</span>
                     </td>
                     <td className="in-house-room">
-                      {item.roomSummary || "—"}
+                      {item.roomSummary || t("common.emptyDash")}
                       {item.rooms.some(room => room.roomNumber)
                         ? ` · ${item.rooms.map(room => room.roomNumber).filter(Boolean).join(", ")}`
                         : ""}
@@ -197,7 +199,7 @@ export function InHousePage() {
                     </td>
                     <td>
                       {item.deposit.heldBalance === 0 ? (
-                        <span className="in-house-muted">No Deposit</span>
+                        <span className="in-house-muted">{t("inHouse.table.noDeposit")}</span>
                       ) : (
                         <span className="reservations-badge reservations-badge--warning">
                           {formatRupiah(item.deposit.heldBalance)}
@@ -212,7 +214,7 @@ export function InHousePage() {
                         }
                         className="in-house-view-button"
                       >
-                        View
+                        {t("common.view")}
                       </Link>
                     </td>
                   </tr>
@@ -220,7 +222,7 @@ export function InHousePage() {
                 {(loading || error || guests.length === 0) && (
                   <tr>
                     <td className="in-house-empty" colSpan={10}>
-                      {loading ? <LoadingSkeleton /> : error || "Tidak ada tamu yang cocok dengan filter."}
+                      {loading ? <LoadingSkeleton /> : error || t("inHouse.messages.empty")}
                     </td>
                   </tr>
                 )}
@@ -229,12 +231,12 @@ export function InHousePage() {
           </div>
           <div className="in-house-table-footer">
             <span className="in-house-audit-dot" />
-            {total} guests in house
+            {t("inHouse.footer", { total })}
             {total > pageSize && (
               <div>
-                <button type="button" disabled={page === 1} onClick={() => setPage(value => value - 1)}>Previous</button>
-                <span> Page {page} of {Math.ceil(total / pageSize)} </span>
-                <button type="button" disabled={page * pageSize >= total} onClick={() => setPage(value => value + 1)}>Next</button>
+                <button type="button" disabled={page === 1} onClick={() => setPage(value => value - 1)}>{t("common.previous")}</button>
+                <span> {t("common.pageInfo", { page, total: Math.ceil(total / pageSize) })} </span>
+                <button type="button" disabled={page * pageSize >= total} onClick={() => setPage(value => value + 1)}>{t("common.next")}</button>
               </div>
             )}
           </div>

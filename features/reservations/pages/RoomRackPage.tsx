@@ -46,6 +46,9 @@ import {
 import type { CheckInContext, EarlyCheckInInput } from "../services/api";
 import { getRoomRack, summarizeRoomRack, toRoomRackGroups, type RoomRackResponse } from "../services/room-rack";
 import { todayJakarta } from "../utils/stay-dates";
+import { useTranslations, type Translate } from "../../../lib/i18n";
+import en from "../locales/en.json";
+import id from "../locales/id.json";
 
 const CHECKOUT_TIME = "12:00";
 const CHECKIN_TIME = "14:00";
@@ -179,6 +182,7 @@ function shiftDate(iso: string, days: number): string {
 }
 
 export function RoomRackPage() {
+  const { t } = useTranslations({ en, id });
   const [startDate, setStartDate] = useState<string | null>(null);
   const [rack, setRack] = useState<RoomRackResponse | null>(null);
   const [loading, setLoading] = useState(true);
@@ -212,7 +216,7 @@ export function RoomRackPage() {
         const result = await getRoomRack(startDate!, controller.signal);
         if (!controller.signal.aborted) setRack(result);
       } catch (cause) {
-        if (!controller.signal.aborted) setError(cause instanceof Error ? cause.message : "Room Rack gagal dimuat.");
+        if (!controller.signal.aborted) setError(cause instanceof Error ? cause.message : t("roomRack.loadError"));
       } finally {
         if (!controller.signal.aborted) setLoading(false);
       }
@@ -244,7 +248,7 @@ export function RoomRackPage() {
     getReservationDetail(reservationId, controller.signal)
       .then((response) => { if (!controller.signal.aborted) setDetail(response); })
       .catch((cause) => {
-        if (!controller.signal.aborted) setDetailError(cause instanceof Error ? cause.message : "Detail reservasi gagal dimuat.");
+        if (!controller.signal.aborted) setDetailError(cause instanceof Error ? cause.message : t("detail.loadError"));
       })
       .finally(() => { if (!controller.signal.aborted) setDetailLoading(false); });
     return () => controller.abort();
@@ -352,11 +356,11 @@ export function RoomRackPage() {
   }, [handleDragEnd]);
 
   const metrics = [
-    { key: "available", tone: "success", value: roomRackSummary?.availableRooms, label: "Available Rooms", glyph: "✓" },
-    { key: "ready", tone: "warning", value: roomRackSummary?.readyToCheckIn, label: "Ready to Check-in", glyph: "◷" },
-    { key: "in-house", tone: "primary", value: roomRackSummary?.inHouse, label: "In House", glyph: "●" },
-    { key: "due-out", tone: "info", value: roomRackSummary?.dueOut, label: "Due Out", glyph: "↩" },
-    { key: "unavailable", tone: "maintenance", value: roomRackSummary?.unavailable, label: "Unavailable Rooms", glyph: "⚠" },
+    { key: "available", tone: "success", value: roomRackSummary?.availableRooms, label: t("roomRack.metrics.available"), glyph: "✓" },
+    { key: "ready", tone: "warning", value: roomRackSummary?.readyToCheckIn, label: t("roomRack.metrics.ready"), glyph: "◷" },
+    { key: "in-house", tone: "primary", value: roomRackSummary?.inHouse, label: t("roomRack.metrics.inHouse"), glyph: "●" },
+    { key: "due-out", tone: "info", value: roomRackSummary?.dueOut, label: t("roomRack.metrics.dueOut"), glyph: "↩" },
+    { key: "unavailable", tone: "maintenance", value: roomRackSummary?.unavailable, label: t("roomRack.metrics.unavailable"), glyph: "⚠" },
   ] as const;
 
   const rangeLabel = window.length ? formatRangeLabel(window[0], window[window.length - 1]) : "—";
@@ -569,7 +573,7 @@ export function RoomRackPage() {
             onClose={() => setCleaningRoom(null)}
             onSaved={() => {
               setCleaningRoom(null);
-              setActionNotice(`Room ${cleaningRoom.number} sekarang Available.`);
+              setActionNotice(t("roomRack.roomNowAvailable", { room: cleaningRoom.number }));
               setRefreshKey((value) => value + 1);
             }}
           />

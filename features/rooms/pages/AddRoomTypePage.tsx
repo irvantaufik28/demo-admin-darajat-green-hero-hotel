@@ -26,14 +26,12 @@ import {
   type RoomTypeRecord,
   type RoomTypeInput,
 } from "../services/room-types";
+import { useTranslations, type Translate } from "../../../lib/i18n";
+import en from "../locales/en.json";
+import id from "../locales/id.json";
 
-const steps = ["Basic Info", "Photos", "Amenities", "Capacity"] as const;
-const descriptions = [
-  "Tambahkan informasi dasar tipe kamar",
-  "Tambahkan foto untuk tipe kamar",
-  "Pilih fasilitas yang tersedia untuk tipe kamar ini",
-  "Atur kapasitas tamu untuk tipe kamar",
-];
+const stepKeys = ["basicInfo", "photos", "amenities", "capacity"] as const;
+const stepDescKeys = ["basicInfo", "photos", "amenities", "capacity"] as const;
 
 const initialRoom: RoomTypeEntry = {
   id: "",
@@ -185,62 +183,64 @@ function BasicInfo({
   room,
   update,
   options,
+  t,
 }: {
   room: RoomTypeEntry;
   update: (values: Partial<RoomTypeEntry>) => void;
   options: RoomTypeOptions;
+  t: Translate;
 }) {
   return (
     <div className="room-wizard-sections">
       <section className="room-wizard-section">
         <div className="room-wizard-section-head">
-          <h2>Basic Information</h2>
+          <h2>{t("wizard.basic.sectionTitle")}</h2>
           <div
             className="room-wizard-status-toggle"
-            aria-label="Room type status"
+            aria-label={t("wizard.basic.statusToggleAriaLabel")}
           >
             <button
               type="button"
               className={room.active ? "is-active" : ""}
               onClick={() => update({ active: true })}
             >
-              ● Active
+              ● {t("wizard.basic.active")}
             </button>
             <button
               type="button"
               className={!room.active ? "is-inactive" : ""}
               onClick={() => update({ active: false })}
             >
-              ● Inactive
+              ● {t("wizard.basic.inactive")}
             </button>
           </div>
         </div>
-        <Field label="Room Type Name" required>
+        <Field label={t("wizard.basic.nameLabel")} required>
           <input
             value={room.name}
             maxLength={100}
             onChange={(event) => update({ name: event.target.value })}
-            placeholder="Enter room type name"
+            placeholder={t("wizard.basic.namePlaceholder")}
           />
         </Field>
-        <Field label="Description">
+        <Field label={t("wizard.basic.descriptionLabel")}>
           <textarea
             value={room.description}
             maxLength={1000}
             rows={3}
             onChange={(event) => update({ description: event.target.value })}
-            placeholder="Describe the room"
+            placeholder={t("wizard.basic.descriptionPlaceholder")}
           />
           <small className="room-wizard-field-note">
-            {room.description.length} / 1000
+            {t("wizard.basic.descriptionCounter", { count: room.description.length })}
           </small>
         </Field>
       </section>
 
       <section className="room-wizard-section">
-        <h2>Room Specification</h2>
+        <h2>{t("wizard.basic.specificationTitle")}</h2>
         <div className="room-wizard-field-grid">
-          <Field label="Room Size (m²)" required>
+          <Field label={t("wizard.basic.roomSizeLabel")} required>
             <input
               type="number"
               min="1"
@@ -248,12 +248,12 @@ function BasicInfo({
               onChange={(event) => update({ size: Number(event.target.value) })}
             />
           </Field>
-          <Field label="Bed Type">
+          <Field label={t("wizard.basic.bedTypeLabel")}>
             <select
               value={room.bedType}
               onChange={(event) => update({ bedType: event.target.value })}
             >
-              <option value="">Select bed type</option>
+              <option value="">{t("wizard.basic.bedTypePlaceholder")}</option>
               {options.bedTypes.map((type) => (
                 <option key={type.id} value={type.id}>
                   {type.name}
@@ -261,7 +261,7 @@ function BasicInfo({
               ))}
             </select>
           </Field>
-          <Field label="Number of Beds">
+          <Field label={t("wizard.basic.numberOfBedsLabel")}>
             <input
               type="number"
               min="1"
@@ -276,8 +276,8 @@ function BasicInfo({
       </section>
 
       <section className="room-wizard-section">
-        <h2>Meal Type</h2>
-        <p>Pilih paket makanan standar untuk tarif dasar kamar.</p>
+        <h2>{t("wizard.basic.mealTypeTitle")}</h2>
+        <p>{t("wizard.basic.mealTypeDescription")}</p>
         <div className="room-wizard-choice-grid">
           {options.mealTypes.map((item) => (
             <label
@@ -306,9 +306,9 @@ function BasicInfo({
             ?.name.toLowerCase()
             .includes("room only") && (
             <div className="room-wizard-breakfast">
-              <strong>Rincian Tambahan Sarapan</strong>
+              <strong>{t("wizard.basic.breakfastDetailTitle")}</strong>
               <div className="room-wizard-field-grid room-wizard-field-grid--two">
-                <Field label="Adult Breakfast Price">
+                <Field label={t("wizard.basic.adultBreakfastPriceLabel")}>
                   <input
                     type="number"
                     min="0"
@@ -320,7 +320,7 @@ function BasicInfo({
                     }
                   />
                 </Field>
-                <Field label="Child Breakfast Price">
+                <Field label={t("wizard.basic.childBreakfastPriceLabel")}>
                   <input
                     type="number"
                     min="0"
@@ -340,8 +340,8 @@ function BasicInfo({
       <section className="room-wizard-section">
         <div className="room-wizard-section-head">
           <div>
-            <h2>Extra Bed</h2>
-            <p>Izinkan kasur tambahan untuk tipe kamar ini.</p>
+            <h2>{t("wizard.basic.extraBedTitle")}</h2>
+            <p>{t("wizard.basic.extraBedDescription")}</p>
           </div>
           <label className="room-wizard-switch">
             <input
@@ -361,7 +361,7 @@ function BasicInfo({
         </div>
         {room.extraBedEnabled && (
           <div className="room-wizard-field-grid room-wizard-field-grid--two">
-            <Field label="Extra Bed Price / night">
+            <Field label={t("wizard.basic.extraBedPriceLabel")}>
               <input
                 type="number"
                 min="0"
@@ -371,7 +371,7 @@ function BasicInfo({
                 }
               />
             </Field>
-            <Field label="Maximum Extra Beds">
+            <Field label={t("wizard.basic.maxExtraBedsLabel")}>
               <input
                 type="number"
                 min="1"
@@ -393,10 +393,12 @@ function Photos({
   room,
   update,
   trackPreview,
+  t,
 }: {
   room: RoomTypeEntry;
   update: (values: Partial<RoomTypeEntry>) => void;
   trackPreview: (url: string) => void;
+  t: Translate;
 }) {
   const coverInput = useRef<HTMLInputElement>(null);
   const galleryInput = useRef<HTMLInputElement>(null);
@@ -426,7 +428,7 @@ function Photos({
     );
     if (invalid) {
       setPhotoError(
-        "Gunakan foto PNG, JPG, atau WebP dengan ukuran maksimal 4 MB.",
+        t("wizard.photos.error"),
       );
       event.target.value = "";
       return;
@@ -456,28 +458,28 @@ function Photos({
       <section className="room-wizard-section">
         <div className="room-wizard-section-head">
           <div>
-            <h2>Cover Photo</h2>
-            <p>Foto baru akan diunggah saat tipe kamar disimpan.</p>
+            <h2>{t("wizard.photos.coverTitle")}</h2>
+            <p>{t("wizard.photos.coverDescription")}</p>
           </div>
           <span className="room-wizard-count">
-            {room.cover ? "Preview" : "No preview"}
+            {room.cover ? t("wizard.photos.preview") : t("wizard.photos.noPreview")}
           </span>
         </div>
         {room.cover ? (
           <div className="room-wizard-cover">
-            <img src={room.cover.url} alt="Cover tipe kamar" />
+            <img src={room.cover.url} alt={t("wizard.photos.coverAlt")} />
             <div>
               <strong>{room.cover.name}</strong>
-              <small>{room.cover.size} · Cover Photo</small>
+              <small>{t("wizard.photos.coverCaption", { size: room.cover.size })}</small>
               <div className="room-wizard-photo-actions">
                 <button
                   type="button"
                   onClick={() => coverInput.current?.click()}
                 >
-                  Replace
+                  {t("wizard.photos.replace")}
                 </button>
                 <button type="button" onClick={() => update({ cover: null })}>
-                  Remove
+                  {t("wizard.photos.remove")}
                 </button>
               </div>
             </div>
@@ -489,8 +491,8 @@ function Photos({
             onClick={() => coverInput.current?.click()}
           >
             <span>▧</span>
-            <strong>Upload Cover Photo</strong>
-            <small>PNG, JPG, WebP up to 4 MB · 16:9 recommended</small>
+            <strong>{t("wizard.photos.uploadCover")}</strong>
+            <small>{t("wizard.photos.coverHint")}</small>
           </button>
         )}
         <input
@@ -505,17 +507,17 @@ function Photos({
       <section className="room-wizard-section">
         <div className="room-wizard-section-head">
           <div>
-            <h2>Gallery</h2>
-            <p>Tambahkan beberapa foto untuk menampilkan detail kamar.</p>
+            <h2>{t("wizard.photos.galleryTitle")}</h2>
+            <p>{t("wizard.photos.galleryDescription")}</p>
           </div>
           <span className="room-wizard-count">
-            {room.gallery.length} / 10 photos
+            {t("wizard.photos.galleryCount", { count: room.gallery.length })}
           </span>
         </div>
         <div className="room-wizard-gallery">
           {room.gallery.map((photo, index) => (
             <div className="room-wizard-photo" key={photo.id}>
-              <img src={photo.url} alt={`Foto kamar ${index + 1}`} />
+              <img src={photo.url} alt={t("wizard.photos.photoAlt", { index: index + 1 })} />
               <span className="room-wizard-photo-index">{index + 1}</span>
               <div>
                 <strong title={photo.name}>{photo.name}</strong>
@@ -526,7 +528,7 @@ function Photos({
                   type="button"
                   onClick={() => movePhoto(index, -1)}
                   disabled={index === 0}
-                  aria-label={`Geser ${photo.name} ke kiri`}
+                  aria-label={t("wizard.photos.moveLeftAriaLabel", { name: photo.name })}
                 >
                   ←
                 </button>
@@ -534,7 +536,7 @@ function Photos({
                   type="button"
                   onClick={() => movePhoto(index, 1)}
                   disabled={index === room.gallery.length - 1}
-                  aria-label={`Geser ${photo.name} ke kanan`}
+                  aria-label={t("wizard.photos.moveRightAriaLabel", { name: photo.name })}
                 >
                   →
                 </button>
@@ -550,7 +552,7 @@ function Photos({
                     })
                   }
                 >
-                  Set Cover
+                  {t("wizard.photos.setCover")}
                 </button>
                 <button
                   type="button"
@@ -562,7 +564,7 @@ function Photos({
                     })
                   }
                 >
-                  Remove
+                  {t("wizard.photos.remove")}
                 </button>
               </div>
             </div>
@@ -574,8 +576,8 @@ function Photos({
               onClick={() => galleryInput.current?.click()}
             >
               <span>＋</span>
-              <strong>Upload Photos</strong>
-              <small>PNG, JPG, WebP · up to 4 MB</small>
+              <strong>{t("wizard.photos.uploadPhotos")}</strong>
+              <small>{t("wizard.photos.galleryHint")}</small>
             </button>
           )}
         </div>
@@ -601,10 +603,12 @@ function Amenities({
   room,
   update,
   items,
+  t,
 }: {
   room: RoomTypeEntry;
   update: (values: Partial<RoomTypeEntry>) => void;
   items: MasterOption[];
+  t: Translate;
 }) {
   const [search, setSearch] = useState("");
   const matchedIds = new Set<string>();
@@ -619,7 +623,7 @@ function Amenities({
   });
   const otherItems = items.filter((item) => !matchedIds.has(item.id));
   if (otherItems.length)
-    groups.push({ title: "Other Amenities", items: otherItems });
+    groups.push({ title: t("wizard.amenities.otherAmenities"), items: otherItems });
 
   function toggle(item: string) {
     update({
@@ -642,17 +646,17 @@ function Amenities({
     <section className="room-wizard-section room-wizard-amenities">
       <div className="room-wizard-section-head">
         <div className="room-wizard-section-title-inline">
-          <h2>Amenities Selection</h2>
+          <h2>{t("wizard.amenities.title")}</h2>
           <span className="room-wizard-count">
-            {room.amenities.length} amenities selected
+            {t("wizard.amenities.selectedCount", { count: room.amenities.length })}
           </span>
         </div>
         <input
           type="search"
           value={search}
           onChange={(event) => setSearch(event.target.value)}
-          placeholder="Search amenities..."
-          aria-label="Cari fasilitas"
+          placeholder={t("wizard.amenities.searchPlaceholder")}
+          aria-label={t("wizard.amenities.searchAriaLabel")}
         />
       </div>
       {groups.map((group) => {
@@ -668,7 +672,7 @@ function Amenities({
                 type="button"
                 onClick={() => toggleGroup(visible.map((item) => item.id))}
               >
-                Select All
+                {t("wizard.amenities.selectAll")}
               </button>
             </div>
             <div className="room-wizard-amenity-grid">
@@ -690,7 +694,7 @@ function Amenities({
         !items.some((item) =>
           item.name.toLowerCase().includes(search.toLowerCase()),
         ) && (
-          <p className="room-wizard-muted">Tidak ada fasilitas yang cocok.</p>
+          <p className="room-wizard-muted">{t("wizard.amenities.empty")}</p>
         )}
     </section>
   );
@@ -700,10 +704,12 @@ function Capacity({
   room,
   update,
   backToBasic,
+  t,
 }: {
   room: RoomTypeEntry;
   update: (values: Partial<RoomTypeEntry>) => void;
   backToBasic: () => void;
+  t: Translate;
 }) {
   const selectedCount = room.capacityPatterns.filter(
     (pattern) => pattern.selected,
@@ -722,29 +728,27 @@ function Capacity({
       <section className="room-wizard-section">
         <div className="room-wizard-extra-summary">
           <div>
-            <strong>Extra Bed Configuration</strong>
+            <strong>{t("wizard.capacity.extraBedConfigTitle")}</strong>
             <small>
-              Maximum Extra Beds: {room.extraBedEnabled ? room.maxExtraBeds : 0}{" "}
-              · Configured in Step 1: Basic Info
+              {t("wizard.capacity.extraBedConfigHint", { count: room.extraBedEnabled ? room.maxExtraBeds : 0 })}
             </small>
           </div>
           <button type="button" onClick={backToBasic}>
-            Step 1: Basic Info
+            {t("wizard.capacity.step1Button")}
           </button>
         </div>
       </section>
       <section className="room-wizard-section">
-        <h2>Capacity Patterns</h2>
+        <h2>{t("wizard.capacity.patternsTitle")}</h2>
         <p>
-          Pilih semua kombinasi tamu yang diperbolehkan untuk tipe kamar ini.
+          {t("wizard.capacity.patternsDescription")}
         </p>
         <div className="room-wizard-info">
-          Pilih semua pola kapasitas yang valid, bukan hanya kapasitas maksimum.
-          Setiap pola menentukan izin reservasi dan alokasi kasur tambahan.
+          {t("wizard.capacity.info")}
         </div>
         <div className="room-wizard-capacity-head">
-          <strong>Kombinasi Okupansi Tamu</strong>
-          <span>{selectedCount} Dipilih</span>
+          <strong>{t("wizard.capacity.combinationHead")}</strong>
+          <span>{t("wizard.capacity.selectedLabel", { count: selectedCount })}</span>
           <button
             type="button"
             onClick={() =>
@@ -756,16 +760,16 @@ function Capacity({
               })
             }
           >
-            Select All
+            {t("wizard.capacity.selectAll")}
           </button>
         </div>
         <div className="room-wizard-capacity-scroll">
           <table className="room-wizard-capacity-table">
             <thead>
               <tr>
-                <th>SELECT</th>
-                <th>NUMBER OF PERSONS / GUEST COMBINATION</th>
-                <th>EXTRA BED</th>
+                <th>{t("wizard.capacity.table.select")}</th>
+                <th>{t("wizard.capacity.table.combination")}</th>
+                <th>{t("wizard.capacity.table.extraBed")}</th>
               </tr>
             </thead>
             <tbody>
@@ -781,17 +785,17 @@ function Capacity({
                       onChange={(event) =>
                         updatePattern(index, { selected: event.target.checked })
                       }
-                      aria-label={`Pilih ${pattern.adults} dewasa ${pattern.children} anak`}
+                      aria-label={t("wizard.capacity.selectAriaLabel", { adults: pattern.adults, children: pattern.children })}
                     />
                   </td>
                   <td>
                     <strong>
                       {pattern.adults}{" "}
-                      {pattern.adults === 1 ? "Adult" : "Adults"} +{" "}
+                      {pattern.adults === 1 ? t("wizard.capacity.adult") : t("wizard.capacity.adults")} +{" "}
                       {pattern.children}{" "}
-                      {pattern.children === 1 ? "Child" : "Children"}
+                      {pattern.children === 1 ? t("wizard.capacity.child") : t("wizard.capacity.children")}
                     </strong>
-                    <small>({pattern.adults + pattern.children} Orang)</small>
+                    <small>{t("wizard.capacity.personsCount", { count: pattern.adults + pattern.children })}</small>
                   </td>
                   <td>
                     <select
@@ -805,7 +809,7 @@ function Capacity({
                         })
                       }
                       disabled={!pattern.selected || !room.extraBedEnabled}
-                      aria-label={`Extra bed untuk ${pattern.adults} dewasa ${pattern.children} anak`}
+                      aria-label={t("wizard.capacity.extraBedAriaLabel", { adults: pattern.adults, children: pattern.children })}
                     >
                       {Array.from(
                         {
@@ -815,7 +819,7 @@ function Capacity({
                         },
                         (_, count) => (
                           <option value={count} key={count}>
-                            {count} Extra Bed
+                            {t("wizard.capacity.extraBedOption", { count })}
                           </option>
                         ),
                       )}
@@ -827,8 +831,7 @@ function Capacity({
           </table>
         </div>
         <p className="room-wizard-capacity-note">
-          Engine reservasi hanya akan menampilkan kamar ini tersedia apabila
-          kombinasi tamu yang dicari cocok dengan pola yang dicentang di atas.
+          {t("wizard.capacity.note")}
         </p>
       </section>
     </div>
@@ -836,6 +839,7 @@ function Capacity({
 }
 
 export function AddRoomTypePage({ roomId }: { roomId?: string }) {
+  const { t } = useTranslations({ en, id });
   const router = useRouter();
   const previewUrls = useRef<string[]>([]);
   const uploadedPhotoUrls = useRef(new Map<string, string>());
@@ -848,7 +852,7 @@ export function AddRoomTypePage({ roomId }: { roomId?: string }) {
   const [loaded, setLoaded] = useState(false);
   const [missing, setMissing] = useState(false);
   const [saving, setSaving] = useState(false);
-  const title = roomId ? "Edit Room Type" : "Add Room Type";
+  const title = roomId ? t("wizard.titleEdit") : t("wizard.titleAdd");
 
   useEffect(() => {
     return () => previewUrls.current.forEach((url) => URL.revokeObjectURL(url));
@@ -892,7 +896,7 @@ export function AddRoomTypePage({ roomId }: { roomId?: string }) {
           setError(
             caught instanceof Error
               ? caught.message
-              : "Gagal memuat tipe kamar.",
+              : t("wizard.messages.loadError"),
           );
       } finally {
         if (!controller.signal.aborted) setLoaded(true);
@@ -908,22 +912,22 @@ export function AddRoomTypePage({ roomId }: { roomId?: string }) {
   }
 
   function validateBasic() {
-    if (!room.name.trim()) return "Room Type Name wajib diisi.";
+    if (!room.name.trim()) return t("wizard.validation.nameRequired");
     if (!Number.isFinite(room.size) || room.size < 1)
-      return "Room Size harus lebih dari 0.";
-    if (!room.bedType) return "Pilih Bed Type.";
-    if (!room.mealType) return "Pilih Meal Type.";
+      return t("wizard.validation.sizeInvalid");
+    if (!room.bedType) return t("wizard.validation.bedTypeRequired");
+    if (!room.mealType) return t("wizard.validation.mealTypeRequired");
     if (!Number.isInteger(room.bedCount) || room.bedCount < 1)
-      return "Number of Beds harus minimal 1.";
+      return t("wizard.validation.bedCountInvalid");
     if (
       room.extraBedEnabled &&
       (!Number.isInteger(room.maxExtraBeds) ||
         room.maxExtraBeds < 1 ||
         room.extraBedPrice < 0)
     )
-      return "Periksa konfigurasi Extra Bed.";
+      return t("wizard.validation.extraBedInvalid");
     if (room.adultBreakfastPrice < 0 || room.childBreakfastPrice < 0)
-      return "Harga sarapan tidak boleh negatif.";
+      return t("wizard.validation.breakfastNegative");
     return "";
   }
 
@@ -948,7 +952,7 @@ export function AddRoomTypePage({ roomId }: { roomId?: string }) {
       return;
     }
     if (!room.capacityPatterns.some((pattern) => pattern.selected)) {
-      setError("Pilih minimal satu pola kapasitas tamu.");
+      setError(t("wizard.validation.capacityRequired"));
       return;
     }
     setSaving(true);
@@ -963,7 +967,7 @@ export function AddRoomTypePage({ roomId }: { roomId?: string }) {
       setError(
         caught instanceof Error
           ? caught.message
-          : "Gagal menyimpan tipe kamar.",
+          : t("wizard.messages.saveError"),
       );
     } finally {
       setSaving(false);
@@ -972,10 +976,10 @@ export function AddRoomTypePage({ roomId }: { roomId?: string }) {
 
   if (missing) {
     return (
-      <AdminShell title="Rooms" context={title}>
+      <AdminShell title={t("shell.title")} context={title}>
         <div className="room-wizard-page">
-          <h1>Tipe kamar tidak ditemukan</h1>
-          <Link href="/rooms">← Room Types</Link>
+          <h1>{t("wizard.messages.notFound")}</h1>
+          <Link href="/rooms">← {t("wizard.messages.backToRoomTypes")}</Link>
         </div>
       </AdminShell>
     );
@@ -983,7 +987,7 @@ export function AddRoomTypePage({ roomId }: { roomId?: string }) {
 
   if (!loaded || !options) {
     return (
-      <AdminShell title="Rooms" context={title}>
+      <AdminShell title={t("shell.title")} context={title}>
         <div className="room-wizard-page">
           {error || <LoadingSkeleton variant="form" rows={8} />}
         </div>
@@ -992,22 +996,22 @@ export function AddRoomTypePage({ roomId }: { roomId?: string }) {
   }
 
   return (
-    <AdminShell title="Rooms" context={title}>
+    <AdminShell title={t("shell.title")} context={title}>
       <div className="room-wizard-page">
         <div className="room-types-breadcrumb">
-          <Link href="/rooms">Rooms</Link> /{" "}
-          <Link href="/rooms">Room Types</Link> / {title}
+          <Link href="/rooms">{t("wizard.breadcrumbRooms")}</Link> /{" "}
+          <Link href="/rooms">{t("wizard.breadcrumbRoomTypes")}</Link> / {title}
         </div>
         <div className="room-wizard-heading">
           <h1>{title}</h1>
           <p>
             {roomId
-              ? `Perbarui ${room.name} · ${descriptions[step].toLowerCase()}`
-              : descriptions[step]}
+              ? t("wizard.editDescription", { name: room.name, step: t(`wizard.stepDescriptions.${stepDescKeys[step]}`).toLowerCase() })
+              : t(`wizard.stepDescriptions.${stepDescKeys[step]}`)}
           </p>
         </div>
-        <nav className="room-wizard-steps" aria-label="Room Type form sections">
-          {steps.map((name, index) => (
+        <nav className="room-wizard-steps" aria-label={t("wizard.stepsNavAriaLabel")}>
+          {stepKeys.map((name, index) => (
             <button
               type="button"
               key={name}
@@ -1026,13 +1030,13 @@ export function AddRoomTypePage({ roomId }: { roomId?: string }) {
               aria-current={index === step ? "step" : undefined}
             >
               <span>{index + 1}</span>
-              <strong>{name}</strong>
+              <strong>{t(`wizard.steps.${name}`)}</strong>
               <small>
                 {index === step
-                  ? "In Progress"
+                  ? t("wizard.stepStatus.inProgress")
                   : visitedSteps.includes(index)
-                    ? "Visited"
-                    : "Not visited"}
+                    ? t("wizard.stepStatus.visited")
+                    : t("wizard.stepStatus.notVisited")}
               </small>
             </button>
           ))}
@@ -1040,23 +1044,25 @@ export function AddRoomTypePage({ roomId }: { roomId?: string }) {
 
         <div className="room-wizard-content">
           {step === 0 && (
-            <BasicInfo room={room} update={update} options={options} />
+            <BasicInfo room={room} update={update} options={options} t={t} />
           )}
           {step === 1 && (
             <Photos
               room={room}
               update={update}
               trackPreview={(url) => previewUrls.current.push(url)}
+              t={t}
             />
           )}
           {step === 2 && (
-            <Amenities room={room} update={update} items={options.amenities} />
+            <Amenities room={room} update={update} items={options.amenities} t={t} />
           )}
           {step === 3 && (
             <Capacity
               room={room}
               update={update}
               backToBasic={() => setStep(0)}
+              t={t}
             />
           )}
         </div>
@@ -1068,7 +1074,7 @@ export function AddRoomTypePage({ roomId }: { roomId?: string }) {
         <div className="room-wizard-footer">
           {step === 0 ? (
             <Link href="/rooms" className="room-wizard-secondary">
-              Cancel
+              {t("wizard.footer.cancel")}
             </Link>
           ) : (
             <button
@@ -1079,12 +1085,12 @@ export function AddRoomTypePage({ roomId }: { roomId?: string }) {
                 setError("");
               }}
             >
-              ← Previous: {steps[step - 1]}
+              ← {t("wizard.footer.previous", { step: t(`wizard.steps.${stepKeys[step - 1]}`) })}
             </button>
           )}
           {step < 3 ? (
             <button type="button" className="action-button" onClick={next}>
-              Next: {steps[step + 1]} →
+              {t("wizard.footer.next", { step: t(`wizard.steps.${stepKeys[step + 1]}`) })} →
             </button>
           ) : (
             <button
@@ -1095,10 +1101,10 @@ export function AddRoomTypePage({ roomId }: { roomId?: string }) {
             >
               ◉{" "}
               {saving
-                ? "Saving..."
+                ? t("wizard.footer.saving")
                 : roomId
-                  ? "Save Changes"
-                  : "Save Room Type"}
+                  ? t("wizard.footer.saveChanges")
+                  : t("wizard.footer.saveRoomType")}
             </button>
           )}
         </div>

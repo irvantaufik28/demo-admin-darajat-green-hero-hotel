@@ -12,6 +12,9 @@ import {
   type LeadTime,
   type PricingType,
 } from "../constants/experiences-data";
+import { useTranslations } from "../../../lib/i18n";
+import en from "../locales/en.json";
+import id from "../locales/id.json";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -64,6 +67,7 @@ function Section({
 // ─── Main component ───────────────────────────────────────────────────────────
 
 export function ExperienceForm({ mode, initialData }: Props) {
+  const { t } = useTranslations({ en, id });
   const router = useRouter();
   const [form, setForm] = useState<Experience>(() => buildDefault(initialData));
 
@@ -88,15 +92,15 @@ export function ExperienceForm({ mode, initialData }: Props) {
   const isEdit = mode === "edit";
 
   return (
-    <AdminShell title="Experiences" context={isEdit ? "Edit Experience" : "Add Experience"}>
+    <AdminShell title={t("form.shell.title")} context={isEdit ? t("form.shell.contextEdit") : t("form.shell.contextAdd")}>
       <div className="expf-page">
         {/* Page heading */}
         <div className="expf-heading">
-          <h1>{isEdit ? "Edit Experience" : "Add Experience"}</h1>
+          <h1>{isEdit ? t("form.page.titleEdit") : t("form.page.titleAdd")}</h1>
           <p>
             {isEdit
-              ? "Perbarui detail add-on untuk reservasi tamu"
-              : "Tambah add-on baru yang tersedia untuk reservasi tamu"}
+              ? t("form.page.descriptionEdit")
+              : t("form.page.descriptionAdd")}
           </p>
         </div>
 
@@ -104,18 +108,18 @@ export function ExperienceForm({ mode, initialData }: Props) {
           <div className="expf-card">
 
             {/* ── 1. Basic Information ──────────────────────────────── */}
-            <Section title="Basic Information">
+            <Section title={t("form.sections.basicInformation")}>
               <div className="expf-2col">
                 {/* Name */}
                 <div className="expf-field expf-field--span2">
                   <label className="expf-label" htmlFor="expf-name">
-                    Experience Name <span className="expf-required">*</span>
+                    {t("form.fields.experienceName")} <span className="expf-required">{t("form.required")}</span>
                   </label>
                   <input
                     id="expf-name"
                     type="text"
                     className="expf-input"
-                    placeholder="e.g. BBQ & Grill Package"
+                    placeholder={t("form.fields.experienceNamePlaceholder")}
                     required
                     value={form.name}
                     onChange={(e) => set("name", e.target.value)}
@@ -125,7 +129,7 @@ export function ExperienceForm({ mode, initialData }: Props) {
                 {/* Type */}
                 <div className="expf-field expf-field--span2">
                   <span className="expf-label">
-                    Type Category <span className="expf-required">*</span>
+                    {t("form.fields.typeCategory")} <span className="expf-required">{t("form.required")}</span>
                   </span>
                   <div className="expf-type-grid">
                     <label className={form.type === "Dining" ? "expf-type-card expf-type-card--active" : "expf-type-card"}>
@@ -138,8 +142,8 @@ export function ExperienceForm({ mode, initialData }: Props) {
                         onChange={() => set("type", "Dining" as ExperienceType)}
                       />
                       <div>
-                        <div className="expf-type-card__title">Dining</div>
-                        <div className="expf-type-card__sub">Food, beverages, and culinary packages</div>
+                        <div className="expf-type-card__title">{t("form.fields.typeDining")}</div>
+                        <div className="expf-type-card__sub">{t("form.fields.typeDiningSub")}</div>
                       </div>
                     </label>
                     <label className={form.type === "Celebrate" ? "expf-type-card expf-type-card--active expf-type-card--celebrate" : "expf-type-card"}>
@@ -152,8 +156,8 @@ export function ExperienceForm({ mode, initialData }: Props) {
                         onChange={() => set("type", "Celebrate" as ExperienceType)}
                       />
                       <div>
-                        <div className="expf-type-card__title">Celebrate</div>
-                        <div className="expf-type-card__sub">Decorations, birthday setups & flowers</div>
+                        <div className="expf-type-card__title">{t("form.fields.typeCelebrate")}</div>
+                        <div className="expf-type-card__sub">{t("form.fields.typeCelebrateSub")}</div>
                       </div>
                     </label>
                   </div>
@@ -162,14 +166,14 @@ export function ExperienceForm({ mode, initialData }: Props) {
                 {/* Description */}
                 <div className="expf-field expf-field--span2">
                   <label className="expf-label" htmlFor="expf-desc">
-                    Short Description{" "}
-                    <span className="expf-label--hint">(Display in front-office & booking engine)</span>
+                    {t("form.fields.shortDescription")}{" "}
+                    <span className="expf-label--hint">{t("form.fields.shortDescriptionHint")}</span>
                   </label>
                   <textarea
                     id="expf-desc"
                     className="expf-textarea"
                     rows={2}
-                    placeholder="Ringkasan paket layanan..."
+                    placeholder={t("form.fields.shortDescriptionPlaceholder")}
                     value={form.description}
                     onChange={(e) => set("description", e.target.value)}
                   />
@@ -178,12 +182,12 @@ export function ExperienceForm({ mode, initialData }: Props) {
             </Section>
 
             {/* ── 2. Pricing ────────────────────────────────────────── */}
-            <Section title="Pricing">
+            <Section title={t("form.sections.pricing")}>
               <div className="expf-3col">
                 {/* Price */}
                 <div className="expf-field">
                   <label className="expf-label" htmlFor="expf-price">
-                    Price (IDR) <span className="expf-required">*</span>
+                    {t("form.fields.price")} <span className="expf-required">{t("form.required")}</span>
                   </label>
                   <div className="expf-price-wrap">
                     <span className="expf-price-prefix">Rp</span>
@@ -201,7 +205,7 @@ export function ExperienceForm({ mode, initialData }: Props) {
                 {/* Pricing Type */}
                 <div className="expf-field">
                   <label className="expf-label" htmlFor="expf-pricing-type">
-                    Pricing Type <span className="expf-required">*</span>
+                    {t("form.fields.pricingType")} <span className="expf-required">{t("form.required")}</span>
                   </label>
                   <div className="expf-select-wrap">
                     <select
@@ -210,9 +214,9 @@ export function ExperienceForm({ mode, initialData }: Props) {
                       value={form.pricingType}
                       onChange={(e) => set("pricingType", e.target.value as PricingType)}
                     >
-                      <option>Per Package</option>
-                      <option>Per Person</option>
-                      <option>Per Item</option>
+                      <option value="Per Package">{t("form.fields.pricingPerPackage")}</option>
+                      <option value="Per Person">{t("form.fields.pricingPerPerson")}</option>
+                      <option value="Per Item">{t("form.fields.pricingPerItem")}</option>
                     </select>
                     <Icon name="chevron" className="expf-select-chevron" width={14} height={14} />
                   </div>
@@ -220,7 +224,7 @@ export function ExperienceForm({ mode, initialData }: Props) {
 
                 {/* Status */}
                 <div className="expf-field">
-                  <span className="expf-label">Status</span>
+                  <span className="expf-label">{t("form.fields.status")}</span>
                   <div className="cf-status-toggle">
                     <button
                       type="button"
@@ -228,14 +232,14 @@ export function ExperienceForm({ mode, initialData }: Props) {
                       onClick={() => set("status", "Active")}
                     >
                       <i />
-                      Active
+                      {t("form.fields.statusActive")}
                     </button>
                     <button
                       type="button"
                       className={form.status === "Inactive" ? "cf-status-btn cf-status-btn--selected" : "cf-status-btn"}
                       onClick={() => set("status", "Inactive")}
                     >
-                      Inactive
+                      {t("form.fields.statusInactive")}
                     </button>
                   </div>
                 </div>
@@ -243,11 +247,11 @@ export function ExperienceForm({ mode, initialData }: Props) {
             </Section>
 
             {/* ── 3. Availability ──────────────────────────────────── */}
-            <Section title="Availability">
+            <Section title={t("form.sections.availability")}>
               <div className="expf-3col">
                 {/* Min Qty */}
                 <div className="expf-field">
-                  <label className="expf-label" htmlFor="expf-min-qty">Min Qty</label>
+                  <label className="expf-label" htmlFor="expf-min-qty">{t("form.fields.minQty")}</label>
                   <input
                     id="expf-min-qty"
                     type="number"
@@ -260,13 +264,13 @@ export function ExperienceForm({ mode, initialData }: Props) {
 
                 {/* Max Qty */}
                 <div className="expf-field">
-                  <label className="expf-label" htmlFor="expf-max-qty">Max Qty</label>
+                  <label className="expf-label" htmlFor="expf-max-qty">{t("form.fields.maxQty")}</label>
                   <input
                     id="expf-max-qty"
                     type="number"
                     className="expf-input"
                     min={1}
-                    placeholder="No limit"
+                    placeholder={t("form.fields.maxQtyPlaceholder")}
                     value={form.maxQty ?? ""}
                     onChange={(e) =>
                       set("maxQty", e.target.value === "" ? null : Math.max(1, Number(e.target.value)))
@@ -276,7 +280,7 @@ export function ExperienceForm({ mode, initialData }: Props) {
 
                 {/* Lead Time */}
                 <div className="expf-field">
-                  <label className="expf-label" htmlFor="expf-lead">Lead Time</label>
+                  <label className="expf-label" htmlFor="expf-lead">{t("form.fields.leadTime")}</label>
                   <div className="expf-select-wrap">
                     <select
                       id="expf-lead"
@@ -284,10 +288,10 @@ export function ExperienceForm({ mode, initialData }: Props) {
                       value={form.leadTime}
                       onChange={(e) => set("leadTime", e.target.value as LeadTime)}
                     >
-                      <option value="Same Day">Same Day</option>
-                      <option value="H-1">H-1 (24 Hours)</option>
-                      <option value="H-2">H-2 (48 Hours)</option>
-                      <option value="H-3">H-3 (72 Hours)</option>
+                      <option value="Same Day">{t("form.fields.leadTimeSameDay")}</option>
+                      <option value="H-1">{t("form.fields.leadTimeH1")}</option>
+                      <option value="H-2">{t("form.fields.leadTimeH2")}</option>
+                      <option value="H-3">{t("form.fields.leadTimeH3")}</option>
                     </select>
                     <Icon name="chevron" className="expf-select-chevron" width={14} height={14} />
                   </div>
@@ -296,7 +300,7 @@ export function ExperienceForm({ mode, initialData }: Props) {
 
               {/* Available Days */}
               <div className="expf-field" style={{ marginTop: 14 }}>
-                <span className="expf-label">Available Days</span>
+                <span className="expf-label">{t("form.fields.availableDays")}</span>
                 <div className="expf-days-row">
                   {ALL_DAYS.map((day) => (
                     <label
@@ -317,7 +321,7 @@ export function ExperienceForm({ mode, initialData }: Props) {
 
               {/* Room Types */}
               <div className="expf-field" style={{ marginTop: 14 }}>
-                <span className="expf-label">Applicable Room Types</span>
+                <span className="expf-label">{t("form.fields.applicableRoomTypes")}</span>
                 <div className="expf-room-row">
                   <label className="exp-checkbox-label">
                     <input
@@ -326,7 +330,7 @@ export function ExperienceForm({ mode, initialData }: Props) {
                       checked={form.roomTypes.length === 0}
                       onChange={() => set("roomTypes", [])}
                     />
-                    <span>All Room Types</span>
+                    <span>{t("form.fields.allRoomTypes")}</span>
                   </label>
                   {ALL_ROOM_TYPES_EXP.map((rt) => (
                     <label key={rt} className="exp-checkbox-label exp-checkbox-label--secondary">
@@ -351,17 +355,17 @@ export function ExperienceForm({ mode, initialData }: Props) {
             </Section>
 
             {/* ── 4. Internal Note ─────────────────────────────────── */}
-            <Section title="Internal Note" last>
+            <Section title={t("form.sections.internalNote")} last>
               <div className="expf-field">
                 <label className="expf-label" htmlFor="expf-note">
-                  Staff Note{" "}
-                  <span className="expf-label--hint">(Kitchen coordination — not visible to guests)</span>
+                  {t("form.fields.staffNote")}{" "}
+                  <span className="expf-label--hint">{t("form.fields.staffNoteHint")}</span>
                 </label>
                 <textarea
                   id="expf-note"
                   className="expf-textarea"
                   rows={3}
-                  placeholder="Catatan khusus operasional dapur atau housekeeping..."
+                  placeholder={t("form.fields.staffNotePlaceholder")}
                   value={form.internalNote}
                   onChange={(e) => set("internalNote", e.target.value)}
                 />
@@ -376,10 +380,10 @@ export function ExperienceForm({ mode, initialData }: Props) {
               className="expf-btn-cancel"
               onClick={() => router.push("/experiences")}
             >
-              Cancel
+              {t("form.actions.cancel")}
             </button>
             <button type="submit" className="expf-btn-save">
-              {isEdit ? "Save Changes" : "Save Experience"}
+              {isEdit ? t("form.actions.saveChanges") : t("form.actions.saveExperience")}
             </button>
           </div>
         </form>

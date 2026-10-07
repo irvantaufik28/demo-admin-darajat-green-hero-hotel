@@ -4,6 +4,9 @@ import { useEffect } from "react";
 import { formatRupiah } from "../constants/walk-in-data";
 import type { CheckInContext, EarlyCheckInInput } from "../services/api";
 import { EarlyCheckInFields } from "./EarlyCheckInFields";
+import { useTranslations } from "../../../lib/i18n";
+import en from "../locales/en.json";
+import id from "../locales/id.json";
 
 type Props = {
   guestName: string;
@@ -42,6 +45,7 @@ export function SaveReservationConfirmation({
   paymentMethods = [],
   error,
 }: Props) {
+  const { t } = useTranslations({ en, id });
   useEffect(() => {
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
@@ -71,28 +75,28 @@ export function SaveReservationConfirmation({
       >
         <div className="reservation-operation-header">
           <h2 id="save-reservation-title">
-            {checkIn ? "Confirm Save & Check-in" : "Confirm Save Reservation"}
+            {checkIn ? t("saveConfirmation.checkInTitle") : t("saveConfirmation.saveTitle")}
           </h2>
-          <button type="button" onClick={onCancel} aria-label="Close modal">
+          <button type="button" onClick={onCancel} aria-label={t("common.closeModal")}>
             ×
           </button>
         </div>
         <div className="reservation-operation-body">
           <p className="reservation-save-confirmation-copy">
             {checkIn
-              ? "Simpan reservasi dan lakukan check-in tamu ini?"
-              : "Simpan reservasi tamu ini?"}
+              ? t("saveConfirmation.checkInCopy")
+              : t("saveConfirmation.saveCopy")}
           </p>
           <div className="reservation-operation-context">
             <div>
-              <strong>{guestName.trim() || "Nama tamu belum diisi"}</strong>
+              <strong>{guestName.trim() || t("saveConfirmation.guestNamePlaceholder")}</strong>
               <span>
-                {rooms} kamar · {nights} malam
+                {t("saveConfirmation.roomsNights", { rooms, nights })}
               </span>
             </div>
             <small>
-              Booking total {formatRupiah(total + (checkIn && checkInContext?.required ? earlyCheckIn?.chargeAmount ?? 0 : 0))}
-              {checkIn && checkInContext?.required && (earlyCheckIn?.chargeAmount ?? 0) > 0 ? " termasuk biaya early check-in" : ""}
+              {t("saveConfirmation.bookingTotal", { amount: formatRupiah(total + (checkIn && checkInContext?.required ? earlyCheckIn?.chargeAmount ?? 0 : 0)) })}
+              {checkIn && checkInContext?.required && (earlyCheckIn?.chargeAmount ?? 0) > 0 ? t("saveConfirmation.includingEarlyCheckIn") : ""}
             </small>
           </div>
           {checkIn && outstandingBalance > 0 && onAcknowledgedChange && (
@@ -103,10 +107,7 @@ export function SaveReservationConfirmation({
                 onChange={(event) => onAcknowledgedChange(event.target.checked)}
               />
               <span>
-                Saya mengonfirmasi sisa tagihan{" "}
-                <strong>{formatRupiah(outstandingBalance)}</strong> telah
-                dijelaskan kepada tamu. Jika belum lunas saat check-out, petugas
-                wajib mencatat konfirmasi dan alasan.
+                {t("saveConfirmation.balanceAcknowledgement", { amount: formatRupiah(outstandingBalance) })}
               </span>
             </label>
           )}
@@ -122,7 +123,7 @@ export function SaveReservationConfirmation({
             disabled={busy}
             onClick={onCancel}
           >
-            Cancel
+            {t("common.cancel")}
           </button>
           <button
             type="button"
@@ -133,10 +134,10 @@ export function SaveReservationConfirmation({
             onClick={onConfirm}
           >
             {busy
-              ? "Menyimpan..."
+              ? t("common.saving")
               : checkIn
-                ? "Confirm Save & Check-in"
-                : "Confirm Save Reservation"}
+                ? t("saveConfirmation.checkInButton")
+                : t("saveConfirmation.saveButton")}
           </button>
         </div>
       </section>

@@ -9,10 +9,14 @@ import { AdminShell } from "../../../components/layout/AdminShell";
 import { restoreSession } from "../../../lib/auth";
 import { getGuests, type Guest } from "../services/guests";
 import { guestDate, guestMoney, guestStatus } from "../utils/format";
+import { useTranslations } from "../../../lib/i18n";
+import en from "../locales/en.json";
+import id from "../locales/id.json";
 
 const pageSize = 20;
 
 export function GuestsPage() {
+  const { t } = useTranslations({ en, id });
   const [query, setQuery] = useState("");
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("");
@@ -48,7 +52,7 @@ export function GuestsPage() {
       } catch (cause) {
         if (!controller.signal.aborted) {
           setGuests([]);
-          setError(cause instanceof Error ? cause.message : "Daftar tamu gagal dimuat.");
+          setError(cause instanceof Error ? cause.message : t("list.errors.loadFailed"));
         }
       } finally {
         if (!controller.signal.aborted) setLoading(false);
@@ -61,39 +65,39 @@ export function GuestsPage() {
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
 
   return (
-    <AdminShell title="Guests" context="Guest Directory">
+    <AdminShell title={t("shell.title")} context={t("shell.listContext")}>
       <main className="guests-page">
         <header className="guests-heading">
           <div>
-            <span className="roles-eyebrow">GUEST RELATIONSHIPS</span>
-            <h1>Guests</h1>
-            <p>Profiles and reservation history.</p>
+            <span className="roles-eyebrow">{t("list.eyebrow")}</span>
+            <h1>{t("list.title")}</h1>
+            <p>{t("list.description")}</p>
           </div>
         </header>
         <section className="guests-panel">
           <div className="guests-toolbar">
-            <h2>Guest List <span>{total} guests</span></h2>
+            <h2>{t("list.panelTitle")} <span>{t("list.count", { total })}</span></h2>
             <div>
-              <input aria-label="Search guests" placeholder="Search name, phone, email..."
+              <input aria-label={t("list.searchAriaLabel")} placeholder={t("list.searchPlaceholder")}
                 value={query} onChange={(event) => setQuery(event.target.value)} />
-              <select aria-label="Filter guest status" value={status} onChange={(event) => { setStatus(event.target.value); setPage(1); }}>
-                <option value="">All Status</option>
-                <option value="active">Active</option>
-                <option value="blacklisted">Blacklisted</option>
+              <select aria-label={t("list.statusFilterAriaLabel")} value={status} onChange={(event) => { setStatus(event.target.value); setPage(1); }}>
+                <option value="">{t("list.statusOptions.all")}</option>
+                <option value="active">{t("list.statusOptions.active")}</option>
+                <option value="blacklisted">{t("list.statusOptions.blacklisted")}</option>
               </select>
             </div>
           </div>
           {error && (
             <div className="guests-message" role="alert">
-              {error} <button type="button" onClick={() => setReloadKey((value) => value + 1)}>Retry</button>
+              {error} <button type="button" onClick={() => setReloadKey((value) => value + 1)}>{t("list.retry")}</button>
             </div>
           )}
           <div className="guests-table-scroll">
             <table className="guests-table">
               <thead><tr>
-                <th>Guest Name</th><th>Phone</th><th>Email</th><th>Total Stays</th>
-                <th>Last Stay</th><th>Total Nights</th><th>Total Spend</th>
-                <th>Guest Status</th><th>Action</th>
+                <th>{t("list.table.guestName")}</th><th>{t("list.table.phone")}</th><th>{t("list.table.email")}</th><th>{t("list.table.totalStays")}</th>
+                <th>{t("list.table.lastStay")}</th><th>{t("list.table.totalNights")}</th><th>{t("list.table.totalSpend")}</th>
+                <th>{t("list.table.guestStatus")}</th><th>{t("list.table.action")}</th>
               </tr></thead>
               <tbody>
                 {!loading && guests.map((guest) => <tr key={guest.id}>
@@ -102,20 +106,20 @@ export function GuestsPage() {
                   <td>{guest.totalStays}</td><td>{guestDate(guest.lastStay)}</td>
                   <td>{guest.totalNights}</td><td>{guestMoney(guest.totalSpend)}</td>
                   <td><span className={`guests-status guests-status--${guest.status}`}>{guestStatus(guest.status)}</span></td>
-                  <td><Link href={`/guests/${guest.id}`}>View</Link></td>
+                  <td><Link href={`/guests/${guest.id}`}>{t("list.view")}</Link></td>
                 </tr>)}
                 {(loading || !guests.length) && <tr><td colSpan={9} className="guests-empty">
-                  {loading ? <LoadingSkeleton /> : error ? "Unable to load guests." : "No guests found."}
+                  {loading ? <LoadingSkeleton /> : error ? t("list.errors.unableToLoad") : t("list.empty")}
                 </td></tr>}
               </tbody>
             </table>
           </div>
           {totalPages > 1 && (
             <div className="guests-pagination">
-              <span>Page {page} of {totalPages}</span>
+              <span>{t("pagination.pageOf", { page, total: totalPages })}</span>
               <div>
-                <button type="button" disabled={page <= 1 || loading} onClick={() => setPage((value) => value - 1)}>Previous</button>
-                <button type="button" disabled={page >= totalPages || loading} onClick={() => setPage((value) => value + 1)}>Next</button>
+                <button type="button" disabled={page <= 1 || loading} onClick={() => setPage((value) => value - 1)}>{t("pagination.previous")}</button>
+                <button type="button" disabled={page >= totalPages || loading} onClick={() => setPage((value) => value + 1)}>{t("pagination.next")}</button>
               </div>
             </div>
           )}

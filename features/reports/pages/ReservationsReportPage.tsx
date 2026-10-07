@@ -18,6 +18,9 @@ import {
   type ReservationReportStatus,
   type ReservationReportSummary,
 } from "../services/reservations-report";
+import { useTranslations } from "../../../lib/i18n";
+import en from "../locales/en.json";
+import id from "../locales/id.json";
 
 const pageSize = 10;
 const money = (value: number) => `Rp${value.toLocaleString("id-ID")}`;
@@ -63,10 +66,9 @@ function statusLabel(value: ReservationReportStatus) {
     .join("-");
 }
 
-function sourceLabel(item: ReservationReportItem) {
-  if (item.source === "ota") return item.otaChannel ? `OTA · ${item.otaChannel.name}` : "OTA";
-  if (item.source === "walk_in") return "Walk-in";
-  return item.source[0].toUpperCase() + item.source.slice(1);
+function sourceLabel(item: ReservationReportItem, t: ReturnType<typeof useTranslations>["t"]) {
+  if (item.source === "ota") return item.otaChannel ? `${t("source.ota")} · ${item.otaChannel.name}` : t("source.ota");
+  return t(`source.${item.source}`);
 }
 
 function roomLabel(item: ReservationReportItem) {
@@ -109,6 +111,7 @@ function csvCell(value: string | number) {
 }
 
 export function ReservationsReportPage() {
+  const { t } = useTranslations({ en, id });
   const [search, setSearch] = useState("");
   const [dateBy, setDateBy] = useState<ReservationReportDateBy>("booking");
   const [from, setFrom] = useState("2026-09-01");
@@ -167,7 +170,7 @@ export function ReservationsReportPage() {
         }
       } catch (cause) {
         if (!controller.signal.aborted) {
-          setError(cause instanceof Error ? cause.message : "Laporan gagal dimuat.");
+          setError(cause instanceof Error ? cause.message : t("common.loadFailed"));
           setItems([]);
           setTotal(0);
           setSummary(emptySummary);
@@ -229,7 +232,7 @@ export function ReservationsReportPage() {
         item.bookingCode,
         item.bookingDate,
         item.guest.fullName,
-        sourceLabel(item),
+        sourceLabel(item, t),
         roomLabel(item),
         item.roomQuantity,
         item.checkInDate,
@@ -251,7 +254,7 @@ export function ReservationsReportPage() {
       link.click();
       URL.revokeObjectURL(link.href);
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Export gagal.");
+      setError(cause instanceof Error ? cause.message : t("common.exportFailed"));
     } finally {
       exportRef.current = false;
       setExporting(false);
@@ -259,30 +262,29 @@ export function ReservationsReportPage() {
   }
 
   const summaryMetrics: [string, number][] = [
-    ["Total Resv", summary.totalReservations],
-    ["Confirmed", summary.confirmed],
-    ["Checked-in", summary.checkedIn],
-    ["Checked-out", summary.checkedOut],
-    ["Cancelled", summary.cancelled],
-    ["Room Nights", summary.roomNights],
+    [t("reservations.summary.totalResv"), summary.totalReservations],
+    [t("reservations.summary.confirmed"), summary.confirmed],
+    [t("reservations.summary.checkedIn"), summary.checkedIn],
+    [t("reservations.summary.checkedOut"), summary.checkedOut],
+    [t("reservations.summary.cancelled"), summary.cancelled],
+    [t("reservations.summary.roomNights"), summary.roomNights],
   ];
 
   return (
-    <AdminShell title="Reports" context="Reservations">
+    <AdminShell title={t("shell.title")} context={t("shell.reservationsContext")}>
       <div className="report-reservations-page">
         <div className="report-reservations-heading">
           <div>
-            <h1>Reservations Report</h1>
+            <h1>{t("reservations.title")}</h1>
             <p>
-              Monitor reservation activity, stay dates, room nights, booking value, payments, and
-              outstanding balances.
+              {t("reservations.description")}
             </p>
           </div>
-          <span>{total} reservations</span>
+          <span>{t("reservations.reservationCount", { total })}</span>
         </div>
         <div className="report-reservations-overview">
           <section className="report-reservations-card">
-            <h2>▣ &nbsp; Reservation Summary</h2>
+            <h2>{t("reservations.summary.title")}</h2>
             <div className="report-reservations-metrics">
               {summaryMetrics.map(([label, value]) => (
                 <div key={label}>
@@ -293,29 +295,29 @@ export function ReservationsReportPage() {
             </div>
           </section>
           <section className="report-reservations-card">
-            <h2>▣ &nbsp; Financial Snapshot</h2>
+            <h2>{t("reservations.financial.title")}</h2>
             <div className="report-reservations-metrics report-reservations-metrics--finance">
               <div>
-                <span>Booking Value</span>
+                <span>{t("reservations.financial.bookingValue")}</span>
                 <strong>{money(financial.bookingValue)}</strong>
               </div>
               <div>
-                <span>Paid</span>
+                <span>{t("reservations.financial.paid")}</span>
                 <strong>{money(financial.paid)}</strong>
               </div>
               <div>
-                <span>Outstanding</span>
+                <span>{t("reservations.financial.outstanding")}</span>
                 <strong>{money(financial.outstanding)}</strong>
               </div>
             </div>
-            <p>Nilai keuangan mencakup reservasi aktif dalam filter. Deposit tidak termasuk.</p>
+            <p>{t("reservations.financial.note")}</p>
           </section>
         </div>
         <div className="report-reservations-filters">
           <div className="report-reservations-filter-main">
             <input
-              aria-label="Search reservations report"
-              placeholder="Search booking ID, guest, or WhatsApp"
+              aria-label={t("reservations.filters.searchAriaLabel")}
+              placeholder={t("reservations.filters.searchPlaceholder")}
               value={search}
               onChange={(event) => {
                 setSearch(event.target.value);
@@ -323,7 +325,7 @@ export function ReservationsReportPage() {
               }}
             />
             <label>
-              Date By
+              {t("reservations.filters.dateBy")}
               <select
                 value={dateBy}
                 onChange={(event) => {
@@ -331,14 +333,14 @@ export function ReservationsReportPage() {
                   setPage(1);
                 }}
               >
-                <option value="booking">Booking Date</option>
-                <option value="check_in">Check-in Date</option>
-                <option value="check_out">Check-out Date</option>
+                <option value="booking">{t("reservations.dateBy.booking")}</option>
+                <option value="check_in">{t("reservations.dateBy.checkIn")}</option>
+                <option value="check_out">{t("reservations.dateBy.checkOut")}</option>
               </select>
             </label>
             <div className="report-reservations-dates">
               <input
-                aria-label="From date"
+                aria-label={t("reservations.filters.fromDate")}
                 type="date"
                 value={from}
                 onChange={(event) => {
@@ -348,7 +350,7 @@ export function ReservationsReportPage() {
               />
               <span>–</span>
               <input
-                aria-label="To date"
+                aria-label={t("reservations.filters.toDate")}
                 type="date"
                 value={to}
                 onChange={(event) => {
@@ -360,22 +362,22 @@ export function ReservationsReportPage() {
           </div>
           <div className="report-reservations-filter-extra">
             <select
-              aria-label="Reservation status"
+              aria-label={t("reservations.filters.reservationStatusAriaLabel")}
               value={status}
               onChange={(event) => {
                 setStatus(event.target.value);
                 setPage(1);
               }}
             >
-              <option value="">All Status</option>
+              <option value="">{t("reservations.filters.allStatus")}</option>
               {statusFilterOptions.map((option) => (
                 <option key={option.value} value={option.value}>
-                  {option.label}
+                  {t(`reservationStatus.${option.value}`)}
                 </option>
               ))}
             </select>
             <select
-              aria-label="Source"
+              aria-label={t("reservations.filters.sourceAriaLabel")}
               value={source}
               onChange={(event) => {
                 setSource(event.target.value);
@@ -383,22 +385,22 @@ export function ReservationsReportPage() {
                 setPage(1);
               }}
             >
-              <option value="">All Sources</option>
+              <option value="">{t("common.allSources")}</option>
               {sourceFilterOptions.map((option) => (
                 <option key={option.value} value={option.value}>
-                  {option.label}
+                  {t(`source.${option.value}`)}
                 </option>
               ))}
             </select>
             <select
-              aria-label="Room type"
+              aria-label={t("reservations.filters.roomTypeAriaLabel")}
               value={room}
               onChange={(event) => {
                 setRoom(event.target.value);
                 setPage(1);
               }}
             >
-              <option value="">All Room Types</option>
+              <option value="">{t("common.allRoomTypes")}</option>
               {roomOptions.map((option) => (
                 <option key={option.id} value={option.id}>
                   {option.name}
@@ -406,7 +408,7 @@ export function ReservationsReportPage() {
               ))}
             </select>
             <select
-              aria-label="OTA channel"
+              aria-label={t("reservations.filters.otaChannelAriaLabel")}
               value={ota}
               disabled={source !== "ota"}
               onChange={(event) => {
@@ -414,7 +416,7 @@ export function ReservationsReportPage() {
                 setPage(1);
               }}
             >
-              <option value="">All OTA {source !== "ota" ? "(Inactive)" : ""}</option>
+              <option value="">{source !== "ota" ? t("reservations.filters.allOtaInactive") : t("reservations.filters.allOta")}</option>
               {otaOptions.map((option) => (
                 <option key={option.id} value={option.id}>
                   {option.name}
@@ -422,7 +424,7 @@ export function ReservationsReportPage() {
               ))}
             </select>
             <button type="button" onClick={reset}>
-              Reset
+              {t("common.reset")}
             </button>
             <button
               type="button"
@@ -430,7 +432,7 @@ export function ReservationsReportPage() {
               onClick={exportCsv}
               disabled={exporting || total === 0}
             >
-              ↓ {exporting ? "Exporting…" : "Export CSV"}
+              ↓ {exporting ? t("common.exporting") : t("common.exportCsv")}
             </button>
           </div>
         </div>
@@ -445,21 +447,21 @@ export function ReservationsReportPage() {
               <thead>
                 <tr>
                   {[
-                    "Booking ID",
-                    "Booking Date",
-                    "Guest",
-                    "Source",
-                    "Room Type",
-                    "Room Qty",
-                    "Check-in",
-                    "Check-out",
-                    "Nights",
-                    "Room Nights",
-                    "Reservation Status",
-                    "Booking Total",
-                    "Discount",
-                    "Paid",
-                    "Outstanding",
+                    t("reservations.table.bookingId"),
+                    t("reservations.table.bookingDate"),
+                    t("reservations.table.guest"),
+                    t("reservations.table.source"),
+                    t("reservations.table.roomType"),
+                    t("reservations.table.roomQty"),
+                    t("reservations.table.checkIn"),
+                    t("reservations.table.checkOut"),
+                    t("reservations.table.nights"),
+                    t("reservations.table.roomNights"),
+                    t("reservations.table.reservationStatus"),
+                    t("reservations.table.bookingTotal"),
+                    t("reservations.table.discount"),
+                    t("reservations.table.paid"),
+                    t("reservations.table.outstanding"),
                   ].map((heading) => (
                     <th key={heading}>{heading}</th>
                   ))}
@@ -476,7 +478,7 @@ export function ReservationsReportPage() {
                       </td>
                       <td>{dateLabel(item.bookingDate)}</td>
                       <td>{item.guest.fullName}</td>
-                      <td>{sourceLabel(item)}</td>
+                      <td>{sourceLabel(item, t)}</td>
                       <td>{roomLabel(item)}</td>
                       <td>{item.roomQuantity}</td>
                       <td>{dateLabel(item.checkInDate)}</td>
@@ -487,7 +489,7 @@ export function ReservationsReportPage() {
                         <span
                           className={`reservations-badge reservations-badge--${badgeTone(item.reservationStatus)}`}
                         >
-                          {statusLabel(item.reservationStatus)}
+                          {t(`reservationStatus.${item.reservationStatus}`)}
                         </span>
                       </td>
                       <td>{money(item.bookingTotal)}</td>
@@ -504,7 +506,7 @@ export function ReservationsReportPage() {
                       {loading ? (
                         <LoadingSkeleton />
                       ) : (
-                        "Tidak ada reservasi yang sesuai filter."
+                        t("reservations.empty")
                       )}
                     </td>
                   </tr>
@@ -514,12 +516,11 @@ export function ReservationsReportPage() {
           </div>
           <div className="report-reservations-footer">
             <span>
-              Showing{" "}
-              <strong>
-                {total ? (currentPage - 1) * pageSize + 1 : 0}–
-                {Math.min(currentPage * pageSize, total)}
-              </strong>{" "}
-              of <strong>{total}</strong> reservations
+              {t("reservations.pagination.showing", {
+                start: total ? (currentPage - 1) * pageSize + 1 : 0,
+                end: Math.min(currentPage * pageSize, total),
+                total,
+              })}
             </span>
             <div>
               <button
@@ -527,24 +528,23 @@ export function ReservationsReportPage() {
                 disabled={currentPage === 1}
                 onClick={() => setPage((value) => value - 1)}
               >
-                Prev
+                {t("reservations.pagination.prev")}
               </button>
               <span>
-                {currentPage} / {pageCount}
+                {t("reservations.pagination.pageOf", { page: currentPage, total: pageCount })}
               </span>
               <button
                 type="button"
                 disabled={currentPage === pageCount}
                 onClick={() => setPage((value) => value + 1)}
               >
-                Next
+                {t("reservations.pagination.next")}
               </button>
             </div>
           </div>
         </div>
         <p className="report-reservations-note">
-          All financial figures are in Indonesian Rupiah (IDR). Export CSV follows the active
-          filters.
+          {t("reservations.note")}
         </p>
       </div>
     </AdminShell>

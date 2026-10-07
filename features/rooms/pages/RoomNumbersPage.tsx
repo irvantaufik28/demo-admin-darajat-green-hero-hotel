@@ -16,6 +16,9 @@ import {
   type RoomOperationalStatus,
   type RoomTypeOption,
 } from "../services/room-numbers";
+import { useTranslations, type Translate } from "../../../lib/i18n";
+import en from "../locales/en.json";
+import id from "../locales/id.json";
 
 const pageSize = 20;
 const statusLabels: Record<RoomOperationalStatus, string> = {
@@ -45,13 +48,36 @@ function occupancy(room: Pick<RoomNumber, "operationalStatus" | "isActive">) {
     : "Unavailable";
 }
 
-function errorMessage(error: unknown) {
+const statusKeys: Record<RoomOperationalStatus, string> = {
+  available: "roomNumbers.status.available",
+  occupied: "roomNumbers.status.occupied",
+  cleaning: "roomNumbers.status.cleaning",
+  maintenance: "roomNumbers.status.maintenance",
+  out_of_service: "roomNumbers.status.outOfService",
+};
+
+const occupancyKeys: Record<string, string> = {
+  Available: "roomNumbers.status.available",
+  Occupied: "roomNumbers.status.occupied",
+  Unavailable: "roomNumbers.status.unavailable",
+};
+
+function statusLabel(status: RoomOperationalStatus, t: Translate) {
+  return t(statusKeys[status]);
+}
+
+function occupancyLabel(value: string, t: Translate) {
+  return t(occupancyKeys[value] ?? value);
+}
+
+function errorMessage(error: unknown, t: Translate) {
   return error instanceof Error
     ? error.message
-    : "Permintaan gagal. Coba lagi.";
+    : t("roomNumbers.messages.requestFailed");
 }
 
 export function RoomNumbersPage() {
+  const { t } = useTranslations({ en, id });
   const [rooms, setRooms] = useState<RoomNumber[]>([]);
   const [roomTypes, setRoomTypes] = useState<RoomTypeOption[]>([]);
   const [floors, setFloors] = useState<FloorOption[]>([]);
@@ -87,7 +113,7 @@ export function RoomNumbersPage() {
         setReady(true);
       } catch (cause) {
         if (!controller.signal.aborted) {
-          setLoadError(errorMessage(cause));
+          setLoadError(errorMessage(cause, t));
           setLoading(false);
         }
       }
@@ -129,7 +155,7 @@ export function RoomNumbersPage() {
         setRooms(response.items);
         setTotal(response.total);
       } catch (cause) {
-        if (!controller.signal.aborted) setLoadError(errorMessage(cause));
+        if (!controller.signal.aborted) setLoadError(errorMessage(cause, t));
       } finally {
         if (!controller.signal.aborted) setLoading(false);
       }
@@ -171,12 +197,12 @@ export function RoomNumbersPage() {
     event.preventDefault();
     if (editingOccupied) {
       setError(
-        "Kamar masih ditempati tamu. Perubahan dapat disimpan setelah check-out.",
+        t("roomNumbers.validation.occupiedCannotSave"),
       );
       return;
     }
     if (!draft.roomNumber.trim() || !draft.roomTypeId) {
-      setError("Room number dan room type wajib diisi.");
+      setError(t("roomNumbers.validation.requiredFields"));
       return;
     }
     setSaving(true);
@@ -194,26 +220,26 @@ export function RoomNumbersPage() {
       setEditing(null);
       setReloadKey((key) => key + 1);
     } catch (cause) {
-      setError(errorMessage(cause));
+      setError(errorMessage(cause, t));
     } finally {
       setSaving(false);
     }
   }
 
   return (
-    <AdminShell title="Rooms" context="Room Numbers">
+    <AdminShell title={t("shell.title")} context={t("shell.roomNumbersContext")}>
       <div className="room-numbers-page">
         <div className="room-numbers-heading">
           <div>
-            <h1>Room Numbers</h1>
-            <p>Kelola kamar fisik yang digunakan saat check-in</p>
+            <h1>{t("roomNumbers.heading")}</h1>
+            <p>{t("roomNumbers.description")}</p>
           </div>
           <button
             className="action-button"
             type="button"
             onClick={() => openModal()}
           >
-            ＋ Add Room Number
+            ＋ {t("roomNumbers.addButton")}
           </button>
         </div>
 
@@ -224,8 +250,8 @@ export function RoomNumbersPage() {
               type="search"
               value={query}
               onChange={(event) => setQuery(event.target.value)}
-              placeholder="Search room number..."
-              aria-label="Search room number"
+              placeholder={t("roomNumbers.filters.searchPlaceholder")}
+              aria-label={t("roomNumbers.filters.searchAriaLabel")}
             />
           </label>
           <select
@@ -234,9 +260,9 @@ export function RoomNumbersPage() {
               setTypeFilter(event.target.value);
               setPage(1);
             }}
-            aria-label="Filter room type"
+            aria-label={t("roomNumbers.filters.typeAriaLabel")}
           >
-            <option value="">Room Type: All Room Types</option>
+            <option value="">{t("roomNumbers.filters.typeAll")}</option>
             {roomTypes.map((type) => (
               <option key={type.id} value={type.id}>
                 {type.name}
@@ -249,15 +275,15 @@ export function RoomNumbersPage() {
               setStatusFilter(event.target.value);
               setPage(1);
             }}
-            aria-label="Filter status"
+            aria-label={t("roomNumbers.filters.statusAriaLabel")}
           >
-            <option value="">Status: All Status</option>
+            <option value="">{t("roomNumbers.filters.statusAll")}</option>
             {statuses.map((status) => (
               <option key={status} value={status}>
-                {statusLabels[status]}
+                {statusLabel(status, t)}
               </option>
             ))}
-            <option value="inactive">Inactive</option>
+            <option value="inactive">{t("roomNumbers.filters.statusInactive")}</option>
           </select>
           <select
             value={occupancyFilter}
@@ -265,11 +291,11 @@ export function RoomNumbersPage() {
               setOccupancyFilter(event.target.value);
               setPage(1);
             }}
-            aria-label="Filter occupancy"
+            aria-label={t("roomNumbers.filters.occupancyAriaLabel")}
           >
-            <option value="">Occupancy: All</option>
-            <option>Available</option>
-            <option>Occupied</option>
+            <option value="">{t("roomNumbers.filters.occupancyAll")}</option>
+            <option value="Available">{t("roomNumbers.filters.occupancyAvailable")}</option>
+            <option value="Occupied">{t("roomNumbers.filters.occupancyOccupied")}</option>
           </select>
           <button
             type="button"
@@ -282,10 +308,10 @@ export function RoomNumbersPage() {
               setPage(1);
             }}
           >
-            Reset
+            {t("roomNumbers.filters.reset")}
           </button>
           <span className="room-types-total">
-            <strong>{total}</strong> Room Numbers Total
+            {t("roomNumbers.filters.total", { total })}
           </span>
         </div>
 
@@ -297,7 +323,7 @@ export function RoomNumbersPage() {
                 type="button"
                 onClick={() => setReloadKey((key) => key + 1)}
               >
-                Coba lagi
+                {t("roomNumbers.messages.retry")}
               </button>
             </p>
           )}
@@ -305,12 +331,12 @@ export function RoomNumbersPage() {
             <table className="room-numbers-table">
               <thead>
                 <tr>
-                  <th>ROOM NUMBER</th>
-                  <th>ROOM TYPE</th>
-                  <th>FLOOR</th>
-                  <th>OCCUPANCY</th>
-                  <th>OPERATIONAL STATUS</th>
-                  <th>ACTION</th>
+                  <th>{t("roomNumbers.table.roomNumber")}</th>
+                  <th>{t("roomNumbers.table.roomType")}</th>
+                  <th>{t("roomNumbers.table.floor")}</th>
+                  <th>{t("roomNumbers.table.occupancy")}</th>
+                  <th>{t("roomNumbers.table.operationalStatus")}</th>
+                  <th>{t("roomNumbers.table.action")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -323,7 +349,7 @@ export function RoomNumbersPage() {
                       <span
                         className={`room-numbers-badge room-numbers-badge--${occupancy(room).toLowerCase()}`}
                       >
-                        {occupancy(room)}
+                        {occupancyLabel(occupancy(room), t)}
                       </span>
                     </td>
                     <td>
@@ -331,8 +357,8 @@ export function RoomNumbersPage() {
                         className={`room-numbers-badge room-numbers-badge--${room.isActive ? room.operationalStatus : "inactive"}`}
                       >
                         {room.isActive
-                          ? statusLabels[room.operationalStatus]
-                          : "Inactive"}
+                          ? statusLabel(room.operationalStatus, t)
+                          : t("roomNumbers.status.inactive")}
                       </span>
                     </td>
                     <td>
@@ -341,7 +367,7 @@ export function RoomNumbersPage() {
                         type="button"
                         onClick={() => openModal(room)}
                       >
-                        Edit
+                        {t("roomNumbers.cell.edit")}
                       </button>
                     </td>
                   </tr>
@@ -349,7 +375,7 @@ export function RoomNumbersPage() {
                 {!loading && rooms.length === 0 && (
                   <tr>
                     <td colSpan={6} className="room-types-empty">
-                      Tidak ada kamar yang cocok.
+                      {t("roomNumbers.messages.empty")}
                     </td>
                   </tr>
                 )}
@@ -365,11 +391,7 @@ export function RoomNumbersPage() {
           </div>
           <div className="room-numbers-table-footer">
             <span>
-              Showing{" "}
-              <strong>
-                {from}–{to}
-              </strong>{" "}
-              of <strong>{total}</strong> room numbers
+              {t("roomNumbers.pagination.showing", { from, to, total })}
             </span>
             <div>
               <button
@@ -377,7 +399,7 @@ export function RoomNumbersPage() {
                 type="button"
                 onClick={() => setPage((value) => value - 1)}
               >
-                ‹ Previous
+                ‹ {t("roomNumbers.pagination.previous")}
               </button>
               <span>{page}</span>
               <button
@@ -385,7 +407,7 @@ export function RoomNumbersPage() {
                 type="button"
                 onClick={() => setPage((value) => value + 1)}
               >
-                Next ›
+                {t("roomNumbers.pagination.next")} ›
               </button>
             </div>
           </div>
@@ -408,22 +430,22 @@ export function RoomNumbersPage() {
               <div>
                 <h2>
                   {editingOccupied
-                    ? "Room Number Detail"
+                    ? t("roomNumbers.modal.titleDetail")
                     : editing
-                      ? "Edit Room Number"
-                      : "Add Room Number"}
+                      ? t("roomNumbers.modal.titleEdit")
+                      : t("roomNumbers.modal.titleAdd")}
                 </h2>
                 <p>
                   {editingOccupied
-                    ? "Kamar sedang ditempati tamu"
+                    ? t("roomNumbers.modal.subtitleDetail")
                     : editing
-                      ? "Perbarui informasi kamar fisik"
-                      : "Tambahkan kamar fisik baru"}
+                      ? t("roomNumbers.modal.subtitleEdit")
+                      : t("roomNumbers.modal.subtitleAdd")}
                 </p>
               </div>
               <button
                 type="button"
-                aria-label="Close modal"
+                aria-label={t("roomNumbers.modal.closeAriaLabel")}
                 disabled={saving}
                 onClick={() => setEditing(null)}
               >
@@ -434,23 +456,21 @@ export function RoomNumbersPage() {
               {editing && (
                 <div className="room-numbers-occupancy">
                   <div>
-                    <strong>Current Occupancy</strong>
+                    <strong>{t("roomNumbers.modal.currentOccupancy")}</strong>
                     <small>
-                      Status kamar mengikuti status operasional dan proses
-                      check-in.
+                      {t("roomNumbers.modal.currentOccupancyHint")}
                     </small>
                   </div>
                   <span
                     className={`room-numbers-badge room-numbers-badge--${editingOccupied ? "occupied" : occupancy(draft).toLowerCase()}`}
                   >
-                    {editingOccupied ? "Occupied" : occupancy(draft)}
+                    {editingOccupied ? t("roomNumbers.status.occupied") : occupancyLabel(occupancy(draft), t)}
                   </span>
                 </div>
               )}
               {editingOccupied && (
                 <p className="room-numbers-occupied-notice" role="status">
-                  Kamar masih ditempati tamu. Data kamar hanya dapat dilihat dan
-                  baru bisa diubah setelah tamu check-out.
+                  {t("roomNumbers.modal.occupiedNotice")}
                 </p>
               )}
               <fieldset
@@ -459,19 +479,19 @@ export function RoomNumbersPage() {
               >
                 <div className="room-numbers-fields">
                   <label>
-                    Room Number <b>*</b>
+                    {t("roomNumbers.modal.roomNumberLabel")} <b>*</b>
                     <input
                       value={draft.roomNumber}
                       onChange={(event) =>
                         setDraft({ ...draft, roomNumber: event.target.value })
                       }
-                      placeholder="e.g. 101"
+                      placeholder={t("roomNumbers.modal.roomNumberPlaceholder")}
                       required
                     />
-                    <small>Nomor unik kamar fisik</small>
+                    <small>{t("roomNumbers.modal.roomNumberHint")}</small>
                   </label>
                   <label>
-                    Floor / Area <em>(Optional)</em>
+                    {t("roomNumbers.modal.floorLabel")} <em>{t("roomNumbers.modal.optional")}</em>
                     <select
                       value={draft.floorId ?? ""}
                       onChange={(event) =>
@@ -481,18 +501,18 @@ export function RoomNumbersPage() {
                         })
                       }
                     >
-                      <option value="">Select floor</option>
+                      <option value="">{t("roomNumbers.modal.floorPlaceholder")}</option>
                       {floors.map((floor) => (
                         <option key={floor.id} value={floor.id}>
                           {floor.name}
                         </option>
                       ))}
                     </select>
-                    <small>Lokasi lantai atau blok</small>
+                    <small>{t("roomNumbers.modal.floorHint")}</small>
                   </label>
                 </div>
                 <label>
-                  Room Type <b>*</b>
+                  {t("roomNumbers.modal.roomTypeLabel")} <b>*</b>
                   <select
                     value={draft.roomTypeId}
                     onChange={(event) =>
@@ -500,7 +520,7 @@ export function RoomNumbersPage() {
                     }
                     required
                   >
-                    <option value="">Select room type</option>
+                    <option value="">{t("roomNumbers.modal.roomTypePlaceholder")}</option>
                     {roomTypes.map((type) => (
                       <option key={type.id} value={type.id}>
                         {type.name}
@@ -510,7 +530,7 @@ export function RoomNumbersPage() {
                 </label>
                 <fieldset>
                   <legend>
-                    Operational Status <b>*</b>
+                    {t("roomNumbers.modal.operationalStatusLabel")} <b>*</b>
                   </legend>
                   <div className="room-numbers-status-options">
                     {statuses.map((status) => (
@@ -523,13 +543,12 @@ export function RoomNumbersPage() {
                             setDraft({ ...draft, operationalStatus: status })
                           }
                         />
-                        {statusLabels[status]}
+                        {statusLabel(status, t)}
                       </label>
                     ))}
                   </div>
                   <small>
-                    Hanya kamar berstatus Available yang siap ditetapkan saat
-                    check-in.
+                    {t("roomNumbers.modal.operationalStatusHint")}
                   </small>
                 </fieldset>
                 <label>
@@ -541,21 +560,21 @@ export function RoomNumbersPage() {
                         setDraft({ ...draft, isActive: event.target.checked })
                       }
                     />{" "}
-                    Active room number
+                    {t("roomNumbers.modal.activeRoomNumber")}
                   </span>
                 </label>
                 <label>
-                  Internal Note <em>(Optional)</em>
+                  {t("roomNumbers.modal.internalNoteLabel")} <em>{t("roomNumbers.modal.optional")}</em>
                   <textarea
                     rows={2}
                     value={draft.note}
                     onChange={(event) =>
                       setDraft({ ...draft, note: event.target.value })
                     }
-                    placeholder="Catatan internal staf front office atau housekeeping..."
+                    placeholder={t("roomNumbers.modal.internalNotePlaceholder")}
                   />
                   <small>
-                    Catatan internal belum didukung API dan belum disimpan.
+                    {t("roomNumbers.modal.internalNoteHint")}
                   </small>
                 </label>
               </fieldset>
@@ -571,7 +590,7 @@ export function RoomNumbersPage() {
                 disabled={saving}
                 onClick={() => setEditing(null)}
               >
-                {editingOccupied ? "Close" : "Cancel"}
+                {editingOccupied ? t("roomNumbers.modal.close") : t("roomNumbers.modal.cancel")}
               </button>
               {!editingOccupied && (
                 <button
@@ -581,10 +600,10 @@ export function RoomNumbersPage() {
                 >
                   ✓{" "}
                   {saving
-                    ? "Saving..."
+                    ? t("roomNumbers.modal.saving")
                     : editing
-                      ? "Save Changes"
-                      : "Add Room Number"}
+                      ? t("roomNumbers.modal.saveChanges")
+                      : t("roomNumbers.modal.addRoomNumber")}
                 </button>
               )}
             </div>

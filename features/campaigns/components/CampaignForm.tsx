@@ -24,6 +24,9 @@ import {
   type CampaignRoomTypeOption,
   type CancellationPolicyOption,
 } from "../services/campaigns";
+import { useTranslations } from "../../../lib/i18n";
+import en from "../locales/en.json";
+import id from "../locales/id.json";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -169,6 +172,7 @@ function CheckboxGroup({
 // ─── Main component ───────────────────────────────────────────────────────────
 
 export function CampaignForm({ mode, campaignId }: Props) {
+  const { t } = useTranslations({ en, id });
   const router = useRouter();
   const [form, setForm] = useState<FormState>(() => buildDefault());
   const [roomOptions, setRoomOptions] = useState<CampaignRoomTypeOption[]>([]);
@@ -197,10 +201,10 @@ export function CampaignForm({ mode, campaignId }: Props) {
           setForm(buildDefault(detail.campaign));
           setHasLoadedCampaign(true);
         }
-        if (mode === "edit" && !detail) setError("Campaign tidak ditemukan.");
+        if (mode === "edit" && !detail) setError(t("form.messages.campaignNotFound"));
       } catch (cause) {
         if (!controller.signal.aborted) {
-          setError(cause instanceof Error ? cause.message : "Campaign gagal dimuat.");
+          setError(cause instanceof Error ? cause.message : t("form.messages.loadFailed"));
         }
       } finally {
         if (!controller.signal.aborted) setLoading(false);
@@ -259,15 +263,15 @@ export function CampaignForm({ mode, campaignId }: Props) {
     if (saving || loading) return;
     setError("");
     if (!form.name.trim() || form.applicableDays.length === 0) {
-      setError("Isi nama campaign dan pilih minimal satu Applicable Day.");
+      setError(t("form.messages.requireNameAndDay"));
       return;
     }
     if (form.requirePromoCode && !form.promoCode.trim()) {
-      setError("Isi promo code ketika Require Promo Code aktif.");
+      setError(t("form.messages.requirePromoCode"));
       return;
     }
     if (form.useBlackoutDates && form.blackoutDates.some((item) => !item.from || !item.to)) {
-      setError("Lengkapi tanggal From dan To pada setiap Blackout Date.");
+      setError(t("form.messages.requireBlackoutDates"));
       return;
     }
     const input: CampaignInput = {
@@ -305,7 +309,7 @@ export function CampaignForm({ mode, campaignId }: Props) {
       }
       router.push("/campaigns");
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Campaign gagal disimpan.");
+      setError(cause instanceof Error ? cause.message : t("form.messages.saveFailed"));
     } finally {
       setSaving(false);
     }
@@ -319,17 +323,17 @@ export function CampaignForm({ mode, campaignId }: Props) {
 
   return (
     <AdminShell
-      title="Campaigns & Promotions"
-      context={isEdit ? "Edit Campaign" : "Add Campaign"}
+      title={t("form.shell.title")}
+      context={isEdit ? t("form.shell.contextEdit") : t("form.shell.contextAdd")}
     >
       <div className="cf-page">
         {/* Page header */}
         <div className="cf-heading">
-          <h1>{isEdit ? "Edit Campaign" : "Add Campaign"}</h1>
+          <h1>{isEdit ? t("form.page.titleEdit") : t("form.page.titleAdd")}</h1>
           <p>
             {isEdit
-              ? "Perbarui pengaturan promo yang sudah ada"
-              : "Buat promo berdasarkan periode, tipe kamar, dan aturan booking"}
+              ? t("form.page.descriptionEdit")
+              : t("form.page.descriptionAdd")}
           </p>
         </div>
 
@@ -341,18 +345,18 @@ export function CampaignForm({ mode, campaignId }: Props) {
           <div className="cf-card">
 
             {/* ── 1. Campaign Information ─────────────────────────────── */}
-            <Section title="Campaign Information">
+            <Section title={t("form.sections.campaignInformation")}>
               <div className="cf-info-grid">
                 {/* Name */}
                 <div className="cf-field cf-field--name">
                   <label className="cf-label" htmlFor="cf-name">
-                    Campaign Name <span className="cf-required">*</span>
+                    {t("form.fields.campaignName")} <span className="cf-required">{t("form.required")}</span>
                   </label>
                   <input
                     id="cf-name"
                     type="text"
                     className="cf-input"
-                    placeholder="Enter campaign name"
+                    placeholder={t("form.fields.campaignNamePlaceholder")}
                     required
                     value={form.name}
                     onChange={(e) => set("name", e.target.value)}
@@ -361,7 +365,7 @@ export function CampaignForm({ mode, campaignId }: Props) {
 
                 {/* Status toggle */}
                 <div className="cf-field cf-field--status">
-                  <span className="cf-label">Status</span>
+                  <span className="cf-label">{t("form.fields.status")}</span>
                   <div className="cf-status-toggle">
                     <button
                       type="button"
@@ -373,7 +377,7 @@ export function CampaignForm({ mode, campaignId }: Props) {
                       onClick={() => set("status", "Active")}
                     >
                       <i />
-                      Active
+                      {t("form.fields.statusActive")}
                     </button>
                     <button
                       type="button"
@@ -384,7 +388,7 @@ export function CampaignForm({ mode, campaignId }: Props) {
                       }
                       onClick={() => set("status", "Inactive")}
                     >
-                      Inactive
+                      {t("form.fields.statusInactive")}
                     </button>
                   </div>
                 </div>
@@ -392,7 +396,7 @@ export function CampaignForm({ mode, campaignId }: Props) {
                 {/* Priority */}
                 <div className="cf-field cf-field--priority">
                   <label className="cf-label" htmlFor="cf-priority">
-                    Priority <span className="cf-required">*</span>
+                    {t("form.fields.priority")} <span className="cf-required">{t("form.required")}</span>
                   </label>
                   <input
                     id="cf-priority"
@@ -406,17 +410,17 @@ export function CampaignForm({ mode, campaignId }: Props) {
                       set("priority", Math.max(1, Number(e.target.value)))
                     }
                   />
-                  <p className="cf-hint">Lower number = higher priority</p>
+                  <p className="cf-hint">{t("form.fields.priorityHint")}</p>
                 </div>
               </div>
             </Section>
 
             {/* ── 2. Applicable Source ────────────────────────────────── */}
-            <Section title="Applicable Source">
+            <Section title={t("form.sections.applicableSource")}>
               <div className="cf-checkbox-row">
                 {([
-                  ["website", "Website"],
-                  ["front_desk", "Front Desk (Walk-in & Phone)"],
+                  ["website", t("form.fields.channelWebsite")],
+                  ["front_desk", t("form.fields.channelFrontDesk")],
                 ] as const).map(([channel, label]) => (
                   <label key={channel} className="cf-checkbox-label">
                     <input
@@ -433,13 +437,13 @@ export function CampaignForm({ mode, campaignId }: Props) {
                   </label>
                 ))}
                 <span className="cf-hint-inline">
-                  (Satu channel per campaign)
+                  {t("form.fields.channelHint")}
                 </span>
               </div>
             </Section>
 
             {/* ── 3. Applicable Room Types ────────────────────────────── */}
-            <Section title="Applicable Room Types">
+            <Section title={t("form.sections.applicableRoomTypes")}>
               <div className="cf-checkbox-row">
                 {roomOptions.map((room) => (
                   <label key={room.id} className="cf-checkbox-label">
@@ -449,7 +453,7 @@ export function CampaignForm({ mode, campaignId }: Props) {
                       checked={form.roomTypes.includes(room.id)}
                       onChange={() => toggleRoomType(room.id)}
                     />
-                    <span>{room.name}{!room.isActive ? " (Inactive)" : ""}</span>
+                    <span>{room.name}{!room.isActive ? t("form.fields.inactiveSuffix") : ""}</span>
                   </label>
                 ))}
                 <label className="cf-checkbox-label cf-checkbox-label--secondary">
@@ -459,41 +463,41 @@ export function CampaignForm({ mode, campaignId }: Props) {
                     checked={allRoomsChecked}
                     onChange={toggleSelectAll}
                   />
-                  <span>All Room Types</span>
+                  <span>{t("form.fields.allRoomTypes")}</span>
                 </label>
               </div>
             </Section>
 
             {/* ── 4. Period ───────────────────────────────────────────── */}
-            <Section title="Period">
+            <Section title={t("form.sections.period")}>
               <div className="cf-period-grid">
                 {/* Booking Period */}
                 <div className="cf-period-row">
-                  <span className="cf-period-label">Booking Period</span>
+                  <span className="cf-period-label">{t("form.fields.bookingPeriod")}</span>
                   <DateRangePicker
-                    label="Booking Period"
+                    label={t("form.fields.bookingPeriod")}
                     start={form.bookingStart}
                     end={form.bookingEnd}
                     onChange={(bookingStart, bookingEnd) => setForm((current) => ({ ...current, bookingStart, bookingEnd }))}
                   />
-                  <span className="cf-period-note">Periode pemesanan dibuat</span>
+                  <span className="cf-period-note">{t("form.fields.bookingPeriodNote")}</span>
                 </div>
                 {/* Stay Period */}
                 <div className="cf-period-row">
-                  <span className="cf-period-label">Stay Period</span>
+                  <span className="cf-period-label">{t("form.fields.stayPeriod")}</span>
                   <DateRangePicker
-                    label="Stay Period"
+                    label={t("form.fields.stayPeriod")}
                     start={form.stayStart}
                     end={form.stayEnd}
                     onChange={(stayStart, stayEnd) => setForm((current) => ({ ...current, stayStart, stayEnd }))}
                   />
-                  <span className="cf-period-note">Periode tamu menginap</span>
+                  <span className="cf-period-note">{t("form.fields.stayPeriodNote")}</span>
                 </div>
               </div>
             </Section>
 
             {/* ── 5. Applicable Days ──────────────────────────────────── */}
-            <Section title="Applicable Days">
+            <Section title={t("form.sections.applicableDays")}>
               <CheckboxGroup
                 options={ALL_DAYS}
                 selected={form.applicableDays}
@@ -502,11 +506,11 @@ export function CampaignForm({ mode, campaignId }: Props) {
             </Section>
 
             {/* ── 6. Booking Requirement ──────────────────────────────── */}
-            <Section title="Booking Requirement">
+            <Section title={t("form.sections.bookingRequirement")}>
               <div className="cf-inline-fields">
                 <div className="cf-inline-field">
                   <label className="cf-label-inline" htmlFor="cf-min-nights">
-                    Minimum Stay:
+                    {t("form.fields.minimumStay")}
                   </label>
                   <input
                     id="cf-min-nights"
@@ -518,11 +522,11 @@ export function CampaignForm({ mode, campaignId }: Props) {
                       set("minNights", Math.max(1, Number(e.target.value)))
                     }
                   />
-                  <span className="cf-unit">Nights</span>
+                  <span className="cf-unit">{t("form.fields.nightsUnit")}</span>
                 </div>
                 <div className="cf-inline-field">
                   <label className="cf-label-inline" htmlFor="cf-min-rooms">
-                    Minimum Rooms (Optional):
+                    {t("form.fields.minimumRooms")}
                   </label>
                   <input
                     id="cf-min-rooms"
@@ -534,13 +538,13 @@ export function CampaignForm({ mode, campaignId }: Props) {
                       set("minRooms", Math.max(1, Number(e.target.value)))
                     }
                   />
-                  <span className="cf-unit">Rooms</span>
+                  <span className="cf-unit">{t("form.fields.roomsUnit")}</span>
                 </div>
               </div>
             </Section>
 
             {/* ── 7. Discount ─────────────────────────────────────────── */}
-            <Section title="Discount">
+            <Section title={t("form.sections.discount")}>
               <div className="cf-inline-fields">
                 <div className="cf-radio-group">
                   <label className="cf-radio-label">
@@ -551,7 +555,7 @@ export function CampaignForm({ mode, campaignId }: Props) {
                       checked={form.discountType === "percent"}
                       onChange={() => set("discountType", "percent")}
                     />
-                    <span>Percentage</span>
+                    <span>{t("form.fields.discountPercentage")}</span>
                   </label>
                   <label className="cf-radio-label">
                     <input
@@ -561,11 +565,11 @@ export function CampaignForm({ mode, campaignId }: Props) {
                       checked={form.discountType === "fixed"}
                       onChange={() => set("discountType", "fixed")}
                     />
-                    <span>Fixed Amount</span>
+                    <span>{t("form.fields.discountFixed")}</span>
                   </label>
                 </div>
                 <div className="cf-inline-field">
-                  <span className="cf-label-inline">Value:</span>
+                  <span className="cf-label-inline">{t("form.fields.discountValue")}</span>
                   <div className="cf-discount-input-wrap">
                     <input
                       type="number"
@@ -586,17 +590,17 @@ export function CampaignForm({ mode, campaignId }: Props) {
             </Section>
 
             {/* ── 8. Cancellation Policy ──────────────────────────────── */}
-            <Section title="Cancellation Policy">
+            <Section title={t("form.sections.cancellationPolicy")}>
               <div className="cf-select-wrap">
                 <select
                   className="cf-select"
                   value={form.cancellationPolicy}
                   onChange={(e) => set("cancellationPolicy", e.target.value)}
                 >
-                  <option value="">Default cancellation policy</option>
+                  <option value="">{t("form.fields.defaultCancellationPolicy")}</option>
                   {availablePolicies.map((policy) => (
                     <option key={policy.id} value={policy.id}>
-                      {policy.name}{!policy.isActive ? " (Inactive)" : ""}
+                      {policy.name}{!policy.isActive ? t("form.fields.inactiveSuffix") : ""}
                     </option>
                   ))}
                 </select>
@@ -610,7 +614,7 @@ export function CampaignForm({ mode, campaignId }: Props) {
             </Section>
 
             {/* ── 9. Promo Code ───────────────────────────────────────── */}
-            <Section title="Promo Code">
+            <Section title={t("form.sections.promoCode")}>
               <label className="cf-checkbox-label" style={{ marginBottom: 10 }}>
                 <input
                   type="checkbox"
@@ -618,15 +622,15 @@ export function CampaignForm({ mode, campaignId }: Props) {
                   checked={form.requirePromoCode}
                   onChange={(e) => set("requirePromoCode", e.target.checked)}
                 />
-                <span>Require Promo Code</span>
+                <span>{t("form.fields.requirePromoCode")}</span>
               </label>
                 <div className="cf-promo-code-row">
-                  <span className="cf-label-inline">Code:</span>
+                  <span className="cf-label-inline">{t("form.fields.promoCodeLabel")}</span>
                   <input
                     type="text"
                     id="cf-promo-code"
                     className="cf-input cf-input--code"
-                    placeholder="e.g. PROMO2026"
+                    placeholder={t("form.fields.promoCodePlaceholder")}
                     value={form.promoCode}
                     disabled={!form.requirePromoCode}
                     onChange={(e) =>
@@ -637,7 +641,7 @@ export function CampaignForm({ mode, campaignId }: Props) {
             </Section>
 
             {/* ── 10. Blackout Dates ──────────────────────────────────── */}
-            <Section title="Blackout Dates" last>
+            <Section title={t("form.sections.blackoutDates")} last>
               <label className="cf-checkbox-label" style={{ marginBottom: 10 }}>
                 <input
                   type="checkbox"
@@ -645,7 +649,7 @@ export function CampaignForm({ mode, campaignId }: Props) {
                   checked={form.useBlackoutDates}
                   onChange={(e) => set("useBlackoutDates", e.target.checked)}
                 />
-                <span>Use Blackout Dates</span>
+                <span>{t("form.fields.useBlackoutDates")}</span>
               </label>
 
                 <>
@@ -653,7 +657,7 @@ export function CampaignForm({ mode, campaignId }: Props) {
                     {form.blackoutDates.map((bd) => (
                       <div key={bd.id} className="cf-blackout-row">
                         <DateRangePicker
-                          label="Blackout Date"
+                          label={t("form.sections.blackoutDates")}
                           start={bd.from}
                           end={bd.to}
                           disabled={!form.useBlackoutDates}
@@ -667,7 +671,7 @@ export function CampaignForm({ mode, campaignId }: Props) {
                         <button
                           type="button"
                           className="cf-blackout-delete"
-                          aria-label="Hapus blackout date"
+                          aria-label={t("form.fields.removeBlackoutDateAria")}
                           disabled={!form.useBlackoutDates}
                           onClick={() => removeBlackout(bd.id)}
                         >
@@ -683,7 +687,7 @@ export function CampaignForm({ mode, campaignId }: Props) {
                     onClick={addBlackout}
                   >
                     <Icon name="plus" width={14} height={14} />
-                    <span>Add Blackout Date</span>
+                    <span>{t("form.fields.addBlackoutDate")}</span>
                   </button>
                 </>
 
@@ -697,10 +701,10 @@ export function CampaignForm({ mode, campaignId }: Props) {
               className="cf-btn-cancel"
               onClick={() => router.push("/campaigns")}
             >
-              Cancel
+              {t("form.actions.cancel")}
             </button>
             <button type="submit" className="cf-btn-save" disabled={saving}>
-              {saving ? "Saving..." : isEdit ? "Save Changes" : "Save Campaign"}
+              {saving ? t("form.actions.saving") : isEdit ? t("form.actions.saveChanges") : t("form.actions.saveCampaign")}
             </button>
           </div>
         </form>

@@ -9,6 +9,9 @@ import { AdminShell } from "../../../components/layout/AdminShell";
 import { formatStayDate } from "../constants/walk-in-data";
 import { getArrivalsToday, type ArrivalTodayItem } from "../services/api";
 import { restoreSession } from "../../../lib/auth";
+import { useTranslations } from "../../../lib/i18n";
+import en from "../locales/en.json";
+import id from "../locales/id.json";
 
 const pageSize = 20;
 
@@ -32,6 +35,7 @@ function statusTone(value: string) {
 }
 
 export function ArrivalsTodayPage() {
+  const { t } = useTranslations({ en, id });
   const [arrivals, setArrivals] = useState<ArrivalTodayItem[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
@@ -57,7 +61,7 @@ export function ArrivalsTodayPage() {
         }
       } catch (cause) {
         if (!controller.signal.aborted) {
-          setError(cause instanceof Error ? cause.message : "Data kedatangan gagal dimuat.");
+          setError(cause instanceof Error ? cause.message : t("arrivals.messages.loadError"));
         }
       } finally {
         if (!controller.signal.aborted) setLoading(false);
@@ -67,28 +71,28 @@ export function ArrivalsTodayPage() {
   }, [page, search, source]);
 
   return (
-    <AdminShell title="Reservations" context="Arrivals Today">
+    <AdminShell title={t("shell.title")} context={t("shell.arrivalsToday")}>
       <div className="arrivals-page">
         <div className="arrivals-heading">
           <div>
-            <span className="arrivals-eyebrow">FRONT DESK · ARRIVALS</span>
-            <h1>Arrivals Today</h1>
-            <p>Reservasi yang dijadwalkan tiba hari ini dan tamu yang sudah check-in.</p>
+            <span className="arrivals-eyebrow">{t("arrivals.eyebrow")}</span>
+            <h1>{t("arrivals.heading")}</h1>
+            <p>{t("arrivals.description")}</p>
           </div>
           <Link href="/reservations/create-reservation-walkin" className="action-button">
-            ＋ New Reservation
+            ＋ {t("arrivals.newReservation")}
           </Link>
         </div>
 
         <section className="arrivals-panel">
           <div className="arrivals-panel-header">
             <div>
-              <h2>Today&apos;s Arrival List</h2>
-              <p>{total} reservasi</p>
+              <h2>{t("arrivals.panelTitle")}</h2>
+              <p>{t("arrivals.panelCount", { count: total })}</p>
             </div>
             <div className="arrivals-panel-actions">
               <Link href="/reservations" className="reservation-secondary-button">
-                All Reservations
+                {t("arrivals.allReservations")}
               </Link>
             </div>
           </div>
@@ -97,19 +101,19 @@ export function ArrivalsTodayPage() {
             <input
               value={search}
               onChange={event => { setSearch(event.target.value); setPage(1); }}
-              placeholder="Search booking ID, guest, or WhatsApp"
-              aria-label="Cari kedatangan"
+              placeholder={t("arrivals.searchPlaceholder")}
+              aria-label={t("arrivals.searchAriaLabel")}
             />
             <select
               value={source}
               onChange={event => { setSource(event.target.value); setPage(1); }}
-              aria-label="Filter sumber reservasi"
+              aria-label={t("arrivals.sourceAriaLabel")}
             >
-              <option value="all">All Sources</option>
-              <option value="website">Website</option>
-              <option value="walk_in">Walk-in</option>
-              <option value="phone">Phone</option>
-              <option value="ota">OTA</option>
+              <option value="all">{t("arrivals.sourceAll")}</option>
+              <option value="website">{t("source.website")}</option>
+              <option value="walk_in">{t("source.walkIn")}</option>
+              <option value="phone">{t("source.phone")}</option>
+              <option value="ota">{t("source.ota")}</option>
             </select>
           </div>
 
@@ -117,16 +121,16 @@ export function ArrivalsTodayPage() {
             <table className="arrivals-table">
               <thead>
                 <tr>
-                  <th>NO</th>
-                  <th>BOOKING</th>
-                  <th>GUEST</th>
-                  <th>SOURCE</th>
-                  <th>STAY</th>
-                  <th>ROOM</th>
-                  <th>PAYMENT</th>
-                  <th>STATUS</th>
-                  <th>OPERATIONAL STATUS</th>
-                  <th>ACTION</th>
+                  <th>{t("arrivals.table.no")}</th>
+                  <th>{t("arrivals.table.booking")}</th>
+                  <th>{t("arrivals.table.guest")}</th>
+                  <th>{t("arrivals.table.source")}</th>
+                  <th>{t("arrivals.table.stay")}</th>
+                  <th>{t("arrivals.table.room")}</th>
+                  <th>{t("arrivals.table.payment")}</th>
+                  <th>{t("arrivals.table.status")}</th>
+                  <th>{t("arrivals.table.operationalStatus")}</th>
+                  <th>{t("arrivals.table.action")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -148,10 +152,10 @@ export function ArrivalsTodayPage() {
                         <strong>
                           {formatStayDate(item.checkInDate)} → {formatStayDate(item.checkOutDate)}
                         </strong>
-                        <small>{item.nights} {item.nights === 1 ? "night" : "nights"}</small>
+                        <small>{item.nights} {item.nights === 1 ? t("common.nightLower") : t("common.nightsLower")}</small>
                       </div>
                     </td>
-                    <td>{item.roomSummary || "—"}</td>
+                    <td>{item.roomSummary || t("common.emptyDash")}</td>
                     <td>
                       <span className={"reservations-badge reservations-badge--" + statusTone(label(item.paymentStatus))}>
                         {label(item.paymentStatus)}
@@ -172,7 +176,7 @@ export function ArrivalsTodayPage() {
                         href={"/reservations/" + encodeURIComponent(item.id)}
                         className="reservations-view-link"
                       >
-                        View
+                        {t("common.view")}
                       </Link>
                     </td>
                   </tr>
@@ -180,7 +184,7 @@ export function ArrivalsTodayPage() {
                 {(loading || error || arrivals.length === 0) && (
                   <tr>
                     <td className="arrivals-empty" colSpan={10}>
-                      {loading ? <LoadingSkeleton /> : error || "Tidak ada kedatangan yang cocok dengan filter."}
+                      {loading ? <LoadingSkeleton /> : error || t("arrivals.messages.empty")}
                     </td>
                   </tr>
                 )}
@@ -189,12 +193,12 @@ export function ArrivalsTodayPage() {
           </div>
 
           <div className="arrivals-table-footer">
-            Showing {arrivals.length} of {total} arrivals
+            {t("arrivals.footer", { count: arrivals.length, total })}
             {total > pageSize && (
               <div>
-                <button type="button" disabled={page === 1} onClick={() => setPage(value => value - 1)}>Previous</button>
-                <span> Page {page} of {Math.ceil(total / pageSize)} </span>
-                <button type="button" disabled={page * pageSize >= total} onClick={() => setPage(value => value + 1)}>Next</button>
+                <button type="button" disabled={page === 1} onClick={() => setPage(value => value - 1)}>{t("common.previous")}</button>
+                <span> {t("common.pageInfo", { page, total: Math.ceil(total / pageSize) })} </span>
+                <button type="button" disabled={page * pageSize >= total} onClick={() => setPage(value => value + 1)}>{t("common.next")}</button>
               </div>
             )}
           </div>

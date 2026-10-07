@@ -17,6 +17,9 @@ import {
   type RevenueReportStatus,
   type RevenueTotals,
 } from "../services/revenue-report";
+import { useTranslations } from "../../../lib/i18n";
+import en from "../locales/en.json";
+import id from "../locales/id.json";
 
 const money = (value: number) => `Rp${value.toLocaleString("id-ID")}`;
 
@@ -145,6 +148,7 @@ function exportCsv(items: RevenueReportItem[]) {
 }
 
 export function RevenueReportPage() {
+  const { t } = useTranslations({ en, id });
   const [dateBy, setDateBy] = useState<RevenueReportDateBy>("booking");
   const [from, setFrom] = useState("2026-09-01");
   const [to, setTo] = useState("2026-10-31");
@@ -211,7 +215,7 @@ export function RevenueReportPage() {
         }
       } catch (cause) {
         if (!controller.signal.aborted) {
-          setError(cause instanceof Error ? cause.message : "Laporan gagal dimuat.");
+          setError(cause instanceof Error ? cause.message : t("common.loadFailed"));
           setTotals(emptyTotals);
           setBySource([]);
           setByMethod([]);
@@ -239,65 +243,64 @@ export function RevenueReportPage() {
   const paymentTypes = byMethod.filter((row) => row.transactions > 0).length;
 
   return (
-    <AdminShell title="Reports" context="Revenue">
+    <AdminShell title={t("shell.title")} context={t("shell.revenueContext")}>
       <div className="revenue-report-page">
         <header className="revenue-report-heading">
           <div>
-            <h1>Revenue Report</h1>
+            <h1>{t("revenue.title")}</h1>
             <p>
-              Monitor booking value, payments, refunds, outstanding balances, and net collections.
+              {t("revenue.description")}
             </p>
           </div>
-          <span>{totals.reservations} reservations</span>
+          <span>{t("revenue.reservationCount", { total: totals.reservations })}</span>
         </header>
 
-        <section className="revenue-report-kpis" aria-label="Revenue summary">
+        <section className="revenue-report-kpis" aria-label={t("revenue.kpis.ariaLabel")}>
           {(
             [
-              ["Gross Booking Value", totals.gross, "gross"],
-              ["Discount", totals.discount, "discount"],
-              ["Net Booking Value", totals.net, "net"],
-              ["Net Collected", totals.netCollected, "collected"],
-              ["Paid", totals.paid, "paid"],
-              ["Refunded", totals.refunded, "refunded"],
-              ["Outstanding", totals.outstanding, "outstanding"],
+              [t("revenue.kpis.grossBookingValue"), totals.gross, "gross"],
+              [t("revenue.kpis.discount"), totals.discount, "discount"],
+              [t("revenue.kpis.netBookingValue"), totals.net, "net"],
+              [t("revenue.kpis.netCollected"), totals.netCollected, "collected"],
+              [t("revenue.kpis.paid"), totals.paid, "paid"],
+              [t("revenue.kpis.refunded"), totals.refunded, "refunded"],
+              [t("revenue.kpis.outstanding"), totals.outstanding, "outstanding"],
             ] as [string, number, string][]
           ).map(([label, value, tone]) => (
-            <div className={`revenue-report-kpi revenue-report-kpi--${tone}`} key={label}>
+            <div className={`revenue-report-kpi revenue-report-kpi--${tone}`} key={tone}>
               <span>{label}</span>
               <strong>{money(value)}</strong>
             </div>
           ))}
         </section>
         <p className="revenue-report-disclaimer">
-          Security Deposit is excluded from revenue and net collection calculations. Diskon belum
-          tersedia pada data, sehingga ditampilkan Rp0.
+          {t("revenue.disclaimer")}
         </p>
 
-        <section className="revenue-report-filters" aria-label="Revenue filters">
+        <section className="revenue-report-filters" aria-label={t("revenue.filters.ariaLabel")}>
           <div className="revenue-report-filter-row">
-            <span className="revenue-report-currency">Currency: IDR (Rupiah)</span>
+            <span className="revenue-report-currency">{t("revenue.filters.currency")}</span>
             <label>
-              Date By:
+              {t("revenue.filters.dateBy")}
               <select
                 value={dateBy}
                 onChange={(event) => setDateBy(event.target.value as RevenueReportDateBy)}
               >
-                <option value="payment">Payment Date</option>
-                <option value="booking">Booking Date</option>
-                <option value="check_in">Check-in Date</option>
+                <option value="payment">{t("revenue.dateBy.payment")}</option>
+                <option value="booking">{t("revenue.dateBy.booking")}</option>
+                <option value="check_in">{t("revenue.dateBy.checkIn")}</option>
               </select>
             </label>
             <div className="revenue-report-date-range">
               <input
-                aria-label="From date"
+                aria-label={t("revenue.filters.fromDate")}
                 type="date"
                 value={from}
                 onChange={(event) => setFrom(event.target.value)}
               />
               <span>–</span>
               <input
-                aria-label="To date"
+                aria-label={t("revenue.filters.toDate")}
                 type="date"
                 value={to}
                 onChange={(event) => setTo(event.target.value)}
@@ -306,47 +309,47 @@ export function RevenueReportPage() {
           </div>
           <div className="revenue-report-filter-row">
             <select
-              aria-label="Source"
+              aria-label={t("revenue.filters.sourceAriaLabel")}
               value={source}
               onChange={(event) => setSource(event.target.value)}
             >
-              <option value="">All Sources</option>
+              <option value="">{t("common.allSources")}</option>
               {sourceFilterOptions.map((option) => (
                 <option key={option.value} value={option.value}>
-                  {option.label}
+                  {t(`source.${option.value}`)}
                 </option>
               ))}
             </select>
             <select
-              aria-label="Payment status"
+              aria-label={t("revenue.filters.paymentStatusAriaLabel")}
               value={paymentStatus}
               onChange={(event) => setPaymentStatus(event.target.value)}
             >
-              <option value="">All Payment Status</option>
+              <option value="">{t("revenue.filters.allPaymentStatus")}</option>
               {paymentStatusOptions.map((option) => (
                 <option key={option.value} value={option.value}>
-                  {option.label}
+                  {t(`paymentStatus.${option.value}`)}
                 </option>
               ))}
             </select>
             <select
-              aria-label="Reservation status"
+              aria-label={t("revenue.filters.reservationStatusAriaLabel")}
               value={reservationStatus}
               onChange={(event) => setReservationStatus(event.target.value)}
             >
-              <option value="">All Resv Status</option>
+              <option value="">{t("revenue.filters.allResvStatus")}</option>
               {reservationStatusOptions.map((option) => (
                 <option key={option.value} value={option.value}>
-                  {option.label}
+                  {t(`reservationStatus.${option.value}`)}
                 </option>
               ))}
             </select>
             <select
-              aria-label="Payment method"
+              aria-label={t("revenue.filters.paymentMethodAriaLabel")}
               value={method}
               onChange={(event) => setMethod(event.target.value)}
             >
-              <option value="">All Methods</option>
+              <option value="">{t("revenue.filters.allMethods")}</option>
               {methodOptions.map((option) => (
                 <option key={option.id} value={option.id}>
                   {option.name}
@@ -354,11 +357,11 @@ export function RevenueReportPage() {
               ))}
             </select>
             <select
-              aria-label="Room type"
+              aria-label={t("revenue.filters.roomTypeAriaLabel")}
               value={room}
               onChange={(event) => setRoom(event.target.value)}
             >
-              <option value="">All Room Types</option>
+              <option value="">{t("common.allRoomTypes")}</option>
               {roomOptions.map((option) => (
                 <option key={option.id} value={option.id}>
                   {option.name}
@@ -366,7 +369,7 @@ export function RevenueReportPage() {
               ))}
             </select>
             <button type="button" onClick={reset}>
-              Reset
+              {t("common.reset")}
             </button>
             <button
               className="revenue-report-export"
@@ -374,7 +377,7 @@ export function RevenueReportPage() {
               onClick={() => exportCsv(items)}
               disabled={exportDisabled}
             >
-              ↓ Export CSV
+              ↓ {t("common.exportCsv")}
             </button>
           </div>
         </section>
@@ -387,27 +390,27 @@ export function RevenueReportPage() {
 
         <section className="revenue-report-panel" aria-busy={loading}>
           <header>
-            <h2>Revenue by Source</h2>
-            <span>{activeChannels} Active Channels</span>
+            <h2>{t("revenue.bySource.title")}</h2>
+            <span>{t("revenue.bySource.activeChannels", { count: activeChannels })}</span>
           </header>
           <div className="revenue-report-table-scroll">
             <table className="revenue-report-table">
               <thead>
                 <tr>
-                  <th>Source</th>
-                  <th>Reservations</th>
-                  <th>Booking Value</th>
-                  <th>Paid</th>
-                  <th>Refunded</th>
-                  <th>Outstanding</th>
-                  <th>Net Collected</th>
+                  <th>{t("revenue.bySource.table.source")}</th>
+                  <th>{t("revenue.bySource.table.reservations")}</th>
+                  <th>{t("revenue.bySource.table.bookingValue")}</th>
+                  <th>{t("revenue.bySource.table.paid")}</th>
+                  <th>{t("revenue.bySource.table.refunded")}</th>
+                  <th>{t("revenue.bySource.table.outstanding")}</th>
+                  <th>{t("revenue.bySource.table.netCollected")}</th>
                 </tr>
               </thead>
               <tbody>
                 {bySource.map((row) => (
                   <tr key={row.source}>
                     <td>
-                      <strong>{sourceLabels[row.source]}</strong>
+                      <strong>{t(`source.${row.source}`)}</strong>
                     </td>
                     <td>{row.reservations}</td>
                     <td>{money(row.gross)}</td>
@@ -420,7 +423,7 @@ export function RevenueReportPage() {
                   </tr>
                 ))}
                 <tr className="revenue-report-total">
-                  <td>Total</td>
+                  <td>{t("revenue.bySource.total")}</td>
                   <td>{totals.reservations}</td>
                   <td>{money(totals.gross)}</td>
                   <td>{money(totals.paid)}</td>
@@ -435,25 +438,25 @@ export function RevenueReportPage() {
 
         <section className="revenue-report-panel" aria-busy={loading}>
           <header>
-            <h2>Revenue by Payment Method</h2>
-            <span>{paymentTypes} Payment Types</span>
+            <h2>{t("revenue.byMethod.title")}</h2>
+            <span>{t("revenue.byMethod.paymentTypes", { count: paymentTypes })}</span>
           </header>
           <div className="revenue-report-table-scroll">
             <table className="revenue-report-table revenue-report-table--method">
               <thead>
                 <tr>
-                  <th>Payment Method</th>
-                  <th>Transactions</th>
-                  <th>Paid</th>
-                  <th>Refunded</th>
-                  <th>Net Collected</th>
+                  <th>{t("revenue.byMethod.table.paymentMethod")}</th>
+                  <th>{t("revenue.byMethod.table.transactions")}</th>
+                  <th>{t("revenue.byMethod.table.paid")}</th>
+                  <th>{t("revenue.byMethod.table.refunded")}</th>
+                  <th>{t("revenue.byMethod.table.netCollected")}</th>
                 </tr>
               </thead>
               <tbody>
                 {byMethod.length === 0 && (
                   <tr>
                     <td colSpan={5} className="revenue-report-empty">
-                      {loading ? "Memuat…" : "Tidak ada transaksi pada filter ini."}
+                      {loading ? t("common.loading") : t("revenue.byMethod.empty")}
                     </td>
                   </tr>
                 )}
@@ -469,7 +472,7 @@ export function RevenueReportPage() {
                   </tr>
                 ))}
                 <tr className="revenue-report-total">
-                  <td>Total</td>
+                  <td>{t("revenue.byMethod.total")}</td>
                   <td>{totals.transactions}</td>
                   <td>{money(totals.paid)}</td>
                   <td>{money(totals.refunded)}</td>
@@ -480,7 +483,7 @@ export function RevenueReportPage() {
           </div>
         </section>
         <p className="revenue-report-note">
-          Net Collected = Paid − Refunded. Semua angka mengikuti filter aktif.
+          {t("revenue.note")}
         </p>
       </div>
     </AdminShell>

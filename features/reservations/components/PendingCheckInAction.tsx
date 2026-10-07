@@ -6,6 +6,9 @@ import {
   saveReservationDetail,
   type ReservationDetail,
 } from "../constants/reservation-detail-data";
+import { useTranslations } from "../../../lib/i18n";
+import en from "../locales/en.json";
+import id from "../locales/id.json";
 
 type Props = {
   reservation: ReservationDetail;
@@ -17,6 +20,7 @@ function parseCurrency(value: string) {
 }
 
 export function PendingCheckInAction({ reservation, onUpdate }: Props) {
+  const { t } = useTranslations({ en, id });
   const autoOpened = useRef(false);
   const [open, setOpen] = useState(false);
   const [assignedRooms, setAssignedRooms] = useState<string[]>([]);
@@ -123,7 +127,7 @@ export function PendingCheckInAction({ reservation, onUpdate }: Props) {
       balance <= 0
     ) {
       setError(
-        "Reservasi harus berstatus Unpaid atau Partial dengan sisa tagihan sebelum check-in.",
+        t("pendingCheckIn.errors.statusInvalid"),
       );
       return;
     }
@@ -132,16 +136,16 @@ export function PendingCheckInAction({ reservation, onUpdate }: Props) {
       assignedRooms.some((value) => !value) ||
       new Set(assignedRooms).size !== assignedRooms.length
     ) {
-      setError("Pilih nomor kamar yang berbeda untuk setiap unit.");
+      setError(t("pendingCheckIn.errors.roomsRequired"));
       return;
     }
     if (requireDeposit && depositAmount < 1) {
-      setError("Jumlah deposit harus lebih dari Rp0.");
+      setError(t("pendingCheckIn.errors.depositInvalid"));
       return;
     }
     if (!balanceAcknowledged) {
       setError(
-        "Konfirmasi bahwa petugas telah menjelaskan sisa pembayaran kepada tamu.",
+        t("pendingCheckIn.errors.balanceConfirmRequired"),
       );
       return;
     }
@@ -153,13 +157,13 @@ export function PendingCheckInAction({ reservation, onUpdate }: Props) {
       checkInAt: new Date().toISOString(),
     });
     if (!updated || updated.status !== "Checked-in") {
-      setError("Check-in tidak dapat disimpan.");
+      setError(t("pendingCheckIn.errors.saveFailed"));
       return;
     }
     setOpen(false);
     onUpdate(
       updated,
-      "Check-in dengan sisa tagihan berhasil dikonfirmasi. Sisa tagihan tetap harus dilunasi sebelum check-out.",
+      t("pendingCheckIn.success"),
     );
   }
 
@@ -170,7 +174,7 @@ export function PendingCheckInAction({ reservation, onUpdate }: Props) {
         className="action-button reservation-detail-main-action"
         onClick={openDialog}
       >
-        Confirm &amp; Check-in
+        {t("detailActions.confirmAndCheckIn")}
       </button>
       {open && (
         <div
@@ -187,12 +191,12 @@ export function PendingCheckInAction({ reservation, onUpdate }: Props) {
           >
             <div className="reservation-operation-header">
               <h2 id="partial-check-in-title">
-                Confirm Check-in with Outstanding Balance
+                {t("detailActions.modal.checkInWithBalanceTitle")}
               </h2>
               <button
                 type="button"
                 onClick={() => setOpen(false)}
-                aria-label="Close modal"
+                aria-label={t("common.closeModal")}
               >
                 ×
               </button>
@@ -204,14 +208,13 @@ export function PendingCheckInAction({ reservation, onUpdate }: Props) {
                   <span>{reservation.bookingId}</span>
                 </div>
                 <small>
-                  Paid {formatRupiah(reservation.amountPaid ?? 0)} · Remaining{" "}
-                  {formatRupiah(balance)}
+                  {t("pendingCheckIn.paidRemaining", { paid: formatRupiah(reservation.amountPaid ?? 0), remaining: formatRupiah(balance) })}
                 </small>
               </div>
               <div className="reservation-operation-rooms">
                 {units.map((unit, index) => (
                   <label key={unit.type.id + "-" + unit.index}>
-                    Assign {unit.type.name}
+                    {t("pendingCheckIn.assignRoom", { roomType: unit.type.name })}
                     {units.length > 1 ? " #" + (index + 1) : ""} <span>*</span>
                     <select
                       value={assignedRooms[index] ?? ""}
@@ -223,7 +226,7 @@ export function PendingCheckInAction({ reservation, onUpdate }: Props) {
                         )
                       }
                     >
-                      <option value="">Select room</option>
+                      <option value="">{t("detailActions.modal.selectRoom")}</option>
                       {unit.type.numbers.map((number) => (
                         <option
                           key={number}
@@ -233,7 +236,7 @@ export function PendingCheckInAction({ reservation, onUpdate }: Props) {
                               selectedIndex !== index && selected === number,
                           )}
                         >
-                          {number} — Available
+                          {t("detailActions.modal.roomAvailable", { roomNumber: number })}
                         </option>
                       ))}
                     </select>
@@ -249,12 +252,12 @@ export function PendingCheckInAction({ reservation, onUpdate }: Props) {
                       setRequireDeposit(event.target.checked)
                     }
                   />
-                  Require Deposit <span>Security guarantee</span>
+                  {t("detailActions.modal.requireDeposit")} <span>{t("detailActions.modal.securityGuarantee")}</span>
                 </label>
                 {requireDeposit && (
                   <div className="reservation-operation-deposit-fields">
                     <label>
-                      Deposit Amount
+                      {t("detailActions.modal.depositAmount")}
                       <input
                         inputMode="numeric"
                         value={formatRupiah(depositAmount)}
@@ -264,7 +267,7 @@ export function PendingCheckInAction({ reservation, onUpdate }: Props) {
                       />
                     </label>
                     <label>
-                      Deposit Method
+                      {t("detailActions.modal.depositMethod")}
                       <select
                         value={depositMethod}
                         onChange={(event) =>
@@ -279,7 +282,7 @@ export function PendingCheckInAction({ reservation, onUpdate }: Props) {
                       </select>
                     </label>
                     <label className="reservation-operation-wide">
-                      Deposit Note (Optional)
+                      {t("detailActions.modal.depositNoteOptional")}
                       <input
                         value={depositNote}
                         onChange={(event) => setDepositNote(event.target.value)}
@@ -297,9 +300,7 @@ export function PendingCheckInAction({ reservation, onUpdate }: Props) {
                   }
                 />
                 <span>
-                  Saya mengonfirmasi sisa tagihan{" "}
-                  <strong>{formatRupiah(balance)}</strong> telah dijelaskan
-                  kepada tamu. Pelunasan wajib sebelum check-out.
+                  {t("pendingCheckIn.balanceAcknowledgement", { amount: formatRupiah(balance) })}
                 </span>
               </label>
               {error && (
@@ -314,7 +315,7 @@ export function PendingCheckInAction({ reservation, onUpdate }: Props) {
                 className="reservation-secondary-button"
                 onClick={() => setOpen(false)}
               >
-                Cancel
+                {t("common.cancel")}
               </button>
               <button
                 type="button"
@@ -322,7 +323,7 @@ export function PendingCheckInAction({ reservation, onUpdate }: Props) {
                 onClick={confirmCheckIn}
                 disabled={!balanceAcknowledged}
               >
-                Confirm Check-in
+                {t("detailActions.modal.confirmCheckIn")}
               </button>
             </div>
           </section>

@@ -1,3 +1,8 @@
+"use client";
+import { useTranslations } from "../../../lib/i18n";
+import en from "../locales/en.json";
+import id from "../locales/id.json";
+
 type Props = {
   label: string;
   value: number;
@@ -13,11 +18,12 @@ export function QuantityControl({
   max,
   onChange,
 }: Props) {
+  const { t } = useTranslations({ en, id });
   return (
     <div className="quantity-control" aria-label={label}>
       <button
         type="button"
-        aria-label={"Kurangi " + label}
+        aria-label={t("common.decrease", { label })}
         disabled={value <= min}
         onClick={() => onChange(value - 1)}
       >
@@ -26,7 +32,7 @@ export function QuantityControl({
       <span aria-live="polite">{value}</span>
       <button
         type="button"
-        aria-label={"Tambah " + label}
+        aria-label={t("common.increase", { label })}
         disabled={value >= max}
         onClick={() => onChange(value + 1)}
       >

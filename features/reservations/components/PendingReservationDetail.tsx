@@ -21,6 +21,9 @@ import {
 import { PendingCheckInAction } from "./PendingCheckInAction";
 import { ConfirmReservationAction } from "./ConfirmReservationAction";
 import { isAutoConfirmedSource } from "../constants/reservation-list-data";
+import { useTranslations } from "../../../lib/i18n";
+import en from "../locales/en.json";
+import id from "../locales/id.json";
 
 type Props = {
   reservation: ReservationDetail;
@@ -87,6 +90,7 @@ export function PendingReservationDetail({
   onDismissNotice,
   onUpdate,
 }: Props) {
+  const { t } = useTranslations({ en, id });
   const [modal, setModal] = useState<"payment" | "release" | null>(null);
   const [paymentAmount, setPaymentAmount] = useState(0);
   const [paymentMethod, setPaymentMethod] = useState(paymentMethods[0]);
@@ -139,7 +143,7 @@ export function PendingReservationDetail({
   const roomCount = roomRows.reduce((sum, row) => sum + row.quantity, 0);
   const transactions = reservation.paymentTransactions ?? [];
   const phone = reservation.whatsapp.replace(/\D/g, "").replace(/^0/, "62");
-  const whatsappMessage = `Halo ${reservation.guestName}, pengingat pembayaran reservasi ${reservation.bookingId} di Green Hero Darajat. Sisa tagihan: ${formatRupiah(balance)}.`;
+  const whatsappMessage = t("pendingDetail.whatsappMessage", { guest: reservation.guestName, bookingId: reservation.bookingId, balance: formatRupiah(balance) });
 
   function openPayment() {
     setPaymentAmount(balance);
@@ -153,7 +157,7 @@ export function PendingReservationDetail({
   function savePayment() {
     if (paymentAmount <= 0 || paymentAmount > balance) {
       setError(
-        "Jumlah pembayaran harus lebih dari Rp0 dan tidak melebihi sisa tagihan.",
+        t("pendingDetail.errors.invalidAmount"),
       );
       return;
     }
@@ -165,17 +169,17 @@ export function PendingReservationDetail({
       paymentNote,
     );
     if (!updated) {
-      setError("Pembayaran tidak dapat disimpan. Periksa kembali jumlahnya.");
+      setError(t("pendingDetail.errors.paymentSaveFailed"));
       return;
     }
     setModal(null);
     onUpdate(
       updated,
       updated.status === "Confirmed" && isPending
-        ? "Pembayaran lunas dicatat. Reservasi otomatis dikonfirmasi."
+        ? t("pendingDetail.success.paidAutoConfirmed")
         : updated.paymentStatus === "Paid"
-          ? `Pembayaran lunas dicatat. Reservasi tetap ${updated.status}.`
-          : `Pembayaran sebagian berhasil dicatat. Reservasi tetap ${updated.status}.`,
+          ? t("pendingDetail.success.paidSameStatus", { status: updated.status })
+          : t("pendingDetail.success.partial", { status: updated.status }),
     );
   }
 
@@ -186,23 +190,23 @@ export function PendingReservationDetail({
       cancellationNote,
     );
     if (!updated) {
-      setError("Hold tidak dapat dilepas untuk reservasi ini.");
+      setError(t("pendingDetail.errors.releaseFailed"));
       return;
     }
     setModal(null);
     onUpdate(
       updated,
-      "Reservasi tanpa pembayaran dibatalkan. Status kini Cancelled / Unpaid.",
+      t("pendingDetail.success.cancelled"),
     );
   }
 
   return (
-    <AdminShell title="Reservations" context={reservation.bookingId}>
+    <AdminShell title={t("shell.title")} context={reservation.bookingId}>
       <div className="pending-detail-page">
         <header className="pending-detail-heading">
           <div>
             <div className="pending-detail-heading-line">
-              <h1>Reservation Detail</h1>
+              <h1>{t("pendingDetail.reservationDetail")}</h1>
               <span
                 className={
                   "reservations-badge reservations-badge--" +
@@ -230,13 +234,13 @@ export function PendingReservationDetail({
             <p>
               <strong>{reservation.bookingId}</strong> ·{" "}
               {reservation.source === "Phone"
-                ? "Created via Front Desk Phone Log"
-                : `Source: ${reservation.source}`}
+                ? t("pendingDetail.createdViaPhone")
+                : t("pendingDetail.sourcePrefix", { source: reservation.source })}
             </p>
           </div>
           <div className="pending-detail-heading-actions">
             <Link href="/reservations" className="reservation-secondary-button">
-              ← All Reservations
+              ← {t("pendingDetail.allReservations")}
             </Link>
           </div>
         </header>
@@ -249,7 +253,7 @@ export function PendingReservationDetail({
             <button
               type="button"
               onClick={onDismissNotice}
-              aria-label="Tutup pesan"
+              aria-label={t("common.closeMessage")}
             >
               ×
             </button>
@@ -258,96 +262,95 @@ export function PendingReservationDetail({
         {isPending && (
           <div className="pending-detail-hold">
             <div>
-              <strong>Hold Reservation Active:</strong> Check-in is available
-              after staff confirmation of the outstanding balance.
+              <strong>{t("pendingDetail.holdActive")}</strong>{t("pendingDetail.holdActiveMessage")}
             </div>
             <span>
               {reservation.paymentStatus === "Unpaid"
-                ? "Awaiting Payment"
-                : "Partial Payment"}
+                ? t("pendingDetail.awaitingPayment")
+                : t("pendingDetail.partialPayment")}
             </span>
           </div>
         )}
         <div className="pending-detail-columns">
           <div className="pending-detail-main">
             <PendingSection
-              title="Guest Information"
+              title={t("pendingDetail.guestInformation")}
               aside={
                 <span className="pending-detail-section-tag">
-                  Primary Contact
+                  {t("pendingDetail.primaryContact")}
                 </span>
               }
             >
               <div className="pending-detail-guest-grid">
                 <div>
-                  <small>Full Name</small>
+                  <small>{t("pendingDetail.fullName")}</small>
                   <strong>{reservation.guestName}</strong>
                 </div>
                 <div>
-                  <small>WhatsApp / Phone</small>
+                  <small>{t("pendingDetail.whatsappPhone")}</small>
                   <strong>{reservation.whatsapp}</strong>
                 </div>
                 <div>
-                  <small>Email Address</small>
-                  <strong>{reservation.email || "—"}</strong>
+                  <small>{t("pendingDetail.emailAddress")}</small>
+                  <strong>{reservation.email || t("common.emptyDash")}</strong>
                 </div>
               </div>
               {reservation.notes && (
                 <div className="pending-detail-notes">
-                  <small>Guest Notes</small>
+                  <small>{t("pendingDetail.guestNotes")}</small>
                   <p>{reservation.notes}</p>
                 </div>
               )}
             </PendingSection>
             <PendingSection
-              title="Stay Details"
+              title={t("pendingDetail.stayDetails")}
               aside={
                 <span>
-                  {nights} {nights === 1 ? "Night" : "Nights"} Stay
+                  {nights === 1 ? t("pendingDetail.nightStay", { nights }) : t("pendingDetail.nightsStay", { nights })}
                 </span>
               }
             >
               <div className="pending-detail-stay-grid">
                 <div>
-                  <small>Check-in</small>
+                  <small>{t("pendingDetail.checkIn")}</small>
                   <strong>{dateLabel(reservation.checkIn)}</strong>
-                  <span>From 14:00 WIB</span>
+                  <span>{t("pendingDetail.fromTime")}</span>
                 </div>
                 <div>
-                  <small>Check-out</small>
+                  <small>{t("pendingDetail.checkOut")}</small>
                   <strong>{dateLabel(reservation.checkOut)}</strong>
-                  <span>Until 12:00 WIB</span>
+                  <span>{t("pendingDetail.untilTime")}</span>
                 </div>
                 <div>
-                  <small>Duration</small>
+                  <small>{t("pendingDetail.duration")}</small>
                   <strong>
-                    {nights} {nights === 1 ? "Night" : "Nights"}
+                    {nights} {nights === 1 ? t("common.night") : t("common.nights")}
                   </strong>
                 </div>
                 <div>
-                  <small>Total Guests</small>
-                  <strong>{reservation.adults ?? 2} Adults</strong>
-                  <span>{reservation.children ?? 0} Children</span>
+                  <small>{t("pendingDetail.totalGuests")}</small>
+                  <strong>{t("pendingDetail.adults", { count: reservation.adults ?? 2 })}</strong>
+                  <span>{t("pendingDetail.children", { count: reservation.children ?? 0 })}</span>
                 </div>
               </div>
             </PendingSection>
             <PendingSection
-              title="Room Allocation & Rate"
-              aside={<span>Physical room numbers assigned at check-in</span>}
+              title={t("pendingDetail.roomAllocationRate")}
+              aside={<span>{t("pendingDetail.roomNumbersAside")}</span>}
             >
               <div className="pending-detail-lock">
-                ⌑ Room numbers are assigned during check-in.
+                {t("pendingDetail.roomsLocked")}
               </div>
               <div className="pending-detail-table-scroll">
                 <table className="pending-detail-table">
                   <thead>
                     <tr>
-                      <th>Room Type</th>
-                      <th>Qty</th>
-                      <th>Nights</th>
-                      <th>Rate / Night</th>
-                      <th>Subtotal</th>
-                      <th>Room Assignment</th>
+                      <th>{t("pendingDetail.roomType")}</th>
+                      <th>{t("pendingDetail.qty")}</th>
+                      <th>{t("pendingDetail.nights")}</th>
+                      <th>{t("pendingDetail.ratePerNight")}</th>
+                      <th>{t("pendingDetail.subtotal")}</th>
+                      <th>{t("pendingDetail.roomAssignment")}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -360,7 +363,7 @@ export function PendingReservationDetail({
                         <td>{formatRupiah(type.rate * quantity * nights)}</td>
                         <td>
                           <span className="pending-detail-locked-badge">
-                            ⌑ Not Assigned
+                            {t("pendingDetail.notAssignedLocked")}
                           </span>
                         </td>
                       </tr>
@@ -369,7 +372,7 @@ export function PendingReservationDetail({
                   <tfoot>
                     <tr>
                       <td colSpan={4}>
-                        Room Total ({roomCount} Units · {nights} Nights)
+                        {t("pendingDetail.roomTotal", { units: roomCount, nights })}
                       </td>
                       <td>{formatRupiah(roomTotal)}</td>
                       <td />
@@ -386,12 +389,10 @@ export function PendingReservationDetail({
                       return bedNights > 0 ? (
                         <div key={`${type.id}-${index}`}>
                           <span>
-                            ↳ Extra Bed · {type.name} #{index + 1}
+                            {t("pendingDetail.extraBedLine", { roomType: type.name, index: index + 1 })}
                           </span>
                           <strong>
-                            1 Bed · {bedNights} Nights @{" "}
-                            {formatRupiah(extraBedRates[type.id])} ={" "}
-                            {formatRupiah(extraBedRates[type.id] * bedNights)}
+                            {t("pendingDetail.extraBedDetail", { nights: bedNights, rate: formatRupiah(extraBedRates[type.id]), total: formatRupiah(extraBedRates[type.id] * bedNights) })}
                           </strong>
                         </div>
                       ) : null;
@@ -400,15 +401,15 @@ export function PendingReservationDetail({
                 </div>
               )}
             </PendingSection>
-            <PendingSection title="Experiences & Add-ons">
+            <PendingSection title={t("pendingDetail.experiencesAddOns")}>
               <div className="pending-detail-table-scroll">
                 <table className="pending-detail-table pending-detail-extras-table">
                   <thead>
                     <tr>
-                      <th>Experience</th>
-                      <th>Qty</th>
-                      <th>Unit Price</th>
-                      <th>Subtotal</th>
+                      <th>{t("pendingDetail.experience")}</th>
+                      <th>{t("pendingDetail.qty")}</th>
+                      <th>{t("pendingDetail.unitPrice")}</th>
+                      <th>{t("pendingDetail.subtotal")}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -431,14 +432,14 @@ export function PendingReservationDetail({
                     {selectedExtras.length === 0 && (
                       <tr>
                         <td colSpan={4} className="pending-detail-table-empty">
-                          No experiences or add-ons selected.
+                          {t("pendingDetail.experiencesEmpty")}
                         </td>
                       </tr>
                     )}
                   </tbody>
                   <tfoot>
                     <tr>
-                      <td colSpan={3}>Experiences Subtotal</td>
+                      <td colSpan={3}>{t("pendingDetail.experiencesSubtotal")}</td>
                       <td>{formatRupiah(extrasTotal)}</td>
                     </tr>
                   </tfoot>
@@ -446,36 +447,38 @@ export function PendingReservationDetail({
               </div>
             </PendingSection>
             <PendingSection
-              title="Charges & Folio"
-              aside={<span>Currency: IDR (Rupiah)</span>}
+              title={t("pendingDetail.chargesFolio")}
+              aside={<span>{t("pendingDetail.currencyAside")}</span>}
             >
               <div className="pending-detail-charges">
                 <Pair
-                  label={`Room Charges (${roomCount} ${roomCount === 1 ? "Room" : "Rooms"} · ${nights} ${nights === 1 ? "Night" : "Nights"})`}
+                  label={t("pendingDetail.roomCharges", {
+                    rooms: roomCount === 1 ? t("pendingDetail.roomsSingular", { count: roomCount }) : t("pendingDetail.roomsPlural", { count: roomCount }),
+                    nights: nights === 1 ? t("pendingDetail.nightSingular", { count: nights }) : t("pendingDetail.nightPlural", { count: nights }),
+                  })}
                 >
                   {formatRupiah(roomTotal)}
                 </Pair>
                 {extraBedsTotal > 0 && (
-                  <Pair label="Extra Bed">{formatRupiah(extraBedsTotal)}</Pair>
+                  <Pair label={t("pendingDetail.extraBed")}>{formatRupiah(extraBedsTotal)}</Pair>
                 )}
-                <Pair label="Experiences & Add-ons">
+                <Pair label={t("pendingDetail.experiencesAddOns")}>
                   {formatRupiah(extrasTotal)}
                 </Pair>
                 <div className="pending-detail-divider" />
-                <Pair label="Booking Total">{formatRupiah(total)}</Pair>
-                <Pair label="Total Paid">{formatRupiah(amountPaid)}</Pair>
+                <Pair label={t("pendingDetail.bookingTotal")}>{formatRupiah(total)}</Pair>
+                <Pair label={t("pendingDetail.totalPaid")}>{formatRupiah(amountPaid)}</Pair>
                 <div className="pending-detail-balance">
-                  <span>Remaining Balance (Outstanding)</span>
+                  <span>{t("pendingDetail.remainingBalanceOutstanding")}</span>
                   <strong>{formatRupiah(balance)}</strong>
                 </div>
               </div>
             </PendingSection>
             <PendingSection
-              title="Payment History"
+              title={t("pendingDetail.paymentHistory")}
               aside={
                 <span>
-                  {transactions.length}{" "}
-                  {transactions.length === 1 ? "Transaction" : "Transactions"}
+                  {transactions.length === 1 ? t("pendingDetail.transaction", { count: transactions.length }) : t("pendingDetail.transactions", { count: transactions.length })}
                 </span>
               }
             >
@@ -505,55 +508,54 @@ export function PendingReservationDetail({
                   <div>
                     <div>
                       <strong>{formatRupiah(amountPaid)}</strong>
-                      <span>Previous payment</span>
+                      <span>{t("pendingDetail.previousPayment")}</span>
                     </div>
                   </div>
                 </div>
               ) : (
                 <div className="pending-detail-payment-empty">
                   <strong>
-                    No payment has been recorded for this reservation.
+                    {t("pendingDetail.paymentEmptyTitle")}
                   </strong>
                   <p>
-                    Record a down payment or full payment to keep the
-                    reservation active.
+                    {t("pendingDetail.paymentEmptyBody")}
                   </p>
                 </div>
               )}
             </PendingSection>
-            <PendingSection title="Internal Notes">
+            <PendingSection title={t("pendingDetail.internalNotes")}>
               <div className="pending-detail-internal-note">
-                No internal notes have been recorded.
+                {t("pendingDetail.internalNotesEmpty")}
               </div>
             </PendingSection>
           </div>
           <aside className="pending-detail-aside">
             <div className="pending-detail-summary">
               <div className="pending-detail-summary-header">
-                <h2>Reservation Summary</h2>
+                <h2>{t("pendingDetail.reservationSummary")}</h2>
                 <span>
-                  {nights} {nights === 1 ? "Night" : "Nights"}
+                  {nights} {nights === 1 ? t("common.night") : t("common.nights")}
                 </span>
               </div>
               <div className="pending-detail-summary-rows">
-                <Pair label="Guest">{reservation.guestName}</Pair>
-                <Pair label="Stay Period">
+                <Pair label={t("pendingDetail.guest")}>{reservation.guestName}</Pair>
+                <Pair label={t("pendingDetail.stayPeriod")}>
                   {formatStayDate(reservation.checkIn)} →{" "}
                   {formatStayDate(reservation.checkOut)}
                 </Pair>
-                <Pair label="Room Types">
+                <Pair label={t("pendingDetail.roomTypes")}>
                   {roomRows
                     .map(({ type, quantity }) => `${quantity}x ${type.name}`)
                     .join(", ")}
                 </Pair>
-                <Pair label="Room Numbers">
+                <Pair label={t("pendingDetail.roomNumbers")}>
                   <span className="pending-detail-locked-badge">
-                    Not Assigned
+                    {t("pendingDetail.notAssigned")}
                   </span>
                 </Pair>
                 <div className="pending-detail-divider" />
-                <Pair label="Booking Total">{formatRupiah(total)}</Pair>
-                <Pair label="Payment Status">
+                <Pair label={t("pendingDetail.bookingTotal")}>{formatRupiah(total)}</Pair>
+                <Pair label={t("pendingDetail.paymentStatus")}>
                   <span
                     className={
                       "reservations-badge reservations-badge--" +
@@ -565,12 +567,12 @@ export function PendingReservationDetail({
                     {reservation.paymentStatus}
                   </span>
                 </Pair>
-                <Pair label="Remaining Balance">
+                <Pair label={t("pendingDetail.remainingBalance")}>
                   <span className="pending-detail-summary-balance">
                     {formatRupiah(balance)}
                   </span>
                 </Pair>
-                <Pair label="Reservation Status">
+                <Pair label={t("pendingDetail.reservationStatus")}>
                   <span
                     className={
                       "reservations-badge reservations-badge--" +
@@ -583,13 +585,11 @@ export function PendingReservationDetail({
               </div>
               {isPending ? (
                 <p className="pending-detail-summary-warning">
-                  Reservasi menunggu pembayaran atau konfirmasi sebelum hold
-                  berakhir.
+                  {t("pendingDetail.summaryWarningPending")}
                 </p>
               ) : (
                 <p className="pending-detail-summary-warning">
-                  Reservasi telah dikonfirmasi. Sisa tagihan perlu disampaikan
-                  sebelum check-in. Jika belum lunas saat check-out, petugas wajib mencatat konfirmasi dan alasan.
+                  {t("pendingDetail.summaryWarningConfirmed")}
                 </p>
               )}
               <div className="pending-detail-summary-actions">
@@ -608,7 +608,7 @@ export function PendingReservationDetail({
                   className="action-button pending-detail-payment-action"
                   onClick={openPayment}
                 >
-                  Record Payment
+                  {t("pendingDetail.recordPayment")}
                 </button>
                 {isPending && (
                   <button
@@ -620,20 +620,20 @@ export function PendingReservationDetail({
                     }}
                     disabled={reservation.paymentStatus !== "Unpaid"}
                   >
-                    Cancel Reservation
+                    {t("pendingDetail.cancelReservation")}
                   </button>
                 )}
               </div>
               <div className="pending-detail-disabled-operations">
-                <span>Check-out requires full payment</span>
-                <span>Room Assignment is completed at check-in</span>
-                <span>Stay extension locked until payment is complete</span>
+                <span>{t("pendingDetail.checkoutRequiresPayment")}</span>
+                <span>{t("pendingDetail.roomAssignmentAtCheckIn")}</span>
+                <span>{t("pendingDetail.stayExtensionLocked")}</span>
               </div>
             </div>
             <div className="pending-detail-assistance">
-              <strong>Need Help with this booking?</strong>
+              <strong>{t("pendingDetail.needHelp")}</strong>
               <p>
-                Send a payment reminder via WhatsApp to {reservation.whatsapp}.
+                {t("pendingDetail.sendReminder", { phone: reservation.whatsapp })}
               </p>
               {phone ? (
                 <a
@@ -641,10 +641,10 @@ export function PendingReservationDetail({
                   target="_blank"
                   rel="noreferrer"
                 >
-                  Send WhatsApp Invoice Link
+                  {t("pendingDetail.sendWhatsapp")}
                 </a>
               ) : (
-                <span>WhatsApp number is unavailable.</span>
+                <span>{t("pendingDetail.whatsappUnavailable")}</span>
               )}
             </div>
           </aside>
@@ -665,13 +665,13 @@ export function PendingReservationDetail({
               <div className="reservation-operation-header">
                 <h2 id="pending-modal-title">
                   {modal === "payment"
-                    ? "Record Payment"
-                    : "Cancel Reservation"}
+                    ? t("pendingDetail.modal.recordPaymentTitle")
+                    : t("pendingDetail.modal.cancelReservationTitle")}
                 </h2>
                 <button
                   type="button"
                   onClick={() => setModal(null)}
-                  aria-label="Close modal"
+                  aria-label={t("common.closeModal")}
                 >
                   ×
                 </button>
@@ -681,11 +681,11 @@ export function PendingReservationDetail({
                   <div className="reservation-operation-context">
                     <div>
                       <strong>{reservation.guestName}</strong>
-                      <span>Remaining Balance: {formatRupiah(balance)}</span>
+                      <span>{t("pendingDetail.modal.remainingBalance", { balance: formatRupiah(balance) })}</span>
                     </div>
                   </div>
                   <label>
-                    Amount to Pay (IDR)
+                    {t("pendingDetail.modal.amountToPay")}
                     <input
                       inputMode="numeric"
                       value={formatRupiah(paymentAmount)}
@@ -694,11 +694,11 @@ export function PendingReservationDetail({
                       }
                     />
                     <small>
-                      Enter the full balance or a smaller down payment.
+                      {t("pendingDetail.modal.amountHint")}
                     </small>
                   </label>
                   <label>
-                    Payment Method
+                    {t("pendingDetail.modal.paymentMethod")}
                     <select
                       value={paymentMethod}
                       onChange={(event) => setPaymentMethod(event.target.value)}
@@ -709,28 +709,26 @@ export function PendingReservationDetail({
                     </select>
                   </label>
                   <label>
-                    Reference / Transaction ID
+                    {t("pendingDetail.modal.reference")}
                     <input
                       value={paymentReference}
                       onChange={(event) =>
                         setPaymentReference(event.target.value)
                       }
-                      placeholder="Transfer receipt reference"
+                      placeholder={t("pendingDetail.modal.referencePlaceholder")}
                     />
                   </label>
                   <label>
-                    Internal Note (Optional)
+                    {t("pendingDetail.modal.internalNote")}
                     <textarea
                       value={paymentNote}
                       onChange={(event) => setPaymentNote(event.target.value)}
                       rows={2}
-                      placeholder="Payment validation note"
+                      placeholder={t("pendingDetail.modal.notePlaceholder")}
                     />
                   </label>
                   <p className="pending-detail-modal-tip">
-                    Payment updates the balance. Reservation remains{" "}
-                    {reservation.status}
-                    {isPending ? " until staff confirms it" : ""}.
+                    {t("pendingDetail.modal.paymentTip", { status: reservation.status, suffix: isPending ? t("pendingDetail.modal.paymentTipSuffix") : "" })}
                   </p>
                   {error && (
                     <p className="reservation-operation-error" role="alert">
@@ -741,31 +739,30 @@ export function PendingReservationDetail({
               ) : (
                 <div className="pending-detail-modal-body">
                   <p>
-                    This reservation has no payment to refund. Cancelling it
-                    records <strong>Cancelled / Unpaid</strong>.
+                    {t("pendingDetail.modal.cancelCopy")}
                   </p>
                   <label>
-                    Reason
+                    {t("pendingDetail.modal.reason")}
                     <select
                       value={cancellationReason}
                       onChange={(event) =>
                         setCancellationReason(event.target.value)
                       }
                     >
-                      <option>Guest request</option>
-                      <option>Duplicate booking</option>
-                      <option>Invalid guest contact details</option>
+                      <option value="Guest request">{t("pendingDetail.modal.reasonGuestRequest")}</option>
+                      <option value="Duplicate booking">{t("pendingDetail.modal.reasonDuplicate")}</option>
+                      <option value="Invalid guest contact details">{t("pendingDetail.modal.reasonInvalidContact")}</option>
                     </select>
                   </label>
                   <label>
-                    Internal Note
+                    {t("pendingDetail.modal.internalNoteLabel")}
                     <textarea
                       value={cancellationNote}
                       onChange={(event) =>
                         setCancellationNote(event.target.value)
                       }
                       rows={3}
-                      placeholder="Optional context"
+                      placeholder={t("pendingDetail.modal.cancelNotePlaceholder")}
                     />
                   </label>
                   {error && (
@@ -781,7 +778,7 @@ export function PendingReservationDetail({
                   className="reservation-secondary-button"
                   onClick={() => setModal(null)}
                 >
-                  {modal === "payment" ? "Cancel" : "Keep Reservation"}
+                  {modal === "payment" ? t("common.cancel") : t("pendingDetail.modal.keepReservation")}
                 </button>
                 <button
                   type="button"
@@ -795,8 +792,8 @@ export function PendingReservationDetail({
                   }
                 >
                   {modal === "payment"
-                    ? "Save Payment"
-                    : "Confirm Cancellation"}
+                    ? t("pendingDetail.modal.savePayment")
+                    : t("pendingDetail.modal.confirmCancellation")}
                 </button>
               </div>
             </section>

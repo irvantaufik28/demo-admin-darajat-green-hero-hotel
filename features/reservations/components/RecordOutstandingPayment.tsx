@@ -6,6 +6,9 @@ import {
   recordReservationPayment,
   type ReservationDetail,
 } from "../constants/reservation-detail-data";
+import { useTranslations } from "../../../lib/i18n";
+import en from "../locales/en.json";
+import id from "../locales/id.json";
 
 type Props = {
   reservation: ReservationDetail;
@@ -25,6 +28,7 @@ function parseCurrency(value: string) {
 }
 
 export function RecordOutstandingPayment({ reservation, onUpdate }: Props) {
+  const { t } = useTranslations({ en, id });
   const [open, setOpen] = useState(false);
   const [amount, setAmount] = useState(0);
   const [method, setMethod] = useState(methods[0]);
@@ -62,7 +66,7 @@ export function RecordOutstandingPayment({ reservation, onUpdate }: Props) {
   function savePayment() {
     if (amount <= 0 || amount > balance) {
       setError(
-        "Jumlah pembayaran harus lebih dari Rp0 dan tidak melebihi sisa tagihan.",
+        t("recordPayment.errors.invalidAmount"),
       );
       return;
     }
@@ -74,7 +78,7 @@ export function RecordOutstandingPayment({ reservation, onUpdate }: Props) {
       note,
     );
     if (!updated) {
-      setError("Pembayaran tidak dapat disimpan.");
+      setError(t("recordPayment.errors.saveFailed"));
       return;
     }
     setOpen(false);
@@ -82,11 +86,11 @@ export function RecordOutstandingPayment({ reservation, onUpdate }: Props) {
       updated,
       updated.paymentStatus === "Paid"
         ? updated.status === "Checked-in"
-          ? "Sisa pembayaran lunas. Tamu dapat check-out."
+          ? t("recordPayment.success.paidCanCheckOut")
           : updated.status === "Checked-out"
-            ? "Sisa pembayaran lunas setelah check-out."
-            : "Sisa pembayaran lunas. Status reservasi tetap sama."
-        : "Pembayaran tambahan dicatat. Check-out dengan sisa tagihan memerlukan konfirmasi dan alasan petugas.",
+            ? t("recordPayment.success.paidAfterCheckOut")
+            : t("recordPayment.success.paidSameStatus")
+        : t("recordPayment.success.partial"),
     );
   }
 
@@ -97,10 +101,13 @@ export function RecordOutstandingPayment({ reservation, onUpdate }: Props) {
         className="action-button reservation-detail-main-action"
         onClick={showDialog}
       >
-        Record Payment
+        {t("recordPayment.button")}
       </button>
       <p className="reservation-detail-summary-hint">
-        Sisa tagihan {formatRupiah(balance)} perlu ditindaklanjuti. {reservation.status === "Checked-out" ? "Pembayaran masih dapat dicatat setelah check-out." : "Check-out tetap dapat dilakukan dengan konfirmasi dan alasan."}
+        {t("recordPayment.hint", {
+          balance: formatRupiah(balance),
+          followUp: reservation.status === "Checked-out" ? t("recordPayment.hintCheckedOut") : t("recordPayment.hintDefault"),
+        })}
       </p>
       {open && (
         <div
@@ -116,11 +123,11 @@ export function RecordOutstandingPayment({ reservation, onUpdate }: Props) {
             aria-labelledby="outstanding-payment-title"
           >
             <div className="reservation-operation-header">
-              <h2 id="outstanding-payment-title">Record Outstanding Payment</h2>
+              <h2 id="outstanding-payment-title">{t("recordPayment.modalTitle")}</h2>
               <button
                 type="button"
                 onClick={() => setOpen(false)}
-                aria-label="Close modal"
+                aria-label={t("common.closeModal")}
               >
                 ×
               </button>
@@ -129,11 +136,11 @@ export function RecordOutstandingPayment({ reservation, onUpdate }: Props) {
               <div className="reservation-operation-context">
                 <div>
                   <strong>{reservation.guestName}</strong>
-                  <span>Remaining Balance: {formatRupiah(balance)}</span>
+                  <span>{t("recordPayment.remainingBalance", { balance: formatRupiah(balance) })}</span>
                 </div>
               </div>
               <label>
-                Amount to Pay (IDR)
+                {t("recordPayment.amountLabel")}
                 <input
                   inputMode="numeric"
                   value={formatRupiah(amount)}
@@ -143,7 +150,7 @@ export function RecordOutstandingPayment({ reservation, onUpdate }: Props) {
                 />
               </label>
               <label>
-                Payment Method
+                {t("recordPayment.methodLabel")}
                 <select
                   value={method}
                   onChange={(event) => setMethod(event.target.value)}
@@ -154,14 +161,14 @@ export function RecordOutstandingPayment({ reservation, onUpdate }: Props) {
                 </select>
               </label>
               <label>
-                Reference / Transaction ID
+                {t("recordPayment.referenceLabel")}
                 <input
                   value={reference}
                   onChange={(event) => setReference(event.target.value)}
                 />
               </label>
               <label>
-                Internal Note (Optional)
+                {t("recordPayment.noteLabel")}
                 <textarea
                   rows={2}
                   value={note}
@@ -180,14 +187,14 @@ export function RecordOutstandingPayment({ reservation, onUpdate }: Props) {
                 className="reservation-secondary-button"
                 onClick={() => setOpen(false)}
               >
-                Cancel
+                {t("common.cancel")}
               </button>
               <button
                 type="button"
                 className="action-button"
                 onClick={savePayment}
               >
-                Save Payment
+                {t("recordPayment.savePayment")}
               </button>
             </div>
           </section>

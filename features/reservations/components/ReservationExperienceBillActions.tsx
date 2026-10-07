@@ -12,6 +12,9 @@ import {
   type ExperienceBillQuote,
   type ReservationExperienceOption,
 } from "../services/api";
+import { useTranslations } from "../../../lib/i18n";
+import en from "../locales/en.json";
+import id from "../locales/id.json";
 
 type PendingItem = ExperienceBillItem & {
   experienceId: string;
@@ -27,6 +30,7 @@ export function ReservationExperienceBillActions({ detail, onUpdated }: {
   detail: ApiReservationDetail;
   onUpdated: (message: string) => Promise<void>;
 }) {
+  const { t } = useTranslations({ en, id });
   const [modal, setModal] = useState<"add" | "bill" | null>(null);
   const [catalog, setCatalog] = useState<ReservationExperienceOption[]>([]);
   const [pending, setPending] = useState<PendingItem[]>([]);
@@ -59,7 +63,7 @@ export function ReservationExperienceBillActions({ detail, onUpdated }: {
       setQuantity(1);
       setServiceDate("");
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Experience gagal dimuat.");
+      setError(cause instanceof Error ? cause.message : t("experienceBill.errors.loadError"));
     } finally {
       setBusy(false);
     }
@@ -67,7 +71,7 @@ export function ReservationExperienceBillActions({ detail, onUpdated }: {
 
   function addPending() {
     if (!selected || !Number.isInteger(quantity) || quantity < 1) {
-      setError("Pilih item dan jumlah yang valid.");
+      setError(t("experienceBill.errors.selectValid"));
       return;
     }
     const existingQuantity = detail.experiences
@@ -76,11 +80,11 @@ export function ReservationExperienceBillActions({ detail, onUpdated }: {
     const stagedQuantity = pending.filter((item) => item.experienceId === selected.experienceId)
       .reduce((sum, item) => sum + item.quantity, 0);
     if (existingQuantity + stagedQuantity + quantity > selected.maxQuantity) {
-      setError(`Maksimum ${selected.maxQuantity} item untuk ${selected.experienceName} dalam reservasi ini.`);
+      setError(t("experienceBill.errors.maxQuantity", { max: selected.maxQuantity, name: selected.experienceName }));
       return;
     }
     if (serviceDate && (serviceDate < detail.reservation.checkInDate || serviceDate >= detail.reservation.checkOutDate)) {
-      setError("Tanggal layanan harus berada dalam periode menginap.");
+      setError(t("experienceBill.errors.serviceDateRange"));
       return;
     }
     setPending((current) => [...current, {
@@ -103,7 +107,7 @@ export function ReservationExperienceBillActions({ detail, onUpdated }: {
     try {
       setQuote(await quoteReservationExperienceBill(detail.reservation.id, items.map(({ variantId, quantity, serviceDate }) => ({ variantId, quantity, ...(serviceDate ? { serviceDate } : {}) }))));
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Tagihan gagal dihitung.");
+      setError(cause instanceof Error ? cause.message : t("experienceBill.errors.quoteError"));
     } finally {
       setBusy(false);
     }
@@ -127,9 +131,9 @@ export function ReservationExperienceBillActions({ detail, onUpdated }: {
       setPending([]);
       setQuote(null);
       setModal(null);
-      await onUpdated("Tagihan Experience berhasil disimpan di Charges & Payments.");
+      await onUpdated(t("experienceBill.savedSuccess"));
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Tagihan gagal disimpan.");
+      setError(cause instanceof Error ? cause.message : t("experienceBill.errors.saveError"));
     } finally {
       setBusy(false);
     }
@@ -138,11 +142,11 @@ export function ReservationExperienceBillActions({ detail, onUpdated }: {
   return (
     <>
       <button type="button" className="reservation-secondary-button" disabled={!canAdd}
-        onClick={() => void openAdd()}>Add Experience or Add-on</button>
+        onClick={() => void openAdd()}>{t("experienceBill.addButton")}</button>
       <button type="button" className="reservation-secondary-button" disabled={!canAdd}
-        onClick={() => void openBill()}>Save Bill{pending.length ? ` (${pending.length})` : ""}</button>
+        onClick={() => void openBill()}>{pending.length ? t("experienceBill.saveBillCount", { count: pending.length }) : t("experienceBill.saveBill")}</button>
       {pending.length > 0 && <p className="reservation-detail-summary-hint">
-        {pending.length} item belum disimpan · {rupiah(pendingTotal)}. Tekan Save Bill untuk menambahkannya ke tagihan.
+        {t("experienceBill.pendingHint", { count: pending.length, total: rupiah(pendingTotal) })}
       </p>}
 
       {modal && createPortal(
@@ -152,14 +156,14 @@ export function ReservationExperienceBillActions({ detail, onUpdated }: {
           <section className="reservation-operation-modal api-reservation-modal api-experience-bill-modal"
             role="dialog" aria-modal="true" aria-labelledby="experience-bill-title">
             <div className="reservation-operation-header">
-              <h2 id="experience-bill-title">{modal === "add" ? "Add Experience or Add-on" : "Save Bill"}</h2>
-              <button type="button" disabled={busy} onClick={() => setModal(null)} aria-label="Close modal">×</button>
+              <h2 id="experience-bill-title">{modal === "add" ? t("experienceBill.addTitle") : t("experienceBill.saveTitle")}</h2>
+              <button type="button" disabled={busy} onClick={() => setModal(null)} aria-label={t("common.closeModal")}>×</button>
             </div>
             <div className="api-reservation-modal-body">
               {modal === "add" ? (
                 <>
-                  <p>Tambahkan item ke tagihan sementara. Extra bed dikelola dari kamar masing-masing.</p>
-                  <label>Experience / Add-on
+                  <p>{t("experienceBill.addDescription")}</p>
+                  <label>{t("experienceBill.experienceLabel")}
                     <select value={variantId} onChange={(event) => { setVariantId(event.target.value); setQuantity(1); setError(""); }}>
                       {variants.map((item) => <option value={item.id} key={item.id}>
                         {item.categoryName} · {item.experienceName} · {item.subName} — {rupiah(item.price)}
@@ -169,21 +173,21 @@ export function ReservationExperienceBillActions({ detail, onUpdated }: {
                   {selected && <div className="api-experience-selection">
                     <strong>{selected.experienceName} · {selected.subName}</strong>
                     {selected.description && <span>{selected.description}</span>}
-                    <span>Harga satuan {rupiah(selected.price)} · maks. {selected.maxQuantity}</span>
+                    <span>{t("experienceBill.unitPriceMax", { price: rupiah(selected.price), max: selected.maxQuantity })}</span>
                   </div>}
-                  <label>Quantity
+                  <label>{t("experienceBill.quantityLabel")}
                     <input type="number" min={1} max={selected?.maxQuantity ?? 1} value={quantity}
                       onChange={(event) => setQuantity(Number(event.target.value))} />
                   </label>
-                  <label>Service date (optional)
+                  <label>{t("experienceBill.serviceDateLabel")}
                     <input type="date" min={detail.reservation.checkInDate} value={serviceDate}
                       onChange={(event) => setServiceDate(event.target.value)} />
                   </label>
-                  <p>Tambahan: <strong>{rupiah((selected?.price ?? 0) * (Number.isFinite(quantity) ? quantity : 0))}</strong></p>
+                  <p>{t("experienceBill.additional", { amount: rupiah((selected?.price ?? 0) * (Number.isFinite(quantity) ? quantity : 0)) })}</p>
                 </>
               ) : (
                 <>
-                  {!pending.length && <p>Belum ada item yang perlu disimpan. Pilih Add Experience or Add-on terlebih dahulu.</p>}
+                  {!pending.length && <p>{t("experienceBill.billEmpty")}</p>}
                   {pending.map((item, index) => <div className="api-experience-bill-line" key={`${item.variantId}-${index}`}>
                     <span>{item.name} · {item.quantity} × {rupiah(item.unitPrice)}{item.serviceDate ? ` · ${item.serviceDate}` : ""}</span>
                     <strong>{rupiah(item.quantity * item.unitPrice)}</strong>
@@ -193,30 +197,30 @@ export function ReservationExperienceBillActions({ detail, onUpdated }: {
                         setPending(remaining);
                         void loadBillQuote(remaining);
                       }}>
-                      Remove
+                      {t("experienceBill.remove")}
                     </button>
                   </div>)}
                   {quote && <div className="api-experience-bill-summary">
                     {quote.lines.map((line, index) => <div key={`${line.variantId}-${index}`}><span>{line.name} × {line.quantity}</span><strong>{rupiah(line.amount)}</strong></div>)}
-                    <div><span>Added to bill</span><strong>{rupiah(quote.addedTotal)}</strong></div>
-                    <div><span>New booking total</span><strong>{rupiah(quote.bookingTotalAfter)}</strong></div>
-                    <div><span>Remaining balance after Save Bill</span><strong>{rupiah(quote.remainingBalanceAfter)}</strong></div>
-                    {quote.addedTotal !== pendingTotal && <small>Harga katalog berubah. Gunakan rincian terbaru di atas.</small>}
-                    <small>Pembayaran dapat dicatat melalui Record Payment di Summary setelah tagihan disimpan.</small>
+                    <div><span>{t("experienceBill.addedToBill")}</span><strong>{rupiah(quote.addedTotal)}</strong></div>
+                    <div><span>{t("experienceBill.newBookingTotal")}</span><strong>{rupiah(quote.bookingTotalAfter)}</strong></div>
+                    <div><span>{t("experienceBill.remainingAfterSave")}</span><strong>{rupiah(quote.remainingBalanceAfter)}</strong></div>
+                    {quote.addedTotal !== pendingTotal && <small>{t("experienceBill.priceChanged")}</small>}
+                    <small>{t("experienceBill.paymentHint")}</small>
                   </div>}
                 </>
               )}
-              {busy && <p>{modal === "bill" ? "Menghitung tagihan..." : "Memuat experience..."}</p>}
+              {busy && <p>{modal === "bill" ? t("experienceBill.calculating") : t("experienceBill.loadingExperiences")}</p>}
               {error && <p className="api-reservation-error" role="alert">{error}</p>}
             </div>
             <div className="api-reservation-modal-footer">
-              <button type="button" className="reservation-secondary-button" disabled={busy} onClick={() => setModal(null)}>Cancel</button>
+              <button type="button" className="reservation-secondary-button" disabled={busy} onClick={() => setModal(null)}>{t("common.cancel")}</button>
               {modal === "add" ? (
                 <button type="button" className="action-button" disabled={busy || !selected}
-                  onClick={addPending}>Add to Bill</button>
+                  onClick={addPending}>{t("experienceBill.addToBill")}</button>
               ) : (
                 <button type="button" className="action-button" disabled={busy || !quote || !pending.length}
-                  onClick={() => void saveBill()}>Confirm Save Bill</button>
+                  onClick={() => void saveBill()}>{t("experienceBill.confirmSaveBill")}</button>
               )}
             </div>
           </section>

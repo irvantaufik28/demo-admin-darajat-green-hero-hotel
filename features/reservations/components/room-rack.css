@@ -347,8 +347,9 @@
   overflow: hidden;
 }
 .rr-chart__scroll {
-  overflow-x: auto;
-  overflow-y: hidden;
+  overflow: auto;
+  max-height: calc(100vh - 300px);
+  min-height: 320px;
 }
 .rr-grid {
   position: relative;

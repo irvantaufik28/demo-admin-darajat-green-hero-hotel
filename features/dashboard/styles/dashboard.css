@@ -374,6 +374,10 @@
   .admin-sidebar--mobile-open .sidebar-new-button span {
     display: inline;
   }
+  .admin-sidebar--mobile-open .sidebar-section-tab span,
+  .admin-sidebar--mobile-open .sidebar-menu-search input {
+    display: block;
+  }
   .admin-sidebar--mobile-open .sidebar-pin {
     display: none;
   }

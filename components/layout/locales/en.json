@@ -4,6 +4,20 @@
     "subtitle": "Admin System"
   },
   "newReservation": "New Reservation",
+  "website": {
+    "title": "WEB SETTINGS",
+    "searchPlaceholder": "Search menu...",
+    "searchLabel": "Search menu"
+  },
+  "websiteItems": {
+    "Hotel Info": "Hotel Info",
+    "Homepage": "Homepage",
+    "Favorite Rooms": "Favorite Rooms",
+    "Facilities": "Facilities",
+    "Gallery": "Gallery",
+    "Testimonials": "Testimonials",
+    "Contact & Location": "Contact & Location"
+  },
   "footer": {
     "shift": "Shift A (07:00 - 15:00)",
     "help": "Help & Documentation"

@@ -4,6 +4,20 @@
     "subtitle": "Sistem Admin"
   },
   "newReservation": "Reservasi Baru",
+  "website": {
+    "title": "PENGATURAN WEB",
+    "searchPlaceholder": "Cari menu...",
+    "searchLabel": "Cari menu"
+  },
+  "websiteItems": {
+    "Hotel Info": "Info Hotel",
+    "Homepage": "Beranda",
+    "Favorite Rooms": "Kamar Favorit",
+    "Facilities": "Fasilitas",
+    "Gallery": "Galeri",
+    "Testimonials": "Testimoni",
+    "Contact & Location": "Kontak & Lokasi"
+  },
   "footer": {
     "shift": "Shift A (07:00 - 15:00)",
     "help": "Bantuan & Dokumentasi"

@@ -5,6 +5,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AdminShell } from "../../../components/layout/AdminShell";
 import { Icon } from "../../../components/ui/Icon";
 import "../components/room-rack.css";
+import { RoomRackReservationSummary } from "../components/RoomRackReservationSummary";
 import {
   RACK_START_DATE,
   RACK_DAYS,
@@ -20,7 +21,6 @@ import {
   sourceShort,
   toISODate,
   type Reservation,
-  type ReservationStatus,
   type RoomTypeGroup,
   type RoomUnit,
 } from "../constants/room-rack-data";
@@ -64,19 +64,6 @@ function barGeometry(res: Reservation, window: Date[]): BarGeom | null {
   return { startIdx, span: endIdx - startIdx + 1 };
 }
 
-function statusLabel(status: ReservationStatus): string {
-  switch (status) {
-    case "in-house":
-      return "In-House";
-    case "confirmed":
-      return "Confirmed";
-    case "deposit-paid":
-      return "Deposit Paid";
-    case "vip-paid":
-      return "VIP · Paid";
-  }
-}
-
 function initials(name: string): string {
   return name
     .split(" ")
@@ -84,14 +71,6 @@ function initials(name: string): string {
     .slice(0, 2)
     .map((part) => part[0]?.toUpperCase() ?? "")
     .join("");
-}
-
-function nights(res: Reservation): number {
-  const [ciY, ciM, ciD] = res.checkIn.split("-").map(Number);
-  const [coY, coM, coD] = res.checkOut.split("-").map(Number);
-  const a = new Date(ciY, ciM - 1, ciD).getTime();
-  const b = new Date(coY, coM - 1, coD).getTime();
-  return Math.max(1, Math.round((b - a) / 86_400_000));
 }
 
 function formatHuman(iso: string): string {
@@ -230,11 +209,11 @@ export function RoomRackPage() {
   }, [handleDragEnd]);
 
   const metrics = [
-    { key: "vacant", tone: "success", value: roomRackSummary.vacantClean, label: "Vacant Clean", glyph: "✓" },
-    { key: "reserved", tone: "warning", value: roomRackSummary.reservedUpcoming, label: "Reserved (Upcoming)", glyph: "◷" },
-    { key: "occupied", tone: "primary", value: roomRackSummary.occupiedInHouse, label: "Occupied (In-House)", glyph: "●" },
-    { key: "due-out", tone: "info", value: roomRackSummary.dueOutToday, label: "Due Out Today", glyph: "↩" },
-    { key: "ooo", tone: "danger", value: roomRackSummary.outOfOrder, label: "Out of Order (OOO)", glyph: "⚠" },
+    { key: "available", tone: "success", value: roomRackSummary.availableRooms, label: "Available Rooms", glyph: "✓" },
+    { key: "ready", tone: "warning", value: roomRackSummary.readyToCheckIn, label: "Ready to Check-in", glyph: "◷" },
+    { key: "in-house", tone: "primary", value: roomRackSummary.inHouse, label: "In House", glyph: "●" },
+    { key: "due-out", tone: "info", value: roomRackSummary.dueOut, label: "Due Out", glyph: "↩" },
+    { key: "unavailable", tone: "maintenance", value: roomRackSummary.unavailable, label: "Unavailable Rooms", glyph: "⚠" },
   ] as const;
 
   const rangeLabel = formatRangeLabel(window[0], window[window.length - 1]);
@@ -320,18 +299,35 @@ export function RoomRackPage() {
 
         {/* Legend */}
         <div className="room-rack__legend">
-          <strong>Status Legend</strong>
+          <strong>Reservation</strong>
           <span className="rr-legend-item">
-            <span className="rr-legend-swatch rr-legend-swatch--success" /> Occupied (In-House)
+            <span className="rr-legend-swatch rr-legend-swatch--warning" /> Upcoming / Ready to Check-in
           </span>
           <span className="rr-legend-item">
-            <span className="rr-legend-swatch rr-legend-swatch--warning" /> Reserved (Confirmed)
+            <span className="rr-legend-swatch rr-legend-swatch--success" /> In House
           </span>
           <span className="rr-legend-item">
-            <span className="rr-legend-swatch rr-legend-swatch--info" /> Due Out Today
+            <span className="rr-legend-swatch rr-legend-swatch--info" /> Due Out
           </span>
           <span className="rr-legend-item">
-            <span className="rr-legend-swatch rr-legend-swatch--maintenance" /> Maintenance / Blocked
+            <span className="rr-legend-swatch rr-legend-swatch--danger" /> Overdue
+          </span>
+          <span className="rr-legend-divider" aria-hidden="true" />
+          <strong>Room</strong>
+          <span className="rr-legend-item">
+            <span className="rr-legend-swatch rr-legend-swatch--available" /> Available
+          </span>
+          <span className="rr-legend-item">
+            <span className="rr-legend-swatch rr-legend-swatch--success" /> Occupied
+          </span>
+          <span className="rr-legend-item">
+            <span className="rr-legend-swatch rr-legend-swatch--cleaning" /> Cleaning
+          </span>
+          <span className="rr-legend-item">
+            <span className="rr-legend-swatch rr-legend-swatch--maintenance" /> Maintenance
+          </span>
+          <span className="rr-legend-item">
+            <span className="rr-legend-swatch rr-legend-swatch--danger" /> Out of Service
           </span>
         </div>
 
@@ -383,7 +379,12 @@ export function RoomRackPage() {
           </div>
 
           {selected && (
-            <DetailPanel selected={selected} onClose={() => setSelected(null)} />
+            <RoomRackReservationSummary
+              reservation={selected.res}
+              room={selected.room}
+              group={selected.group}
+              onClose={() => setSelected(null)}
+            />
           )}
         </div>
 
@@ -421,13 +422,27 @@ function RoomGroup({
   pending: NewBookingDraft | null;
   onPendingClick: (draft: NewBookingDraft) => void;
 }) {
+  const [collapsed, setCollapsed] = useState(false);
+
   return (
     <>
       {/* Category header */}
       <div className="rr-cat-cell">
         <div className="rr-cat-cell__label">
-          {group.name}
-          <span className="rr-cat-cell__count">{group.unitCount} units</span>
+          <button
+            type="button"
+            className="rr-cat-cell__toggle"
+            aria-expanded={!collapsed}
+            aria-label={`${collapsed ? "Expand" : "Minimize"} ${group.name}`}
+            onClick={() => setCollapsed((current) => !current)}
+          >
+            <span
+              className={`rr-cat-cell__chevron${collapsed ? " rr-cat-cell__chevron--collapsed" : ""}`}
+              aria-hidden="true"
+            />
+            <span>{group.name}</span>
+            <span className="rr-cat-cell__count">{group.unitCount} units</span>
+          </button>
         </div>
         {window.map((date, i) => {
           const iso = toISODate(date);
@@ -451,10 +466,15 @@ function RoomGroup({
         const dragHi = drag && drag.roomNumber === room.number ? Math.max(drag.startIdx, drag.endIdx) : -1;
 
         return (
-        <div className="rr-room-row" key={room.number} style={{ display: "contents" }}>
+        <div
+          className={`rr-room-row${collapsed ? " rr-room-row--collapsed" : ""}`}
+          key={room.number}
+          style={{ display: "contents" }}
+          aria-hidden={collapsed}
+          inert={collapsed}
+        >
           <div className="rr-room-cell">
             <div className="rr-room-cell__top">
-              <span className={`rr-dot rr-dot--${room.status}`} />
               <span className="rr-room-cell__num">{room.number}</span>
               <span className="rr-room-cell__bed">{room.bedType}</span>
             </div>
@@ -564,141 +584,6 @@ function RoomGroup({
         );
       })}
     </>
-  );
-}
-
-function DetailPanel({
-  selected,
-  onClose,
-}: {
-  selected: Selected;
-  onClose: () => void;
-}) {
-  const { res, room, group } = selected;
-  const stayNights = nights(res);
-  const roomRate = group.dailyRates[0];
-  const roomCharge = roomRate * stayNights;
-  const tax = Math.round(roomCharge * 0.11);
-  const serviceCharge = Math.round(roomCharge * 0.05);
-  const total = roomCharge + tax + serviceCharge;
-
-  const statusTone =
-    res.status === "in-house" ? "success"
-    : res.status === "confirmed" ? "success"
-    : res.status === "deposit-paid" ? "warning"
-    : res.status === "vip-paid" ? "info"
-    : "warning";
-
-  return (
-    <aside className="reservation-detail-summary rr-detail-panel" aria-label="Reservation detail">
-      {/* Header */}
-      <div className="reservation-detail-section-title rr-detail-panel__header">
-        <div>
-          <h2>Stay Summary</h2>
-          <span>{stayNights} {stayNights === 1 ? "Night" : "Nights"}</span>
-        </div>
-        <button type="button" className="rr-detail__close" onClick={onClose} aria-label="Close detail panel">×</button>
-      </div>
-
-      <div className="reservation-detail-summary-rows">
-        {/* Reservation ID + Status */}
-        <div className="reservation-detail-row">
-          <span>Reservation</span>
-          <strong>{res.id}</strong>
-        </div>
-        <div className="reservation-detail-row">
-          <span>Status</span>
-          <strong><span className={`status-badge status-badge--${statusTone}`}>{statusLabel(res.status)}</span></strong>
-        </div>
-
-        <div className="reservation-detail-summary-divider" />
-
-        {/* Guest */}
-        <div className="reservation-detail-row">
-          <span>Guest</span>
-          <strong>{res.guestName}</strong>
-        </div>
-
-        {/* Stay Period */}
-        <div className="reservation-detail-row">
-          <span>Stay Period</span>
-          <strong>{formatHuman(res.checkIn)} → {formatHuman(res.checkOut)}</strong>
-        </div>
-
-        {/* Room */}
-        <div className="reservation-detail-row">
-          <span>Room Type</span>
-          <strong>{group.name}</strong>
-        </div>
-        <div className="reservation-detail-row">
-          <span>Room Number</span>
-          <strong>Room {room.number}</strong>
-        </div>
-        <div className="reservation-detail-row">
-          <span>Bed / Floor</span>
-          <strong>{room.bedType} · {room.floor}</strong>
-        </div>
-
-        {/* Source */}
-        <div className="reservation-detail-row">
-          <span>Source</span>
-          <strong>{res.source}</strong>
-        </div>
-
-        <div className="reservation-detail-summary-divider" />
-
-        {/* Financial */}
-        <div className="reservation-detail-row">
-          <span>Room Charge ({stayNights}N × {formatRupiah(roomRate)})</span>
-          <strong>{formatRupiah(roomCharge)}</strong>
-        </div>
-        <div className="reservation-detail-row">
-          <span>Tax (11%)</span>
-          <strong>{formatRupiah(tax)}</strong>
-        </div>
-        <div className="reservation-detail-row">
-          <span>Service (5%)</span>
-          <strong>{formatRupiah(serviceCharge)}</strong>
-        </div>
-
-        <div className="reservation-detail-summary-divider" />
-
-        <div className="reservation-detail-row">
-          <span>Booking Total</span>
-          <strong>{formatRupiah(total)}</strong>
-        </div>
-        <div className="reservation-detail-row">
-          <span>Paid Amount</span>
-          <strong>{formatRupiah(res.status === "in-house" || res.status === "vip-paid" ? total : 0)}</strong>
-        </div>
-        <div className="reservation-detail-row">
-          <span>Remaining Balance</span>
-          <strong>{formatRupiah(res.status === "in-house" || res.status === "vip-paid" ? 0 : total)}</strong>
-        </div>
-        <div className="reservation-detail-row">
-          <span>Payment Status</span>
-          <strong>
-            <span className={`status-badge status-badge--${res.status === "in-house" || res.status === "vip-paid" ? "success" : "warning"}`}>
-              {res.status === "in-house" || res.status === "vip-paid" ? "Paid" : "Unpaid"}
-            </span>
-          </strong>
-        </div>
-      </div>
-
-      {/* Notes */}
-      <div className="rr-detail-panel__note">
-        <small>Special Requests</small>
-        <p>Late checkout requested. Extra towels for Room {room.number}.</p>
-      </div>
-
-      {/* Actions */}
-      <div className="rr-detail-panel__actions">
-        <button type="button" className="action-button" onClick={() => window.open(`/reservations/${res.id}`, "_blank")}>
-          View Full Detail
-        </button>
-        <button type="button" className="reservation-secondary-button" onClick={onClose}>Close</button>
-      </div>
-    </aside>
   );
 }
 

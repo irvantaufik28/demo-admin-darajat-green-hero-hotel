@@ -6,7 +6,9 @@ export type RoomStatus =
   | "occupied"
   | "reserved"
   | "due-out"
-  | "maintenance";
+  | "cleaning"
+  | "maintenance"
+  | "out_of_service";
 
 export type BookingSource =
   | "Walk-in"
@@ -27,6 +29,9 @@ export type Reservation = {
   guestName: string;
   source: BookingSource;
   status: ReservationStatus;
+  reservationStatus?: "confirmed" | "checked_in";
+  paymentStatus?: "unpaid" | "partial" | "paid";
+  paidAmount?: number;
   checkIn: string; // ISO date (YYYY-MM-DD)
   checkOut: string; // ISO date (YYYY-MM-DD)
 };
@@ -48,24 +53,16 @@ export type RoomTypeGroup = {
 };
 
 export type RoomRackSummary = {
-  vacantClean: number;
-  reservedUpcoming: number;
-  occupiedInHouse: number;
-  dueOutToday: number;
-  outOfOrder: number;
+  availableRooms: number;
+  readyToCheckIn: number;
+  inHouse: number;
+  dueOut: number;
+  unavailable: number;
 };
 
 // The design anchors "today" at 07 Oct 2026 and shows a 14-day window.
 export const RACK_START_DATE = "2026-10-07";
 export const RACK_DAYS = 14;
-
-export const roomRackSummary: RoomRackSummary = {
-  vacantClean: 6,
-  reservedUpcoming: 8,
-  occupiedInHouse: 5,
-  dueOutToday: 2,
-  outOfOrder: 1,
-};
 
 // Helper to build a 14-day rate row quickly.
 const rate = (base: number, weekend: number): number[] =>
@@ -92,6 +89,8 @@ export const roomTypeGroups: RoomTypeGroup[] = [
             guestName: "Hendra Pratama",
             source: "Website",
             status: "in-house",
+            reservationStatus: "checked_in",
+            paymentStatus: "paid",
             checkIn: "2026-10-07",
             checkOut: "2026-10-11",
           },
@@ -108,6 +107,8 @@ export const roomTypeGroups: RoomTypeGroup[] = [
             guestName: "Clara Wijaya",
             source: "OTA Agoda",
             status: "in-house",
+            reservationStatus: "checked_in",
+            paymentStatus: "paid",
             checkIn: "2026-10-06",
             checkOut: "2026-10-07",
           },
@@ -116,6 +117,8 @@ export const roomTypeGroups: RoomTypeGroup[] = [
             guestName: "Michael Tan",
             source: "Phone",
             status: "confirmed",
+            reservationStatus: "confirmed",
+            paymentStatus: "unpaid",
             checkIn: "2026-10-09",
             checkOut: "2026-10-13",
           },
@@ -132,6 +135,9 @@ export const roomTypeGroups: RoomTypeGroup[] = [
             guestName: "Aisyah Rahman",
             source: "OTA Booking.com",
             status: "deposit-paid",
+            reservationStatus: "confirmed",
+            paymentStatus: "partial",
+            paidAmount: 500_000,
             checkIn: "2026-10-08",
             checkOut: "2026-10-12",
           },
@@ -140,6 +146,8 @@ export const roomTypeGroups: RoomTypeGroup[] = [
             guestName: "David Kurniawan",
             source: "Website",
             status: "confirmed",
+            reservationStatus: "confirmed",
+            paymentStatus: "paid",
             checkIn: "2026-10-15",
             checkOut: "2026-10-19",
           },
@@ -156,6 +164,8 @@ export const roomTypeGroups: RoomTypeGroup[] = [
             guestName: "Siti Nurhaliza",
             source: "Walk-in",
             status: "confirmed",
+            reservationStatus: "confirmed",
+            paymentStatus: "unpaid",
             checkIn: "2026-10-12",
             checkOut: "2026-10-16",
           },
@@ -179,6 +189,9 @@ export const roomTypeGroups: RoomTypeGroup[] = [
             guestName: "Budi Santoso",
             source: "Direct",
             status: "in-house",
+            reservationStatus: "checked_in",
+            paymentStatus: "partial",
+            paidAmount: 1_500_000,
             checkIn: "2026-10-05",
             checkOut: "2026-10-10",
           },
@@ -187,6 +200,8 @@ export const roomTypeGroups: RoomTypeGroup[] = [
             guestName: "Nadia Permata",
             source: "OTA Agoda",
             status: "confirmed",
+            reservationStatus: "confirmed",
+            paymentStatus: "paid",
             checkIn: "2026-10-13",
             checkOut: "2026-10-18",
           },
@@ -212,6 +227,9 @@ export const roomTypeGroups: RoomTypeGroup[] = [
             guestName: "Reza Fadillah",
             source: "Website",
             status: "deposit-paid",
+            reservationStatus: "confirmed",
+            paymentStatus: "partial",
+            paidAmount: 750_000,
             checkIn: "2026-10-11",
             checkOut: "2026-10-15",
           },
@@ -228,6 +246,8 @@ export const roomTypeGroups: RoomTypeGroup[] = [
             guestName: "Grace Halim",
             source: "OTA Booking.com",
             status: "vip-paid",
+            reservationStatus: "confirmed",
+            paymentStatus: "paid",
             checkIn: "2026-10-07",
             checkOut: "2026-10-09",
           },
@@ -236,6 +256,8 @@ export const roomTypeGroups: RoomTypeGroup[] = [
             guestName: "Fajar Nugroho",
             source: "Phone",
             status: "confirmed",
+            reservationStatus: "confirmed",
+            paymentStatus: "unpaid",
             checkIn: "2026-10-16",
             checkOut: "2026-10-20",
           },
@@ -259,6 +281,8 @@ export const roomTypeGroups: RoomTypeGroup[] = [
             guestName: "Anwar Ibrahim",
             source: "Direct",
             status: "vip-paid",
+            reservationStatus: "checked_in",
+            paymentStatus: "paid",
             checkIn: "2026-10-06",
             checkOut: "2026-10-12",
           },
@@ -275,6 +299,8 @@ export const roomTypeGroups: RoomTypeGroup[] = [
             guestName: "Lina Marlina",
             source: "Website",
             status: "in-house",
+            reservationStatus: "checked_in",
+            paymentStatus: "unpaid",
             checkIn: "2026-10-04",
             checkOut: "2026-10-07",
           },
@@ -283,6 +309,9 @@ export const roomTypeGroups: RoomTypeGroup[] = [
             guestName: "Yusuf Maulana",
             source: "OTA Agoda",
             status: "deposit-paid",
+            reservationStatus: "confirmed",
+            paymentStatus: "partial",
+            paidAmount: 1_000_000,
             checkIn: "2026-10-14",
             checkOut: "2026-10-19",
           },
@@ -291,6 +320,30 @@ export const roomTypeGroups: RoomTypeGroup[] = [
     ],
   },
 ];
+
+const rackRooms = roomTypeGroups.flatMap((group) => group.rooms);
+
+export const roomRackSummary: RoomRackSummary = {
+  availableRooms: rackRooms.filter(
+    (room) => room.status === "vacant" || room.status === "reserved",
+  ).length,
+  readyToCheckIn: rackRooms
+    .flatMap((room) => room.reservations)
+    .filter(
+      (reservation) =>
+        reservation.checkIn === RACK_START_DATE &&
+        reservation.status !== "in-house" &&
+        !reservation.id.startsWith("MNT"),
+    ).length,
+  inHouse: rackRooms.filter((room) => room.status === "occupied").length,
+  dueOut: rackRooms.filter((room) => room.status === "due-out").length,
+  unavailable: rackRooms.filter(
+    (room) =>
+      room.status === "cleaning" ||
+      room.status === "maintenance" ||
+      room.status === "out_of_service",
+  ).length,
+};
 
 // Build the 14-day date array as ISO strings based on RACK_START_DATE.
 export function buildDateWindow(startISO: string, days: number): Date[] {

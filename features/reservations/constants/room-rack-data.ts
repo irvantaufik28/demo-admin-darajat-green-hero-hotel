@@ -10,46 +10,55 @@ export type RoomStatus =
   | "maintenance"
   | "out_of_service";
 
-export type BookingSource =
-  | "Walk-in"
-  | "Website"
-  | "OTA Agoda"
-  | "OTA Booking.com"
-  | "Phone"
-  | "Direct";
+export type BookingSource = string;
 
 export type ReservationStatus =
   | "in-house"
+  | "awaiting-confirmation"
   | "confirmed"
   | "deposit-paid"
-  | "vip-paid";
+  | "vip-paid"
+  | "due-out"
+  | "overdue"
+  | "checked-out"
+  | "maintenance";
 
 export type Reservation = {
   id: string;
+  reservationId?: string;
+  reservationRoomId?: string;
   guestName: string;
   source: BookingSource;
   status: ReservationStatus;
-  reservationStatus?: "confirmed" | "checked_in";
-  paymentStatus?: "unpaid" | "partial" | "paid";
+  reservationStatus?: "pending" | "confirmed" | "checked_in" | "checked_out";
+  paymentStatus?: "unpaid" | "partial" | "paid" | "failed" | "expired" | "refunded";
   paidAmount?: number;
+  bookingTotal?: number;
+  operationalStatus?: { code: string; label: string } | null;
+  maintenanceNote?: string;
   checkIn: string; // ISO date (YYYY-MM-DD)
   checkOut: string; // ISO date (YYYY-MM-DD)
 };
 
 export type RoomUnit = {
+  id?: string;
   number: string;
   bedType: string;
   floor: string;
   status: RoomStatus;
+  isActive?: boolean;
   maintenanceNote?: string;
   reservations: Reservation[];
 };
 
 export type RoomTypeGroup = {
+  id?: string;
   name: string;
   unitCount: number;
   rooms: RoomUnit[];
-  dailyRates: number[]; // 14 days of rates
+  unassignedReservations: Reservation[];
+  dailyRates: (number | null)[]; // 14 days of rates
+  inventory?: { stayDate: string; isConfigured: boolean; availableRooms: number | null; heldForUnassigned: boolean; stopSell: boolean | null }[];
 };
 
 export type RoomRackSummary = {
@@ -77,6 +86,29 @@ export const roomTypeGroups: RoomTypeGroup[] = [
     name: "Deluxe Room",
     unitCount: 4,
     dailyRates: rate(850_000, 1_050_000),
+    unassignedReservations: [
+      {
+        id: "RES-10601",
+        guestName: "Rina Kusuma",
+        source: "Phone",
+        status: "confirmed",
+        reservationStatus: "confirmed",
+        paymentStatus: "partial",
+        paidAmount: 400_000,
+        checkIn: "2026-10-07",
+        checkOut: "2026-10-09",
+      },
+      {
+        id: "RES-10602",
+        guestName: "Andi Saputra",
+        source: "Website",
+        status: "confirmed",
+        reservationStatus: "confirmed",
+        paymentStatus: "paid",
+        checkIn: "2026-10-17",
+        checkOut: "2026-10-19",
+      },
+    ],
     rooms: [
       {
         number: "101",
@@ -177,6 +209,18 @@ export const roomTypeGroups: RoomTypeGroup[] = [
     name: "Family Room",
     unitCount: 3,
     dailyRates: rate(1_350_000, 1_650_000),
+    unassignedReservations: [
+      {
+        id: "RES-10603",
+        guestName: "Maya Salsabila",
+        source: "OTA Agoda",
+        status: "confirmed",
+        reservationStatus: "confirmed",
+        paymentStatus: "paid",
+        checkIn: "2026-10-13",
+        checkOut: "2026-10-15",
+      },
+    ],
     rooms: [
       {
         number: "201",
@@ -269,6 +313,18 @@ export const roomTypeGroups: RoomTypeGroup[] = [
     name: "Suite Room",
     unitCount: 2,
     dailyRates: rate(2_400_000, 2_900_000),
+    unassignedReservations: [
+      {
+        id: "RES-10604",
+        guestName: "Kevin Hartono",
+        source: "Phone",
+        status: "confirmed",
+        reservationStatus: "confirmed",
+        paymentStatus: "unpaid",
+        checkIn: "2026-10-07",
+        checkOut: "2026-10-10",
+      },
+    ],
     rooms: [
       {
         number: "301",
@@ -329,6 +385,7 @@ export const roomRackSummary: RoomRackSummary = {
   ).length,
   readyToCheckIn: rackRooms
     .flatMap((room) => room.reservations)
+    .concat(roomTypeGroups.flatMap((group) => group.unassignedReservations))
     .filter(
       (reservation) =>
         reservation.checkIn === RACK_START_DATE &&
@@ -397,7 +454,7 @@ export function formatRupiah(value: number): string {
 }
 
 // Source label short display used on reservation bars.
-export const sourceShort: Record<BookingSource, string> = {
+export const sourceShort: Record<string, string> = {
   "Walk-in": "Walk-in",
   Website: "Web",
   "OTA Agoda": "Agoda",

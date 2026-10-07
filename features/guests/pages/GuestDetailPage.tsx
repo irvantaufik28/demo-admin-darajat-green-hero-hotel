@@ -1,4 +1,6 @@
 "use client";
+import "../../settings/styles/settings.css";
+import "../styles/guests.css";
 
 import { LoadingSkeleton } from "../../../components/ui/LoadingSkeleton";
 import Link from "next/link";

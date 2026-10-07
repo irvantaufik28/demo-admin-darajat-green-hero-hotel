@@ -1,6 +1,5 @@
 import type { ReactNode } from "react";
 import {
-  RACK_START_DATE,
   formatRupiah,
   type Reservation,
   type RoomTypeGroup,
@@ -9,8 +8,9 @@ import {
 
 type Props = {
   reservation: Reservation;
-  room: RoomUnit;
+  room: RoomUnit | null;
   group: RoomTypeGroup;
+  todayISO: string;
   onClose: () => void;
 };
 
@@ -53,31 +53,34 @@ export function RoomRackReservationSummary({
   reservation,
   room,
   group,
+  todayISO,
   onClose,
 }: Props) {
-  const isMaintenance = reservation.id.startsWith("MNT");
+  const isMaintenance = reservation.status === "maintenance";
   const nights = nightCount(reservation.checkIn, reservation.checkOut);
-  const bookingTotal = Math.round(group.dailyRates[0] * nights * 1.16);
+  const bookingTotal = reservation.bookingTotal ?? null;
   const paymentStatus = reservation.paymentStatus ?? "unpaid";
-  const paidAmount =
-    paymentStatus === "paid"
-      ? bookingTotal
-      : paymentStatus === "partial"
-        ? Math.min(reservation.paidAmount ?? 0, bookingTotal)
-        : 0;
-  const remainingBalance = Math.max(0, bookingTotal - paidAmount);
+  const paidAmount = reservation.paidAmount ?? null;
+  const remainingBalance = bookingTotal != null && paidAmount != null
+    ? Math.max(0, bookingTotal - paidAmount)
+    : null;
   const checkedIn = reservation.reservationStatus === "checked_in";
-  const operationalStatus = checkedIn
-    ? reservation.checkOut < RACK_START_DATE
+  const checkedOut = reservation.reservationStatus === "checked_out";
+  const operationalStatus = reservation.operationalStatus?.label ?? (checkedIn
+    ? reservation.checkOut < todayISO
       ? "Overdue"
-      : reservation.checkOut === RACK_START_DATE
+      : reservation.checkOut === todayISO
         ? "Due Out"
-        : reservation.checkIn === RACK_START_DATE
+        : reservation.checkIn === todayISO
           ? "Checked In"
           : "In House"
-    : reservation.checkIn === RACK_START_DATE
+    : reservation.reservationStatus === "checked_out"
+      ? "Checked Out"
+    : reservation.reservationStatus === "pending"
+      ? "Awaiting Confirmation"
+    : reservation.checkIn === todayISO
       ? "Ready to Check-in"
-      : "Upcoming";
+      : "Upcoming");
   const operationalTone =
     operationalStatus === "Overdue"
       ? "danger"
@@ -86,11 +89,15 @@ export function RoomRackReservationSummary({
         : operationalStatus === "Ready to Check-in" || operationalStatus === "Upcoming"
           ? "warning"
           : "success";
-  const mainAction = checkedIn
-    ? "Check Out Guest"
-    : remainingBalance > 0
-      ? "Confirm & Check-in"
-      : "Check-in Guest";
+  const mainAction = !room
+    ? "Assign Room"
+    : checkedIn
+      ? "Check Out Guest"
+      : checkedOut
+        ? "View Reservation"
+      : paymentStatus !== "paid"
+        ? "Confirm & Check-in"
+        : "Check-in Guest";
 
   return (
     <aside
@@ -124,7 +131,7 @@ export function RoomRackReservationSummary({
         {isMaintenance ? (
           <>
             <SummaryRow label="Room">
-              {group.name} · Room {room.number}
+              {group.name} · Room {room?.number ?? "—"}
             </SummaryRow>
             <SummaryRow label="Period">
               {dateLabel(reservation.checkIn)} → {dateLabel(reservation.checkOut)}
@@ -133,7 +140,7 @@ export function RoomRackReservationSummary({
               <Badge label="Maintenance" tone="warning" />
             </SummaryRow>
             <SummaryRow label="Reason">
-              {room.maintenanceNote || "Scheduled maintenance"}
+              {reservation.maintenanceNote || room?.maintenanceNote || "Scheduled maintenance"}
             </SummaryRow>
           </>
         ) : (
@@ -145,24 +152,20 @@ export function RoomRackReservationSummary({
               {dateLabel(reservation.checkIn)} → {dateLabel(reservation.checkOut)}
             </SummaryRow>
             <SummaryRow label="Room Types">{group.name}</SummaryRow>
-            <SummaryRow label="Room Numbers">{room.number}</SummaryRow>
+            <SummaryRow label="Room Numbers">
+              {room?.number ?? "Not Assigned"}
+            </SummaryRow>
             <div className="reservation-detail-summary-divider" />
             <SummaryRow label="Booking Total">
-              {formatRupiah(bookingTotal)}
+              {bookingTotal == null ? "—" : formatRupiah(bookingTotal)}
             </SummaryRow>
-            <SummaryRow label="Paid Amount">{formatRupiah(paidAmount)}</SummaryRow>
+            <SummaryRow label="Paid Amount">{paidAmount == null ? "—" : formatRupiah(paidAmount)}</SummaryRow>
             <SummaryRow label="Remaining Balance">
-              {formatRupiah(remainingBalance)}
+              {remainingBalance == null ? "—" : formatRupiah(remainingBalance)}
             </SummaryRow>
             <SummaryRow label="Payment Status">
               <Badge
-                label={
-                  paymentStatus === "paid"
-                    ? "Paid"
-                    : paymentStatus === "partial"
-                      ? "Partial"
-                      : "Unpaid"
-                }
+                label={paymentStatus.charAt(0).toUpperCase() + paymentStatus.slice(1)}
                 tone={
                   paymentStatus === "paid"
                     ? "success"
@@ -174,14 +177,19 @@ export function RoomRackReservationSummary({
             </SummaryRow>
             <SummaryRow label="Reservation Status">
               <Badge
-                label={checkedIn ? "Checked-in" : "Confirmed"}
-                tone={checkedIn ? "info" : "success"}
+                label={reservation.reservationStatus === "checked_out" ? "Checked-out" : checkedIn ? "Checked-in" : reservation.reservationStatus === "pending" ? "Pending" : "Confirmed"}
+                tone={checkedIn ? "info" : reservation.reservationStatus === "pending" ? "warning" : "success"}
               />
             </SummaryRow>
             <SummaryRow label="Operational Status">
               <Badge label={operationalStatus} tone={operationalTone} />
             </SummaryRow>
-            {remainingBalance > 0 && (
+            {!room && (
+              <p className="pending-detail-summary-warning">
+                Nomor kamar perlu ditetapkan sebelum check-in.
+              </p>
+            )}
+            {paymentStatus !== "paid" && !checkedOut && (
               <p className="pending-detail-summary-warning">
                 {checkedIn
                   ? "Tamu sedang menginap dengan sisa tagihan yang perlu ditindaklanjuti."
@@ -196,12 +204,12 @@ export function RoomRackReservationSummary({
           <button type="button" className="action-button" disabled>
             {mainAction}
           </button>
-          {remainingBalance > 0 && (
+          {paymentStatus !== "paid" && !checkedOut && (
             <button type="button" className="action-button" disabled>
               Record Payment
             </button>
           )}
-          {!checkedIn && (
+          {!checkedIn && !checkedOut && (
             <button type="button" className="reservation-secondary-button" disabled>
               Cancel Reservation
             </button>

@@ -1,0 +1,860 @@
+.roles-page {
+  display: grid;
+  gap: 20px;
+  width: 100%;
+  padding-bottom: 32px;
+}
+.roles-heading,
+.roles-actions,
+.roles-toolbar,
+.roles-filters {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+}
+.roles-eyebrow {
+  color: var(--primary);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+}
+.roles-heading h1 {
+  margin: 6px 0;
+  font-size: 27px;
+  font-weight: 650;
+}
+.roles-heading p,
+.roles-toolbar p {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+.roles-actions button {
+  height: 38px;
+  padding: 0 16px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: #fff;
+  color: var(--text-primary);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.roles-actions .roles-save {
+  border-color: var(--primary);
+  background: var(--primary);
+  color: #fff;
+}
+.roles-add-button {
+  min-height: 38px;
+  padding: 0 17px;
+  border: 1px solid var(--primary);
+  border-radius: 6px;
+  background: var(--primary);
+  color: #fff;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 650;
+  cursor: pointer;
+}
+.roles-actions button:disabled {
+  cursor: default;
+  opacity: 0.45;
+}
+.roles-list {
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: #fff;
+}
+.roles-list > header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 17px 20px;
+  border-bottom: 1px solid var(--border);
+}
+.roles-list h2 {
+  margin: 0;
+  font-size: 16px;
+}
+.roles-list > header span {
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+.roles-list-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 17px 20px;
+  border-bottom: 1px solid #eceeea;
+}
+.roles-list-row:last-child {
+  border-bottom: 0;
+}
+.roles-list-row:hover {
+  background: #fafcf9;
+}
+.roles-avatar {
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  flex: none;
+  border-radius: 9px;
+  background: #e8f0e9;
+  color: var(--primary);
+  font-size: 17px;
+  font-weight: 700;
+}
+.roles-list-name {
+  display: grid;
+  gap: 4px;
+}
+.roles-list-name strong {
+  font-size: 12px;
+  font-weight: 650;
+}
+.roles-list-name span {
+  color: var(--text-secondary);
+  font-size: 11px;
+}
+.roles-list-row a {
+  margin-left: auto;
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  color: var(--primary);
+  font-size: 12px;
+  font-weight: 650;
+  text-decoration: none;
+  white-space: nowrap;
+}
+.roles-list-row a:hover {
+  background: #e8f0e9;
+}
+.roles-back {
+  width: fit-content;
+  color: var(--primary);
+  font-size: 12px;
+  font-weight: 650;
+  text-decoration: none;
+}
+.roles-matrix-panel {
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: #fff;
+}
+.roles-toolbar {
+  padding: 18px 20px;
+  border-bottom: 1px solid var(--border);
+}
+.roles-toolbar h2 {
+  margin: 0 0 5px;
+  font-size: 16px;
+  font-weight: 650;
+}
+.roles-filters input,
+.roles-filters select {
+  height: 36px;
+  padding: 0 10px;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  background: #fff;
+  color: var(--text-primary);
+  font: inherit;
+  font-size: 12px;
+}
+.roles-filters input {
+  min-width: 220px;
+}
+.roles-toolbar > input {
+  height: 36px;
+  min-width: 220px;
+  padding: 0 10px;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  font: inherit;
+  font-size: 12px;
+}
+.roles-table-scroll {
+  overflow-x: auto;
+}
+.roles-table {
+  width: 100%;
+  min-width: 840px;
+  border-collapse: collapse;
+}
+.roles-table--detail {
+  min-width: 500px;
+}
+.roles-table th,
+.roles-table td {
+  border-bottom: 1px solid #eceeea;
+}
+.roles-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  padding: 15px 18px;
+  background: #f7f9f6;
+  color: var(--primary);
+  font-size: 12px;
+  text-align: center;
+  white-space: nowrap;
+}
+.roles-table thead th:first-child {
+  min-width: 290px;
+  text-align: left;
+}
+.roles-table thead small {
+  display: block;
+  margin-top: 4px;
+  color: var(--text-secondary);
+  font-size: 10px;
+  font-weight: 400;
+}
+.roles-table tbody th {
+  padding: 11px 18px;
+  font-size: 12px;
+  font-weight: 500;
+  text-align: left;
+}
+.roles-table tbody td {
+  padding: 8px 18px;
+  text-align: center;
+}
+.roles-table tbody tr:not(.roles-group):hover {
+  background: #fbfcfa;
+}
+.roles-table .roles-group th {
+  padding: 13px 18px;
+  background: #eaf1eb;
+  color: var(--primary);
+  font-size: 11px;
+  font-weight: 750;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.roles-checkbox {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+.roles-checkbox input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+}
+.roles-checkbox span {
+  display: grid;
+  place-items: center;
+  width: 23px;
+  height: 23px;
+  border-radius: 5px;
+  background: #f9eae7;
+  color: #b64a40;
+  font-size: 14px;
+  font-weight: 700;
+}
+.roles-checkbox input:checked + span {
+  background: #e2f1e9;
+  color: #16744b;
+}
+.roles-checkbox input:focus-visible + span {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+.roles-unspecified {
+  color: #a4aaa4;
+}
+.roles-table .roles-empty {
+  padding: 24px;
+  color: var(--text-secondary);
+  text-align: center;
+}
+.roles-notice {
+  margin: 0;
+  padding: 12px 16px;
+  border: 1px solid #b8d8bf;
+  border-radius: 6px;
+  background: #edf6ee;
+  color: var(--primary);
+  font-size: 12px;
+}
+.roles-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgb(16 29 23 / 55%);
+}
+.roles-modal {
+  width: min(440px, 100%);
+  padding: 24px;
+  border-radius: 10px;
+  background: #fff;
+  box-shadow: 0 24px 80px rgb(0 0 0 / 16%);
+}
+.roles-modal header,
+.roles-modal footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.roles-modal h2 {
+  margin: 0;
+  font-size: 19px;
+}
+.roles-modal header button {
+  border: 0;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 24px;
+  cursor: pointer;
+}
+.roles-modal p {
+  margin: 12px 0 20px;
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+.roles-modal label {
+  display: grid;
+  gap: 7px;
+  font-size: 12px;
+  font-weight: 650;
+}
+.roles-modal input {
+  height: 39px;
+  padding: 0 11px;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  font: inherit;
+  font-size: 13px;
+}
+.roles-modal footer {
+  justify-content: flex-end;
+  margin-top: 23px;
+}
+.roles-modal footer button {
+  min-height: 37px;
+  padding: 0 15px;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  background: #fff;
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+.roles-modal footer button:last-child {
+  border-color: var(--primary);
+  background: var(--primary);
+  color: #fff;
+}
+.roles-form-error {
+  display: block;
+  margin-top: 8px;
+  color: #b64a40;
+  font-size: 11px;
+}
+@media (max-width: 900px) {
+  .roles-heading,
+  .roles-toolbar {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
+@media (max-width: 650px) {
+  .roles-actions,
+  .roles-filters {
+    flex-wrap: wrap;
+  }
+  .roles-filters input,
+  .roles-toolbar > input {
+    min-width: 0;
+    width: 100%;
+  }
+  .roles-list-row {
+    gap: 10px;
+    padding: 14px;
+  }
+}
+
+.users-page {
+  display: grid;
+  gap: 20px;
+  width: 100%;
+  padding-bottom: 32px;
+}
+.users-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+.users-heading h1 {
+  margin: 6px 0;
+  font-size: 27px;
+  font-weight: 650;
+}
+.users-heading p {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+.users-panel {
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: #fff;
+}
+.users-toolbar,
+.users-toolbar > div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.users-toolbar {
+  padding: 16px 18px;
+  border-bottom: 1px solid var(--border);
+}
+.users-toolbar h2 {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 650;
+}
+.users-toolbar h2 span {
+  margin-left: 9px;
+  color: var(--text-secondary);
+  font-size: 11px;
+  font-weight: 400;
+}
+.users-toolbar input,
+.users-toolbar select {
+  height: 36px;
+  padding: 0 10px;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  background: #fff;
+  color: var(--text-primary);
+  font: inherit;
+  font-size: 12px;
+}
+.users-toolbar input {
+  min-width: 245px;
+}
+.users-table-scroll {
+  overflow-x: auto;
+}
+.users-table {
+  width: 100%;
+  min-width: 1000px;
+  border-collapse: collapse;
+}
+.users-table th {
+  padding: 13px 16px;
+  border-bottom: 1px solid var(--border);
+  background: #f7f9f6;
+  color: var(--text-secondary);
+  font-size: 11px;
+  font-weight: 650;
+  text-align: left;
+  white-space: nowrap;
+}
+.users-table td {
+  padding: 14px 16px;
+  border-bottom: 1px solid #eceeea;
+  color: var(--text-primary);
+  font-size: 12px;
+  white-space: nowrap;
+}
+.users-table tbody tr:hover {
+  background: #fafcf9;
+}
+.users-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+.users-table td strong {
+  font-weight: 650;
+}
+.users-username {
+  display: block;
+  margin-top: 4px;
+  color: var(--text-secondary);
+  font-size: 10px;
+}
+.users-role,
+.users-status {
+  display: inline-block;
+  padding: 5px 9px;
+  border-radius: 5px;
+  font-size: 11px;
+  font-weight: 650;
+}
+.users-role {
+  background: #edf1ec;
+  color: var(--primary);
+}
+.users-status--active {
+  background: #e4f2e9;
+  color: #187148;
+}
+.users-status--inactive {
+  background: #f4e9e7;
+  color: #ae5149;
+}
+.users-row-actions {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.users-row-actions button {
+  padding: 6px 8px;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--primary);
+  font: inherit;
+  font-size: 11px;
+  font-weight: 650;
+  cursor: pointer;
+}
+.users-row-actions button:hover {
+  background: #e8f0e9;
+}
+.users-row-actions button:last-child {
+  color: #a6433d;
+}
+.users-empty {
+  padding: 24px !important;
+  color: var(--text-secondary) !important;
+  text-align: center;
+}
+.users-modal {
+  width: min(610px, 100%);
+  max-height: calc(100vh - 40px);
+  overflow-y: auto;
+}
+.users-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 15px;
+}
+.users-form-grid input,
+.users-form-grid select {
+  width: 100%;
+  height: 39px;
+  padding: 0 10px;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  background: #fff;
+  color: var(--text-primary);
+  font: inherit;
+  font-size: 12px;
+}
+.users-form-grid :disabled {
+  background: #f7f8f6;
+  color: var(--text-secondary);
+}
+@media (max-width: 700px) {
+  .users-heading,
+  .users-toolbar,
+  .users-toolbar > div {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+  .users-toolbar input {
+    min-width: 0;
+    width: 100%;
+  }
+  .users-toolbar > div,
+  .users-toolbar select {
+    width: 100%;
+  }
+  .users-form-grid {
+    grid-template-columns: 1fr;
+  }
+  .users-modal {
+    max-height: 90vh;
+    overflow-y: auto;
+  }
+}
+
+.reservation-settings-page {
+  width: 100%;
+  padding-bottom: 28px;
+}
+.reservation-settings-heading {
+  margin-bottom: 18px;
+}
+.reservation-settings-heading h1 {
+  margin: 0 0 5px;
+  font-size: 27px;
+  font-weight: 650;
+}
+.reservation-settings-heading p {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+.reservation-settings-panel {
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: #fff;
+}
+.reservation-settings-section {
+  padding: 22px 26px;
+  border-bottom: 1px solid var(--border);
+}
+.reservation-settings-section h2 {
+  margin: 0 0 17px;
+  color: var(--primary);
+  font-size: 13px;
+  font-weight: 700;
+}
+.reservation-setting-times {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 18px;
+}
+.reservation-setting-times label,
+.reservation-setting-expiry {
+  display: grid;
+  gap: 8px;
+  color: var(--text-primary);
+  font-size: 12px;
+  font-weight: 600;
+}
+.reservation-setting-times input,
+.reservation-setting-expiry input {
+  width: 160px;
+  height: 38px;
+  padding: 0 10px;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  background: #fff;
+  color: var(--text-primary);
+  font: inherit;
+  font-size: 12px;
+}
+.reservation-setting-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 12px 0;
+  border-bottom: 1px solid #f0f0ec;
+}
+.reservation-setting-row:last-child {
+  border-bottom: 0;
+  padding-bottom: 0;
+}
+.reservation-setting-row strong,
+.reservation-setting-fixed strong {
+  font-size: 12px;
+  font-weight: 650;
+}
+.reservation-setting-row p,
+.reservation-setting-help {
+  margin: 5px 0 0;
+  color: var(--text-secondary);
+  font-size: 11px;
+  line-height: 1.5;
+}
+.reservation-setting-switch {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: none;
+  cursor: pointer;
+}
+.reservation-setting-switch input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+}
+.reservation-setting-switch > span {
+  position: relative;
+  width: 38px;
+  height: 21px;
+  border-radius: 20px;
+  background: #c9cfca;
+  transition: background 0.15s;
+}
+.reservation-setting-switch > span::after {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  background: #fff;
+  content: "";
+  transition: transform 0.15s;
+}
+.reservation-setting-switch input:checked + span {
+  background: var(--primary);
+}
+.reservation-setting-switch input:checked + span::after {
+  transform: translateX(17px);
+}
+.reservation-setting-switch input:focus-visible + span {
+  outline: 2px solid var(--primary);
+  outline-offset: 3px;
+}
+.reservation-setting-switch small {
+  min-width: 25px;
+  color: var(--text-secondary);
+  font-size: 10px;
+  font-weight: 700;
+}
+.reservation-setting-expiry > span {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.reservation-setting-expiry input {
+  width: 82px;
+}
+.reservation-setting-expiry > span > span,
+.reservation-setting-fixed > span {
+  display: inline-flex;
+  align-items: center;
+  min-height: 38px;
+  padding: 0 12px;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  background: #f8f8f6;
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 500;
+}
+.reservation-setting-fixed {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.reservation-settings-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 16px 26px;
+}
+.reservation-settings-actions button {
+  min-height: 37px;
+  padding: 0 17px;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  background: #fff;
+  color: var(--text-primary);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 650;
+  cursor: pointer;
+}
+.reservation-settings-actions button:last-child {
+  border-color: var(--primary);
+  background: var(--primary);
+  color: #fff;
+}
+.reservation-settings-actions button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+.reservation-settings-error,
+.reservation-settings-notice {
+  margin: 14px 26px 0;
+  padding: 10px 12px;
+  border-radius: 5px;
+  font-size: 11px;
+}
+.reservation-settings-error {
+  background: #f9eae7;
+  color: #a53b32;
+}
+.reservation-settings-notice {
+  background: #e7f3e9;
+  color: var(--primary);
+}
+@media (max-width: 650px) {
+  .reservation-settings-section {
+    padding: 18px;
+  }
+  .reservation-setting-row {
+    align-items: flex-start;
+  }
+  .reservation-setting-row p {
+    max-width: 290px;
+  }
+  .reservation-settings-actions {
+    padding: 16px 18px;
+  }
+}
+
+.demo-notice-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 120;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgb(15 32 25 / 58%);
+}
+.demo-notice-modal {
+  width: min(440px, 100%);
+  padding: 30px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: #fff;
+  box-shadow: 0 24px 70px rgb(0 0 0 / 18%);
+}
+.demo-notice-eyebrow {
+  color: var(--primary);
+  font-size: 10px;
+  font-weight: 750;
+  letter-spacing: 0.13em;
+}
+.demo-notice-modal h2 {
+  margin: 10px 0 12px;
+  color: var(--text-primary);
+  font-size: 22px;
+  line-height: 1.25;
+}
+.demo-notice-modal p {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 13px;
+  line-height: 1.6;
+}
+.demo-notice-modal button {
+  width: 100%;
+  min-height: 40px;
+  margin-top: 23px;
+  border: 0;
+  border-radius: 6px;
+  background: var(--primary);
+  color: #fff;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 650;
+  cursor: pointer;
+}
+.demo-notice-modal button:hover {
+  background: var(--primary-hover);
+}
+.demo-notice-modal button:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 3px;
+}

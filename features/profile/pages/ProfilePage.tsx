@@ -1,4 +1,6 @@
 "use client";
+import "../../settings/styles/settings.css";
+import "../styles/profile.css";
 
 import Link from "next/link";
 import { useEffect, useState, type ChangeEvent } from "react";

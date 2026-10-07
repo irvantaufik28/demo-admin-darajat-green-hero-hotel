@@ -1,13 +1,15 @@
 "use client";
+import "../../dashboard/styles/dashboard.css";
 import "../styles/reservations.css";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AdminShell } from "../../../components/layout/AdminShell";
 import { Icon } from "../../../components/ui/Icon";
+import { LoadingSkeleton } from "../../../components/ui/LoadingSkeleton";
+import { restoreSession } from "../../../lib/auth";
 import "../components/room-rack.css";
 import { RoomRackReservationSummary } from "../components/RoomRackReservationSummary";
 import {
-  RACK_START_DATE,
   RACK_DAYS,
   buildDateWindow,
   formatDayLabel,
@@ -16,8 +18,6 @@ import {
   formatRangeLabel,
   formatRupiah,
   isWeekend,
-  roomRackSummary,
-  roomTypeGroups,
   sourceShort,
   toISODate,
   type Reservation,
@@ -25,6 +25,8 @@ import {
   type RoomUnit,
 } from "../constants/room-rack-data";
 import { extras as addonOptions, getExtraCost, formatStayDate } from "../constants/walk-in-data";
+import { getRoomRack, summarizeRoomRack, toRoomRackGroups, type RoomRackResponse } from "../services/room-rack";
+import { todayJakarta } from "../utils/stay-dates";
 
 const CHECKOUT_TIME = "12:00";
 const CHECKIN_TIME = "14:00";
@@ -32,7 +34,7 @@ const CHECKIN_TIME = "14:00";
 // Map a reservation status to a bar modifier, factoring in the room status
 // (e.g. an in-house guest in a due-out room renders as the "due-out" style).
 function barModifier(res: Reservation, room: RoomUnit): string {
-  if (res.id.startsWith("MNT")) return "maintenance";
+  if (res.status === "maintenance") return "maintenance";
   if (res.status === "in-house" && room.status === "due-out") return "due-out";
   return res.status;
 }
@@ -79,7 +81,7 @@ function formatHuman(iso: string): string {
   return `${formatDayLabel(date)}, ${formatDateNumber(date)} ${formatMonthLabel(date)} ${date.getFullYear()}`;
 }
 
-type Selected = { res: Reservation; room: RoomUnit; group: RoomTypeGroup };
+type Selected = { res: Reservation; room: RoomUnit | null; group: RoomTypeGroup };
 
 type DragState = {
   roomNumber: string;
@@ -98,21 +100,11 @@ type NewBookingDraft = {
   nights: number;
 };
 
-// Default selection: Hendra Pratama / RES-10492 (room 101).
-function findInitialSelected(): Selected | null {
-  for (const group of roomTypeGroups) {
-    for (const room of group.rooms) {
-      const res = room.reservations.find((r) => r.id === "RES-10492");
-      if (res) return { res, room, group };
-    }
-  }
-  return null;
-}
-
 /** Check whether a given day index overlaps any existing reservation in the room. */
 function isDayOccupied(room: RoomUnit, dayIdx: number, window: Date[]): boolean {
   const dayISO = toISODate(window[dayIdx]);
   return room.reservations.some((res) => {
+    if (res.reservationStatus === "checked_out") return false;
     const ci = res.checkIn;
     const [coY, coM, coD] = res.checkOut.split("-").map(Number);
     const lastNight = new Date(coY, coM - 1, coD);
@@ -122,9 +114,86 @@ function isDayOccupied(room: RoomUnit, dayIdx: number, window: Date[]): boolean 
   });
 }
 
+function isHeldForUnassigned(
+  group: RoomTypeGroup,
+  room: RoomUnit,
+  dayIdx: number,
+  window: Date[],
+): boolean {
+  if (isDayOccupied(room, dayIdx, window)) return false;
+
+  const stayDate = toISODate(window[dayIdx]);
+  const inventoryDay = group.inventory?.find((day) => day.stayDate === stayDate);
+  if (inventoryDay) return inventoryDay.heldForUnassigned;
+  const unassignedCount = group.unassignedReservations.filter(
+    (reservation) => reservation.checkIn <= stayDate && stayDate < reservation.checkOut,
+  ).length;
+  if (unassignedCount === 0) return false;
+
+  const freeRoomCount = group.rooms.filter(
+    (candidate) => !isDayOccupied(candidate, dayIdx, window),
+  ).length;
+  return freeRoomCount <= unassignedCount;
+}
+
+function isDayBookable(group: RoomTypeGroup, room: RoomUnit, dayIdx: number, window: Date[], todayISO: string): boolean {
+  const stayDate = toISODate(window[dayIdx]);
+  if (stayDate < todayISO) return false;
+  const inventory = group.inventory?.find((day) => day.stayDate === stayDate);
+  if (
+    room.isActive === false ||
+    room.status === "maintenance" ||
+    room.status === "out_of_service" ||
+    (stayDate <= todayISO && room.status !== "vacant" && room.status !== "reserved") ||
+    (inventory && (!inventory.isConfigured || inventory.stopSell || (inventory.availableRooms ?? 0) < 1))
+  ) return false;
+  return !isDayOccupied(room, dayIdx, window) && !isHeldForUnassigned(group, room, dayIdx, window);
+}
+
+function shiftDate(iso: string, days: number): string {
+  const date = new Date(`${iso}T00:00:00.000Z`);
+  date.setUTCDate(date.getUTCDate() + days);
+  return date.toISOString().slice(0, 10);
+}
+
 export function RoomRackPage() {
-  const window = useMemo(() => buildDateWindow(RACK_START_DATE, RACK_DAYS), []);
-  const todayISO = RACK_START_DATE;
+  const [startDate, setStartDate] = useState<string | null>(null);
+  const [rack, setRack] = useState<RoomRackResponse | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [refreshKey, setRefreshKey] = useState(0);
+  const [roomTypeFilter, setRoomTypeFilter] = useState("all");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [sourceFilter, setSourceFilter] = useState("all");
+  const window = useMemo(() => startDate ? buildDateWindow(startDate, RACK_DAYS) : [], [startDate]);
+  const todayISO = rack?.serverDate ?? startDate ?? "";
+  const roomTypeGroups = useMemo(() => rack ? toRoomRackGroups(rack) : [], [rack]);
+  const roomRackSummary = useMemo(() => rack ? summarizeRoomRack(rack) : null, [rack]);
+
+  useEffect(() => setStartDate(todayJakarta()), []);
+  useEffect(() => {
+    if (!startDate) return;
+    const controller = new AbortController();
+    setLoading(true);
+    setError("");
+    setRack(null);
+    setSelected(null);
+    setPending(null);
+    setDrag(null);
+    async function load() {
+      try {
+        if (!(await restoreSession())) return;
+        const result = await getRoomRack(startDate!, controller.signal);
+        if (!controller.signal.aborted) setRack(result);
+      } catch (cause) {
+        if (!controller.signal.aborted) setError(cause instanceof Error ? cause.message : "Room Rack gagal dimuat.");
+      } finally {
+        if (!controller.signal.aborted) setLoading(false);
+      }
+    }
+    void load();
+    return () => controller.abort();
+  }, [startDate, refreshKey]);
 
   const [selected, setSelected] = useState<Selected | null>(null);
   const [search, setSearch] = useState("");
@@ -133,6 +202,20 @@ export function RoomRackPage() {
   const [booking, setBooking] = useState<NewBookingDraft | null>(null);
   const isDragging = useRef(false);
 
+  const visibleGroups = roomTypeFilter === "all"
+    ? roomTypeGroups
+    : roomTypeGroups.filter((group) => group.id === roomTypeFilter);
+  const matchesReservation = useCallback((reservation: Reservation, roomNumber?: string) => {
+    if (statusFilter !== "all" && reservation.status !== statusFilter) return false;
+    if (sourceFilter !== "all") {
+      const source = reservation.source.toLowerCase();
+      if (sourceFilter === "ota" ? !source.startsWith("ota") : source !== sourceFilter) return false;
+    }
+    const term = search.trim().toLowerCase();
+    return !term || reservation.guestName.toLowerCase().includes(term) ||
+      reservation.id.toLowerCase().includes(term) || roomNumber?.toLowerCase().includes(term) === true;
+  }, [search, sourceFilter, statusFilter]);
+
   /** Find room and group by room number. */
   const findRoom = useCallback((roomNum: string) => {
     for (const g of roomTypeGroups) {
@@ -140,20 +223,22 @@ export function RoomRackPage() {
       if (r) return { room: r, group: g };
     }
     return null;
-  }, []);
+  }, [roomTypeGroups]);
 
   /** Start dragging from an empty day cell. */
   const handleDragStart = useCallback(
     (roomNumber: string, groupName: string, dayIdx: number) => {
       const found = findRoom(roomNumber);
       if (!found) return;
-      if (isDayOccupied(found.room, dayIdx, window)) return;
+      if (
+        !isDayBookable(found.group, found.room, dayIdx, window, todayISO)
+      ) return;
       isDragging.current = true;
       // New drag clears old pending placeholder.
       setPending(null);
       setDrag({ roomNumber, groupName, startIdx: dayIdx, endIdx: dayIdx });
     },
-    [findRoom, window],
+    [findRoom, window, todayISO],
   );
 
   /** Extend drag selection as mouse moves. */
@@ -165,11 +250,13 @@ export function RoomRackPage() {
       const lo = Math.min(drag.startIdx, dayIdx);
       const hi = Math.max(drag.startIdx, dayIdx);
       for (let i = lo; i <= hi; i++) {
-        if (isDayOccupied(found.room, i, window)) return;
+        if (
+          !isDayBookable(found.group, found.room, i, window, todayISO)
+        ) return;
       }
       setDrag((prev) => (prev ? { ...prev, endIdx: dayIdx } : null));
     },
-    [drag, findRoom, window],
+    [drag, findRoom, window, todayISO],
   );
 
   /** End drag → create a pending placeholder (not the modal yet). */
@@ -209,14 +296,14 @@ export function RoomRackPage() {
   }, [handleDragEnd]);
 
   const metrics = [
-    { key: "available", tone: "success", value: roomRackSummary.availableRooms, label: "Available Rooms", glyph: "✓" },
-    { key: "ready", tone: "warning", value: roomRackSummary.readyToCheckIn, label: "Ready to Check-in", glyph: "◷" },
-    { key: "in-house", tone: "primary", value: roomRackSummary.inHouse, label: "In House", glyph: "●" },
-    { key: "due-out", tone: "info", value: roomRackSummary.dueOut, label: "Due Out", glyph: "↩" },
-    { key: "unavailable", tone: "maintenance", value: roomRackSummary.unavailable, label: "Unavailable Rooms", glyph: "⚠" },
+    { key: "available", tone: "success", value: roomRackSummary?.availableRooms, label: "Available Rooms", glyph: "✓" },
+    { key: "ready", tone: "warning", value: roomRackSummary?.readyToCheckIn, label: "Ready to Check-in", glyph: "◷" },
+    { key: "in-house", tone: "primary", value: roomRackSummary?.inHouse, label: "In House", glyph: "●" },
+    { key: "due-out", tone: "info", value: roomRackSummary?.dueOut, label: "Due Out", glyph: "↩" },
+    { key: "unavailable", tone: "maintenance", value: roomRackSummary?.unavailable, label: "Unavailable Rooms", glyph: "⚠" },
   ] as const;
 
-  const rangeLabel = formatRangeLabel(window[0], window[window.length - 1]);
+  const rangeLabel = window.length ? formatRangeLabel(window[0], window[window.length - 1]) : "—";
 
   return (
     <AdminShell title="Reservations" context="Room Rack">
@@ -236,7 +323,7 @@ export function RoomRackPage() {
             <div key={m.key} className={`rr-metric rr-metric--${m.tone}`}>
               <span className="rr-metric__icon" aria-hidden="true">{m.glyph}</span>
               <div>
-                <div className="rr-metric__value">{m.value}</div>
+                <div className="rr-metric__value">{m.value ?? "—"}</div>
                 <div className="rr-metric__label">{m.label}</div>
               </div>
             </div>
@@ -246,14 +333,14 @@ export function RoomRackPage() {
         {/* Toolbar */}
         <div className="room-rack__toolbar">
           <div className="rr-pager" role="group" aria-label="Date navigation">
-            <button type="button">
+            <button type="button" disabled={!startDate || loading} onClick={() => startDate && setStartDate(shiftDate(startDate, -RACK_DAYS))}>
               <Icon name="chevronLeft" width={14} height={14} />
               Prev 14 Days
             </button>
-            <button type="button" className="rr-pager--today">
-              Today ({formatDateNumber(window[0])} {formatMonthLabel(window[0])})
+            <button type="button" className="rr-pager--today" onClick={() => { setStartDate(todayJakarta()); setRefreshKey((value) => value + 1); }}>
+              Today ({todayISO ? formatDateNumber(buildDateWindow(todayISO, 1)[0]) : "—"} {todayISO ? formatMonthLabel(buildDateWindow(todayISO, 1)[0]) : ""})
             </button>
-            <button type="button">
+            <button type="button" disabled={!startDate || loading} onClick={() => startDate && setStartDate(shiftDate(startDate, RACK_DAYS))}>
               Next 14 Days
               <Icon name="chevronRight" width={14} height={14} />
             </button>
@@ -271,27 +358,30 @@ export function RoomRackPage() {
               aria-label="Search guest or reservation number"
             />
           </span>
-          <select aria-label="Filter room type" defaultValue="all">
-            <option value="all">All Room Types (9)</option>
+          <select aria-label="Filter room type" value={roomTypeFilter} onChange={(event) => setRoomTypeFilter(event.target.value)}>
+            <option value="all">All Room Types ({roomTypeGroups.length})</option>
             {roomTypeGroups.map((g) => (
-              <option key={g.name} value={g.name}>{g.name}</option>
+              <option key={g.id ?? g.name} value={g.id ?? g.name}>{g.name}</option>
             ))}
           </select>
-          <select aria-label="Filter status" defaultValue="all">
+          <select aria-label="Filter status" value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)}>
             <option value="all">All Statuses</option>
             <option value="in-house">In-House</option>
             <option value="confirmed">Confirmed</option>
+            <option value="awaiting-confirmation">Awaiting Confirmation</option>
             <option value="due-out">Due Out</option>
+            <option value="overdue">Overdue</option>
+            <option value="checked-out">Checked Out</option>
             <option value="maintenance">Maintenance</option>
           </select>
-          <select aria-label="Filter source" defaultValue="all">
+          <select aria-label="Filter source" value={sourceFilter} onChange={(event) => setSourceFilter(event.target.value)}>
             <option value="all">All Sources</option>
             <option value="walk-in">Walk-in</option>
             <option value="website">Website</option>
             <option value="ota">OTA</option>
             <option value="phone">Phone</option>
           </select>
-          <button type="button" className="rr-refresh">
+          <button type="button" className="rr-refresh" disabled={loading} onClick={() => setRefreshKey((value) => value + 1)}>
             <Icon name="reset" width={15} height={15} />
             Refresh
           </button>
@@ -304,6 +394,9 @@ export function RoomRackPage() {
             <span className="rr-legend-swatch rr-legend-swatch--warning" /> Upcoming / Ready to Check-in
           </span>
           <span className="rr-legend-item">
+            <span className="rr-legend-swatch rr-legend-swatch--awaiting" /> Awaiting Confirmation
+          </span>
+          <span className="rr-legend-item">
             <span className="rr-legend-swatch rr-legend-swatch--success" /> In House
           </span>
           <span className="rr-legend-item">
@@ -311,6 +404,12 @@ export function RoomRackPage() {
           </span>
           <span className="rr-legend-item">
             <span className="rr-legend-swatch rr-legend-swatch--danger" /> Overdue
+          </span>
+          <span className="rr-legend-item">
+            <span className="rr-legend-swatch rr-legend-swatch--checked-out" /> Checked Out
+          </span>
+          <span className="rr-legend-item">
+            <span className="rr-legend-swatch rr-legend-swatch--unassigned" /> Unassigned
           </span>
           <span className="rr-legend-divider" aria-hidden="true" />
           <strong>Room</strong>
@@ -331,9 +430,13 @@ export function RoomRackPage() {
           </span>
         </div>
 
+        {error && <div className="rr-load-error" role="alert">{error} <button type="button" onClick={() => setRefreshKey((value) => value + 1)}>Try again</button></div>}
+
         {/* Body: chart + detail */}
         <div className={selected ? "room-rack__body" : "room-rack__body room-rack__body--full"}>
-          <div className="rr-chart">
+          <div className="rr-chart" aria-busy={loading}>
+            {loading && <div className="rr-load-state"><LoadingSkeleton /></div>}
+            {!loading && !error && rack && (
             <div className="rr-chart__scroll">
               <div className="rr-grid">
                 {/* Header row */}
@@ -358,14 +461,15 @@ export function RoomRackPage() {
                 })}
 
                 {/* Groups */}
-                {roomTypeGroups.map((group) => (
+                {visibleGroups.map((group) => (
                   <RoomGroup
-                    key={group.name}
+                    key={group.id ?? group.name}
                     group={group}
                     window={window}
                     todayISO={todayISO}
-                    selectedId={selected?.res.id ?? null}
+                    selectedId={selected?.res.reservationRoomId ?? selected?.res.id ?? null}
                     onSelect={(res, room) => setSelected({ res, room, group })}
+                    matchesReservation={matchesReservation}
                     drag={drag}
                     onDragStart={handleDragStart}
                     onDragMove={handleDragMove}
@@ -374,8 +478,10 @@ export function RoomRackPage() {
                     onPendingClick={(draft) => setBooking(draft)}
                   />
                 ))}
+                {visibleGroups.length === 0 && <div className="rr-empty-state">No room types found.</div>}
               </div>
             </div>
+            )}
           </div>
 
           {selected && (
@@ -383,6 +489,7 @@ export function RoomRackPage() {
               reservation={selected.res}
               room={selected.room}
               group={selected.group}
+              todayISO={todayISO}
               onClose={() => setSelected(null)}
             />
           )}
@@ -390,7 +497,7 @@ export function RoomRackPage() {
 
         {/* Drag-to-create booking form */}
         {booking && (
-          <NewBookingForm draft={booking} onClose={() => setBooking(null)} />
+          <NewBookingForm draft={booking} groups={roomTypeGroups} onClose={() => setBooking(null)} />
         )}
       </div>
     </AdminShell>
@@ -403,6 +510,7 @@ function RoomGroup({
   todayISO,
   selectedId,
   onSelect,
+  matchesReservation,
   drag,
   onDragStart,
   onDragMove,
@@ -414,7 +522,8 @@ function RoomGroup({
   window: Date[];
   todayISO: string;
   selectedId: string | null;
-  onSelect: (res: Reservation, room: RoomUnit) => void;
+  onSelect: (res: Reservation, room: RoomUnit | null) => void;
+  matchesReservation: (res: Reservation, roomNumber?: string) => boolean;
   drag: DragState | null;
   onDragStart: (roomNumber: string, groupName: string, dayIdx: number) => void;
   onDragMove: (dayIdx: number) => void;
@@ -453,7 +562,7 @@ function RoomGroup({
           ].filter(Boolean).join(" ");
           return (
             <div key={iso} className={classes}>
-              {(group.dailyRates[i] / 1000).toFixed(0)}k
+              {group.dailyRates[i] == null ? "—" : `${Math.round(group.dailyRates[i] / 1000)}k`}
             </div>
           );
         })}
@@ -485,24 +594,35 @@ function RoomGroup({
             {window.map((date, dayIdx) => {
               const iso = toISODate(date);
               const isDragHighlight = dayIdx >= dragLo && dayIdx <= dragHi;
+              const heldForUnassigned = isHeldForUnassigned(group, room, dayIdx, window);
+              const bookable = isDayBookable(group, room, dayIdx, window, todayISO);
               const classes = [
                 "rr-day-cell",
                 isWeekend(date) ? "rr-day-cell--weekend" : "",
                 iso === todayISO ? "rr-day-cell--today" : "",
                 isDragHighlight ? "rr-day-cell--drag" : "",
+                heldForUnassigned ? "rr-day-cell--held" : "",
+                !bookable ? "rr-day-cell--unavailable" : "",
               ].filter(Boolean).join(" ");
               return (
                 <div
                   key={iso}
                   className={classes}
+                  title={heldForUnassigned ? "Kamar tersisa dialokasikan untuk reservasi Unassigned" : undefined}
                   onMouseDown={(e) => {
+                    if (!bookable) return;
                     e.preventDefault();
                     onDragStart(room.number, group.name, dayIdx);
                   }}
                   onMouseEnter={() => onDragMove(dayIdx)}
                   onMouseUp={onDragEnd}
                 >
-                  {!isDragHighlight && (
+                  {heldForUnassigned && !isDayOccupied(room, dayIdx, window) && (
+                    <span className="rr-day-cell__held">
+                      Held for<br />Unassigned
+                    </span>
+                  )}
+                  {!isDragHighlight && bookable && (
                     <span className="rr-day-cell__add" aria-hidden="true">
                       <Icon name="plus" width={14} height={14} />
                     </span>
@@ -516,7 +636,7 @@ function RoomGroup({
               );
             })}
 
-            {room.reservations.map((res) => {
+            {room.reservations.filter((res) => matchesReservation(res, room.number)).map((res) => {
               const geom = barGeometry(res, window);
               if (!geom) return null;
               const modifier = barModifier(res, room);
@@ -528,11 +648,11 @@ function RoomGroup({
               return (
                 <button
                   type="button"
-                  key={res.id}
+                  key={res.reservationRoomId ?? res.id}
                   className={[
                     "rr-bar",
                     `rr-bar--${modifier}`,
-                    selectedId === res.id ? "rr-bar--selected" : "",
+                    selectedId === (res.reservationRoomId ?? res.id) ? "rr-bar--selected" : "",
                   ].filter(Boolean).join(" ")}
                   style={style}
                   onClick={() => { if (!isMaintenance) onSelect(res, room); }}
@@ -541,10 +661,10 @@ function RoomGroup({
                   <span className="rr-bar__name">{res.guestName}</span>
                   <span className="rr-bar__meta">
                     {isMaintenance ? (
-                      <>{room.maintenanceNote ?? "Blocked"}</>
+                      <>{res.maintenanceNote ?? room.maintenanceNote ?? "Blocked"}</>
                     ) : (
                       <>
-                        {sourceShort[res.source]}
+                        {sourceShort[res.source] ?? res.source}
                         {modifier === "due-out" && (
                           <span className="rr-bar__badge">out {CHECKOUT_TIME}</span>
                         )}
@@ -583,15 +703,64 @@ function RoomGroup({
         </div>
         );
       })}
+      {group.unassignedReservations.some((res) => matchesReservation(res)) && (
+        <div
+          className={`rr-room-row${collapsed ? " rr-room-row--collapsed" : ""}`}
+          style={{ display: "contents" }}
+          aria-hidden={collapsed}
+          inert={collapsed}
+        >
+          <div className="rr-room-cell rr-room-cell--unassigned">
+            <div className="rr-room-cell__top">
+              <span className="rr-room-cell__num">Unassigned</span>
+              <span className="rr-room-cell__unassigned-count">
+                {group.unassignedReservations.filter((res) => matchesReservation(res)).length}
+              </span>
+            </div>
+            <span className="rr-room-cell__floor">Room number pending</span>
+          </div>
+          <div className="rr-lane rr-lane--unassigned">
+            {window.map((date) => (
+              <div
+                key={toISODate(date)}
+                className={`rr-day-cell${isWeekend(date) ? " rr-day-cell--weekend" : ""}${toISODate(date) === todayISO ? " rr-day-cell--today" : ""}`}
+              />
+            ))}
+            {group.unassignedReservations.filter((res) => matchesReservation(res)).map((res) => {
+              const geometry = barGeometry(res, window);
+              if (!geometry) return null;
+
+              return (
+                <button
+                  key={res.reservationRoomId ?? res.id}
+                  type="button"
+                  className={`rr-bar rr-bar--${res.status} rr-bar--unassigned${selectedId === (res.reservationRoomId ?? res.id) ? " rr-bar--selected" : ""}`}
+                  style={{
+                    left: `calc(${geometry.startIdx} * var(--rr-day-col) + 3px)`,
+                    width: `calc(${geometry.span} * var(--rr-day-col) - 6px)`,
+                  }}
+                  onClick={() => onSelect(res, null)}
+                  aria-label={`${res.guestName}, ${res.checkIn} to ${res.checkOut}, room not assigned`}
+                >
+                  <span className="rr-bar__name">{res.guestName}</span>
+                  <span className="rr-bar__meta">{sourceShort[res.source] ?? res.source} · Not Assigned</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
     </>
   );
 }
 
 function NewBookingForm({
   draft,
+  groups,
   onClose,
 }: {
   draft: NewBookingDraft;
+  groups: RoomTypeGroup[];
   onClose: () => void;
 }) {
   const [adults, setAdults] = useState(2);
@@ -613,8 +782,9 @@ function NewBookingForm({
   const [depositNote, setDepositNote] = useState("");
 
   // Look up the group to get the rate.
-  const group = roomTypeGroups.find((g) => g.name === draft.groupName);
-  const ratePerNight = group?.dailyRates[0] ?? 0;
+  const group = groups.find((g) => g.name === draft.groupName);
+  const rateIndex = group?.inventory?.findIndex((day) => day.stayDate === draft.checkIn) ?? -1;
+  const ratePerNight = rateIndex >= 0 ? group?.dailyRates[rateIndex] ?? 0 : 0;
   const roomCharge = ratePerNight * draft.nights;
   const extraBedRate = 250000;
   const extraBedCharge = extraBed ? extraBedRate * draft.nights : 0;

@@ -1,4 +1,6 @@
 "use client";
+import "../../reservations/styles/reservations.css";
+import "../styles/payments.css";
 
 import { LoadingSkeleton } from "../../../components/ui/LoadingSkeleton";
 import { useCallback, useEffect, useState } from "react";

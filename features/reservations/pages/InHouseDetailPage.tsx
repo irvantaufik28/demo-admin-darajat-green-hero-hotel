@@ -1,4 +1,5 @@
 "use client";
+import "../../dashboard/styles/dashboard.css";
 import "../styles/reservations.css";
 
 import { Fragment, useEffect, useState, type ReactNode } from "react";

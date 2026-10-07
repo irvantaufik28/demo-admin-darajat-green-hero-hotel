@@ -1,4 +1,6 @@
 "use client";
+import "../../settings/styles/settings.css";
+import "../styles/master.css";
 
 import { LoadingSkeleton } from "../../../components/ui/LoadingSkeleton";
 import { useEffect, useMemo, useState, type FormEvent } from "react";

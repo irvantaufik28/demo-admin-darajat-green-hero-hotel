@@ -809,7 +809,6 @@ button {
   line-height: 1;
 }
 
-/* Shared loading state for API-backed admin pages. */
 .loading-skeleton {
   display: grid;
   gap: 16px;

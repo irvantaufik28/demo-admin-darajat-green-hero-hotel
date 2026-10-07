@@ -1,4 +1,6 @@
 "use client";
+import "../../reservations/styles/reservations.css";
+import "../../dashboard/styles/dashboard.css";
 import "../styles/campaigns.css";
 
 import { LoadingSkeleton } from "../../../components/ui/LoadingSkeleton";

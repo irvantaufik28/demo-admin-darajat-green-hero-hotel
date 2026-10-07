@@ -842,9 +842,10 @@
 }
 .ota-room-row {
   display: grid;
-  grid-template-columns:
-    minmax(120px, 1.35fr) auto minmax(125px, 1fr) minmax(105px, auto)
-    20px;
+  grid-template-columns: minmax(120px, 1.35fr) auto minmax(125px, 1fr) minmax(
+      105px,
+      auto
+    ) 20px;
   align-items: end;
   gap: 10px;
   padding: 12px;

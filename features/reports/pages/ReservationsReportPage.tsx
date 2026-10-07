@@ -1,4 +1,6 @@
 "use client";
+import "../../reservations/styles/reservations.css";
+import "../styles/reports.css";
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";

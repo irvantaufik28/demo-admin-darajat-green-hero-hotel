@@ -1,0 +1,751 @@
+.report-reservations-page {
+  width: 100%;
+}
+.report-reservations-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+.report-reservations-heading h1 {
+  margin: 0;
+  font-size: 25px;
+  font-weight: 650;
+}
+.report-reservations-heading p {
+  margin: 5px 0 0;
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+.report-reservations-heading > span {
+  color: var(--text-secondary);
+  font-size: 11px;
+}
+.report-reservations-overview {
+  display: grid;
+  grid-template-columns: 1.35fr 1fr;
+  gap: 15px;
+  margin-bottom: 17px;
+}
+.report-reservations-card {
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: #fff;
+}
+.report-reservations-card:first-child {
+  border-color: #c7dccd;
+  background: #f2f8f3;
+}
+.report-reservations-card:first-child h2 {
+  border-bottom-color: #c7dccd;
+  background: #e6f1e9;
+  color: var(--primary);
+}
+.report-reservations-card:first-child .report-reservations-metrics > div {
+  border-right-color: #c7dccd;
+}
+.report-reservations-card:first-child
+  .report-reservations-metrics
+  > div:last-child {
+  border-right: 0;
+}
+.report-reservations-card:nth-child(2) {
+  border-color: #e5d7b8;
+  background: #fffbf2;
+}
+.report-reservations-card:nth-child(2) h2 {
+  border-bottom-color: #e5d7b8;
+  background: #f8efd9;
+  color: #76551c;
+}
+.report-reservations-card:nth-child(2) .report-reservations-metrics > div {
+  border-right-color: #e5d7b8;
+}
+.report-reservations-card:nth-child(2)
+  .report-reservations-metrics
+  > div:last-child {
+  border-right: 0;
+}
+.report-reservations-card h2 {
+  margin: 0;
+  padding: 13px 16px;
+  border-bottom: 1px solid var(--border);
+  font-size: 13px;
+  font-weight: 650;
+}
+.report-reservations-metrics {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  padding: 20px 10px;
+}
+.report-reservations-metrics > div {
+  display: grid;
+  gap: 8px;
+  padding: 0 12px;
+  border-right: 1px solid var(--border);
+}
+.report-reservations-metrics > div:last-child {
+  border-right: 0;
+}
+.report-reservations-metrics span {
+  color: var(--text-secondary);
+  font-size: 11px;
+  white-space: nowrap;
+}
+.report-reservations-metrics strong {
+  font-size: 22px;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+}
+.report-reservations-metrics--finance {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  padding-bottom: 10px;
+}
+.report-reservations-metrics--finance strong {
+  font-size: 18px;
+  white-space: nowrap;
+}
+.report-reservations-metrics--finance > div:last-child strong {
+  color: #a86916;
+}
+.report-reservations-card > p {
+  margin: 2px 16px 13px;
+  color: var(--text-secondary);
+  font-size: 10px;
+  line-height: 1.4;
+}
+.report-reservations-filters {
+  display: grid;
+  gap: 10px;
+  margin-bottom: 16px;
+  padding: 13px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: #fff;
+}
+.report-reservations-filter-main,
+.report-reservations-filter-extra {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  flex-wrap: wrap;
+}
+.report-reservations-filter-main > input {
+  flex: 1 1 230px;
+}
+.report-reservations-filters input,
+.report-reservations-filters select,
+.report-reservations-filters button {
+  min-height: 35px;
+  padding: 0 10px;
+  border: 1px solid #d1cfc7;
+  border-radius: 5px;
+  background: #fff;
+  color: var(--text-primary);
+  font: inherit;
+  font-size: 12px;
+}
+.report-reservations-filters label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-secondary);
+  font-size: 11px;
+}
+.report-reservations-dates {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-secondary);
+}
+.report-reservations-dates input {
+  max-width: 145px;
+}
+.report-reservations-filter-extra select {
+  min-width: 145px;
+}
+.report-reservations-filter-extra button {
+  cursor: pointer;
+}
+.report-reservations-filter-extra button:hover {
+  background: var(--background);
+}
+.report-reservations-filter-extra .report-reservations-export {
+  margin-left: auto;
+  border-color: var(--primary);
+  background: var(--primary);
+  color: #fff;
+}
+.report-reservations-filter-extra .report-reservations-export:hover {
+  background: var(--primary-hover);
+}
+.report-reservations-table-shell {
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: #fff;
+}
+.report-reservations-table-scroll {
+  overflow-x: auto;
+}
+.report-reservations-table {
+  width: 100%;
+  min-width: 1660px;
+  border-collapse: collapse;
+  text-align: left;
+}
+.report-reservations-table th {
+  padding: 11px 10px;
+  border-bottom: 1px solid var(--border);
+  background: #fbfbfa;
+  color: var(--text-secondary);
+  font-size: 10px;
+  font-weight: 650;
+  white-space: nowrap;
+}
+.report-reservations-table td {
+  padding: 12px 10px;
+  border-bottom: 1px solid #f0efea;
+  font-size: 11.5px;
+  white-space: nowrap;
+}
+.report-reservations-table tbody tr:hover {
+  background: var(--background);
+}
+.report-reservations-table th:nth-child(6),
+.report-reservations-table td:nth-child(6),
+.report-reservations-table th:nth-child(9),
+.report-reservations-table td:nth-child(9),
+.report-reservations-table th:nth-child(10),
+.report-reservations-table td:nth-child(10) {
+  text-align: center;
+}
+.report-reservations-table th:nth-child(n + 12),
+.report-reservations-table td:nth-child(n + 12) {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.report-reservations-table a {
+  color: var(--primary);
+  font-weight: 600;
+  text-decoration: none;
+}
+.report-reservations-table a:hover {
+  text-decoration: underline;
+}
+.report-reservations-outstanding {
+  color: #a86916;
+  font-weight: 650;
+}
+.report-reservations-empty {
+  padding: 25px;
+  color: var(--text-secondary);
+  font-size: 12px;
+  text-align: center;
+}
+.report-reservations-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 11px 16px;
+  border-top: 1px solid var(--border);
+  background: #fbfbfa;
+  color: var(--text-secondary);
+  font-size: 11px;
+}
+.report-reservations-footer strong {
+  color: var(--text-primary);
+}
+.report-reservations-footer > div {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.report-reservations-footer button {
+  min-height: 27px;
+  padding: 0 9px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: #fff;
+  color: var(--text-primary);
+  font: inherit;
+  cursor: pointer;
+}
+.report-reservations-footer button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+.report-reservations-note {
+  margin: 12px 0 0;
+  color: var(--text-secondary);
+  font-size: 11px;
+}
+.revenue-report-page {
+  display: grid;
+  gap: 16px;
+  width: 100%;
+}
+.revenue-report-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+}
+.revenue-report-heading h1 {
+  margin: 0;
+  font-size: 25px;
+  font-weight: 650;
+}
+.revenue-report-heading p {
+  margin: 5px 0 0;
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+.revenue-report-heading > span {
+  color: var(--text-secondary);
+  font-size: 11px;
+}
+.revenue-report-kpis {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+.revenue-report-kpi {
+  display: grid;
+  align-content: space-between;
+  gap: 13px;
+  min-height: 95px;
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: #fff;
+}
+.revenue-report-kpi span {
+  color: var(--text-secondary);
+  font-size: 11px;
+  font-weight: 600;
+}
+.revenue-report-kpi strong {
+  font-size: clamp(15px, 1.3vw, 20px);
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.revenue-report-kpi--gross,
+.revenue-report-kpi--net {
+  border-color: #c7dccd;
+  background: #f2f8f3;
+}
+.revenue-report-kpi--collected,
+.revenue-report-kpi--paid {
+  border-color: #b8d9ca;
+  background: #eaf5ed;
+  color: #1e6b47;
+}
+.revenue-report-kpi--discount,
+.revenue-report-kpi--outstanding {
+  border-color: #e5d7b8;
+  background: #fffbf2;
+}
+.revenue-report-kpi--refunded {
+  border-color: #ead0ca;
+  background: #fdf5f3;
+  color: #a83226;
+}
+.revenue-report-disclaimer,
+.revenue-report-note {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 11px;
+  line-height: 1.5;
+}
+.revenue-report-filters {
+  display: grid;
+  gap: 11px;
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: #fff;
+}
+.revenue-report-filter-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 9px;
+}
+.revenue-report-filter-row label,
+.revenue-report-date-range {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-secondary);
+  font-size: 11px;
+}
+.revenue-report-filters input,
+.revenue-report-filters select,
+.revenue-report-filters button {
+  min-height: 36px;
+  padding: 0 10px;
+  border: 1px solid #d1cfc7;
+  border-radius: 5px;
+  background: #fff;
+  color: var(--text-primary);
+  font: inherit;
+  font-size: 12px;
+}
+.revenue-report-filter-row select {
+  min-width: 155px;
+}
+.revenue-report-date-range input {
+  width: 145px;
+}
+.revenue-report-currency {
+  margin-right: auto;
+  color: var(--text-secondary);
+  font-size: 11px;
+}
+.revenue-report-filters button {
+  cursor: pointer;
+}
+.revenue-report-filters button:hover {
+  background: var(--background);
+}
+.revenue-report-filters .revenue-report-export {
+  margin-left: auto;
+  border-color: var(--primary);
+  background: var(--primary);
+  color: #fff;
+}
+.revenue-report-filters .revenue-report-export:hover {
+  background: var(--primary-hover);
+}
+.revenue-report-panel {
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: #fff;
+}
+.revenue-report-panel > header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 15px 18px;
+  border-bottom: 1px solid var(--border);
+}
+.revenue-report-panel h2 {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 650;
+}
+.revenue-report-panel > header span {
+  color: var(--text-secondary);
+  font-size: 11px;
+}
+.revenue-report-table-scroll {
+  overflow-x: auto;
+}
+.revenue-report-table {
+  width: 100%;
+  min-width: 950px;
+  border-collapse: collapse;
+}
+.revenue-report-table--method {
+  min-width: 680px;
+}
+.revenue-report-table th {
+  padding: 12px 18px;
+  border-bottom: 1px solid var(--border);
+  background: #fbfbfa;
+  color: var(--text-secondary);
+  font-size: 11px;
+  font-weight: 650;
+  text-align: left;
+  white-space: nowrap;
+}
+.revenue-report-table td {
+  padding: 15px 18px;
+  border-bottom: 1px solid #f0efea;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.revenue-report-table th:not(:first-child),
+.revenue-report-table td:not(:first-child) {
+  text-align: right;
+}
+.revenue-report-table td strong {
+  font-weight: 600;
+}
+.revenue-report-table tbody tr:not(.revenue-report-total):hover {
+  background: var(--background);
+}
+.revenue-report-table .revenue-report-outstanding {
+  color: #a86916;
+  font-weight: 650;
+}
+.revenue-report-table .revenue-report-total {
+  background: #edf3ee;
+  color: var(--primary);
+  font-weight: 700;
+}
+.revenue-report-table .revenue-report-total td {
+  border-bottom: 0;
+}
+@media (max-width: 1100px) {
+  .revenue-report-kpis {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 650px) {
+  .revenue-report-kpis {
+    grid-template-columns: 1fr;
+  }
+  .revenue-report-currency,
+  .revenue-report-filters .revenue-report-export {
+    margin-left: 0;
+    margin-right: 0;
+  }
+  .revenue-report-heading {
+    flex-direction: column;
+  }
+}
+
+.room-performance-page {
+  display: grid;
+  gap: 17px;
+  width: 100%;
+  padding-bottom: 28px;
+}
+.room-performance-heading,
+.room-performance-actions,
+.room-performance-panel > header,
+.room-performance-comparison > header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+}
+.room-performance-heading h1 {
+  margin: 0;
+  font-size: 25px;
+  font-weight: 650;
+}
+.room-performance-heading p,
+.room-performance-period,
+.room-performance-note {
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+.room-performance-heading p {
+  margin: 5px 0 0;
+}
+.room-performance-actions button,
+.room-performance-filters button {
+  min-height: 36px;
+  padding: 0 14px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: #fff;
+  color: var(--text-primary);
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+.room-performance-actions button:last-child {
+  border-color: var(--primary);
+  background: var(--primary);
+  color: #fff;
+}
+.room-performance-filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 12px;
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: #fff;
+}
+.room-performance-filters label {
+  display: grid;
+  gap: 6px;
+  color: var(--text-secondary);
+  font-size: 11px;
+  font-weight: 600;
+}
+.room-performance-filters input,
+.room-performance-filters select {
+  min-width: 145px;
+  height: 36px;
+  padding: 0 10px;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  background: #fff;
+  color: var(--text-primary);
+  font: inherit;
+  font-size: 12px;
+}
+.room-performance-period {
+  margin: -3px 0 0;
+}
+.room-performance-kpis {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 12px;
+}
+.room-performance-kpi {
+  display: grid;
+  gap: 12px;
+  min-height: 105px;
+  padding: 18px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: #fff;
+}
+.room-performance-kpi:nth-child(1) {
+  background: #edf3ee;
+}
+.room-performance-kpi:nth-child(2) {
+  background: #f0f1e8;
+}
+.room-performance-kpi:nth-child(3) {
+  background: #e9f2ed;
+}
+.room-performance-kpi:nth-child(4) {
+  background: #f9f1e6;
+}
+.room-performance-kpi:nth-child(5) {
+  background: #e8f0ed;
+}
+.room-performance-kpi span,
+.room-performance-compare-card span {
+  color: var(--text-secondary);
+  font-size: 11px;
+  font-weight: 600;
+}
+.room-performance-kpi strong {
+  color: var(--primary);
+  font-size: 22px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.room-performance-panel,
+.room-performance-comparison {
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: #fff;
+}
+.room-performance-panel > header,
+.room-performance-comparison > header {
+  align-items: center;
+  padding: 15px 18px;
+  border-bottom: 1px solid var(--border);
+}
+.room-performance-panel h2,
+.room-performance-comparison h2 {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 650;
+}
+.room-performance-panel header span,
+.room-performance-comparison header span {
+  color: var(--text-secondary);
+  font-size: 11px;
+}
+.room-performance-scroll {
+  overflow-x: auto;
+}
+.room-performance-scroll table {
+  width: 100%;
+  min-width: 930px;
+  border-collapse: collapse;
+}
+.room-performance-scroll th {
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border);
+  background: #fafbf9;
+  color: var(--text-secondary);
+  font-size: 11px;
+  text-align: left;
+  white-space: nowrap;
+}
+.room-performance-scroll td {
+  padding: 14px 16px;
+  border-bottom: 1px solid #f0efea;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.room-performance-scroll th:not(:first-child),
+.room-performance-scroll td:not(:first-child) {
+  text-align: right;
+}
+.room-performance-scroll td strong {
+  font-weight: 650;
+}
+.room-performance-scroll .room-performance-total {
+  background: #edf3ee;
+  color: var(--primary);
+  font-weight: 700;
+}
+.room-performance-compare-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  padding: 16px;
+}
+.room-performance-compare-card {
+  display: grid;
+  gap: 9px;
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: #fafbf9;
+}
+.room-performance-compare-card strong {
+  color: var(--primary);
+  font-size: 19px;
+}
+.room-performance-compare-card small {
+  color: var(--text-secondary);
+  font-size: 11px;
+}
+.room-performance-note {
+  margin: 0;
+}
+@media (max-width: 1200px) {
+  .room-performance-kpis {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+@media (max-width: 850px) {
+  .room-performance-compare-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 650px) {
+  .room-performance-heading {
+    flex-direction: column;
+  }
+  .room-performance-kpis,
+  .room-performance-compare-grid {
+    grid-template-columns: 1fr;
+  }
+  .room-performance-actions {
+    flex-wrap: wrap;
+  }
+}
+@media print {
+  .room-performance-actions,
+  .room-performance-filters {
+    display: none;
+  }
+  .room-performance-page {
+    gap: 10px;
+  }
+}

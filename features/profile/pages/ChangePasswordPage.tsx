@@ -1,4 +1,6 @@
 "use client";
+import "../../settings/styles/settings.css";
+import "../styles/profile.css";
 
 import { AdminShell } from "../../../components/layout/AdminShell";
 

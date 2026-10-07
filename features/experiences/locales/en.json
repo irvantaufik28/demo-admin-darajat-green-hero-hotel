@@ -1,0 +1,168 @@
+{
+  "shell": {
+    "title": "Admin",
+    "context": "Experiences"
+  },
+  "list": {
+    "page": {
+      "title": "Experiences",
+      "description": "Manage add-ons and package options for guest reservations"
+    },
+    "actions": {
+      "addExperience": "+ Add Experience",
+      "reset": "Reset",
+      "edit": "Edit",
+      "enable": "Enable",
+      "disable": "Disable",
+      "previous": "Previous",
+      "next": "Next"
+    },
+    "filters": {
+      "searchPlaceholder": "Search experience...",
+      "allTypes": "All Types",
+      "status": {
+        "all": "All Status",
+        "active": "Active",
+        "inactive": "Inactive"
+      },
+      "count": "Total {total} experiences recorded"
+    },
+    "table": {
+      "experience": "Experience",
+      "category": "Category",
+      "packages": "Packages",
+      "priceRange": "Price Range",
+      "maxQty": "Max Qty",
+      "status": "Status",
+      "action": "Action"
+    },
+    "cell": {
+      "package": "{count} package",
+      "packages": "{count} packages",
+      "noPrice": "—",
+      "priceRange": "{min} – {max}"
+    },
+    "status": {
+      "active": "Active",
+      "inactive": "Inactive"
+    },
+    "pagination": {
+      "showing": "Showing {from}–{to} of {total} experiences"
+    },
+    "notice": {
+      "title": "Operational Information:",
+      "body": "Experience package prices are copied to the reservation at the time of booking. Later price changes do not affect previous transactions."
+    },
+    "messages": {
+      "empty": "No experiences match the filter.",
+      "categoriesLoadFailed": "Failed to load categories.",
+      "experiencesLoadFailed": "Failed to load experiences.",
+      "detailLoadFailed": "Failed to load experience detail.",
+      "saveFailed": "Failed to save experience.",
+      "statusChangeFailed": "Failed to change experience status."
+    }
+  },
+  "modal": {
+    "titleAdd": "Add Experience",
+    "titleEdit": "Edit Experience",
+    "closeAria": "Close",
+    "fields": {
+      "experienceName": "Experience Name",
+      "experienceNamePlaceholder": "e.g. Kambing Guling",
+      "typeCategory": "Type Category",
+      "inactive": "Inactive",
+      "shortDescription": "Short Description",
+      "packagesAndPrices": "Packages & Prices",
+      "packagesHint": "Add package variants, each with its own description and price.",
+      "addPackage": "Add Package",
+      "packageHeading": "Package {index}",
+      "removePackageAria": "Remove package {index}",
+      "packageName": "Package Name",
+      "packageNamePlaceholder": "e.g. Paket 1",
+      "price": "Price (IDR)",
+      "pricePlaceholder": "0",
+      "description": "Description",
+      "descriptionPlaceholder": "Fill in the package contents and terms",
+      "maxQuantity": "Max Quantity",
+      "imageUrl": "Image URL",
+      "imageUrlPlaceholder": "https://...",
+      "code": "Code",
+      "slug": "Slug",
+      "status": "Status",
+      "statusActive": "Active",
+      "statusInactive": "Inactive"
+    },
+    "required": "*",
+    "actions": {
+      "cancel": "Cancel",
+      "saving": "Saving...",
+      "saveChanges": "Save Changes",
+      "saveExperience": "Save Experience"
+    },
+    "validation": {
+      "requireBasics": "Fill in the name, category, code, and slug of the experience.",
+      "requirePackageNameAndPrice": "Every package must have a name and price.",
+      "duplicatePackageName": "Package names within one experience must be unique.",
+      "invalidPrice": "Package prices must be whole non-negative numbers."
+    }
+  },
+  "form": {
+    "shell": {
+      "title": "Experiences",
+      "contextAdd": "Add Experience",
+      "contextEdit": "Edit Experience"
+    },
+    "page": {
+      "titleAdd": "Add Experience",
+      "titleEdit": "Edit Experience",
+      "descriptionAdd": "Add a new add-on available for guest reservations",
+      "descriptionEdit": "Update add-on details for guest reservations"
+    },
+    "sections": {
+      "basicInformation": "Basic Information",
+      "pricing": "Pricing",
+      "availability": "Availability",
+      "internalNote": "Internal Note"
+    },
+    "fields": {
+      "experienceName": "Experience Name",
+      "experienceNamePlaceholder": "e.g. BBQ & Grill Package",
+      "typeCategory": "Type Category",
+      "typeDining": "Dining",
+      "typeDiningSub": "Food, beverages, and culinary packages",
+      "typeCelebrate": "Celebrate",
+      "typeCelebrateSub": "Decorations, birthday setups & flowers",
+      "shortDescription": "Short Description",
+      "shortDescriptionHint": "(Display in front-office & booking engine)",
+      "shortDescriptionPlaceholder": "Summary of the service package...",
+      "price": "Price (IDR)",
+      "pricingType": "Pricing Type",
+      "pricingPerPackage": "Per Package",
+      "pricingPerPerson": "Per Person",
+      "pricingPerItem": "Per Item",
+      "status": "Status",
+      "statusActive": "Active",
+      "statusInactive": "Inactive",
+      "minQty": "Min Qty",
+      "maxQty": "Max Qty",
+      "maxQtyPlaceholder": "No limit",
+      "leadTime": "Lead Time",
+      "leadTimeSameDay": "Same Day",
+      "leadTimeH1": "H-1 (24 Hours)",
+      "leadTimeH2": "H-2 (48 Hours)",
+      "leadTimeH3": "H-3 (72 Hours)",
+      "availableDays": "Available Days",
+      "applicableRoomTypes": "Applicable Room Types",
+      "allRoomTypes": "All Room Types",
+      "staffNote": "Staff Note",
+      "staffNoteHint": "(Kitchen coordination — not visible to guests)",
+      "staffNotePlaceholder": "Special notes for kitchen or housekeeping operations..."
+    },
+    "required": "*",
+    "actions": {
+      "cancel": "Cancel",
+      "saveChanges": "Save Changes",
+      "saveExperience": "Save Experience"
+    }
+  }
+}

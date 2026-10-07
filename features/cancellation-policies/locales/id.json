@@ -1,0 +1,136 @@
+{
+  "shell": {
+    "title": "Operasional",
+    "context": "Kebijakan Pembatalan"
+  },
+  "page": {
+    "title": "Kebijakan Pembatalan",
+    "description": "Kelola aturan pembatalan berdasarkan tipe kamar dan periode menginap"
+  },
+  "actions": {
+    "addPolicy": "Tambah Kebijakan Pembatalan",
+    "reset": "Atur Ulang",
+    "edit": "Ubah",
+    "enable": "Aktifkan",
+    "disable": "Nonaktifkan",
+    "previous": "Sebelumnya",
+    "next": "Berikutnya"
+  },
+  "filters": {
+    "searchPlaceholder": "Cari nama kebijakan atau tipe kamar",
+    "allRoomTypes": "Semua Tipe Kamar",
+    "status": {
+      "all": "Semua Status",
+      "active": "Aktif",
+      "inactive": "Nonaktif"
+    },
+    "counts": {
+      "active": "{count} Aktif",
+      "inactive": "{count} Nonaktif"
+    }
+  },
+  "table": {
+    "policyName": "Nama Kebijakan",
+    "stayPeriod": "Periode Menginap",
+    "roomType": "Tipe Kamar",
+    "bookingSource": "Sumber Pemesanan",
+    "cancellationPolicy": "Kebijakan Pembatalan",
+    "status": "Status",
+    "action": "Aksi",
+    "allRoomTypes": "Semua Tipe Kamar"
+  },
+  "status": {
+    "active": "Aktif",
+    "inactive": "Nonaktif"
+  },
+  "pagination": {
+    "showing": "Menampilkan {from}–{to} dari {total} kebijakan"
+  },
+  "notice": {
+    "title": "Catatan Kebijakan Pembatalan:",
+    "body": "Kebijakan pembatalan yang dipilih pada reservasi atau kampanye promo akan disimpan sebagai snapshot riwayat pemesanan. Perubahan kebijakan di halaman ini tidak akan mengubah syarat reservasi yang sudah dibuat sebelumnya."
+  },
+  "messages": {
+    "empty": "Tidak ada kebijakan yang sesuai filter.",
+    "optionsLoadFailed": "Pilihan kebijakan gagal dimuat.",
+    "policiesLoadFailed": "Kebijakan gagal dimuat.",
+    "detailLoadFailed": "Detail kebijakan gagal dimuat.",
+    "saveFailed": "Kebijakan gagal disimpan.",
+    "statusChangeFailed": "Status kebijakan gagal diubah."
+  },
+  "modal": {
+    "titleAdd": "Tambah Kebijakan Pembatalan",
+    "titleEdit": "Ubah Kebijakan Pembatalan",
+    "descriptionAdd": "Buat kebijakan pembatalan baru",
+    "descriptionEdit": "Perbarui aturan pembatalan dan denda no-show",
+    "closeAria": "Tutup modal",
+    "sections": {
+      "policyInformation": "1. Informasi Kebijakan",
+      "bookingSource": "Sumber Pemesanan",
+      "applicableRoomTypes": "2. Tipe Kamar yang Berlaku",
+      "stayPeriod": "3. Periode Menginap",
+      "cancellationRules": "4. Aturan Pembatalan",
+      "noShowRule": "5. Aturan No-show"
+    },
+    "fields": {
+      "policyName": "Nama Kebijakan",
+      "selectPolicyType": "Pilih tipe kebijakan",
+      "inactiveSuffix": " (Nonaktif)",
+      "status": "Status",
+      "statusActive": "Aktif",
+      "statusInactive": "Nonaktif",
+      "sourceWebsite": "Website",
+      "sourcePhone": "Telepon",
+      "sourceHint": "Pilih satu atau keduanya. Kebijakan berlaku untuk kanal yang dipilih.",
+      "selectAll": "Pilih Semua",
+      "applyToAllDates": "Berlaku untuk Semua Tanggal",
+      "from": "Dari",
+      "to": "Sampai",
+      "activeTier": "{count} tier aktif",
+      "activeTiers": "{count} tier aktif",
+      "addRule": "+ Tambah Aturan",
+      "noShowCharge": "Denda No-show",
+      "chargeType": "Tipe Denda:",
+      "deletePolicy": "Hapus Kebijakan",
+      "deletePolicyTitle": "Hapus Kebijakan belum tersedia di API. Gunakan status Nonaktif."
+    },
+    "rule": {
+      "cancellationTime": "Waktu Pembatalan:",
+      "daysBeforeCheckin": "Hari Sebelum Check-in",
+      "chargeType": "Tipe Denda:",
+      "removeAria": "Hapus aturan",
+      "timing": {
+        "moreThan": "Lebih dari",
+        "within": "Dalam"
+      },
+      "charge": {
+        "percentage": "Persentase",
+        "fixedAmount": "Nominal Tetap",
+        "nightsCount": "Jumlah Malam"
+      },
+      "unit": {
+        "percent": "%",
+        "nights": "malam",
+        "currency": "Rp"
+      }
+    },
+    "noShow": {
+      "options": {
+        "none": "Tidak Ada",
+        "percentage": "Persentase",
+        "firstNightCharge": "Denda Malam Pertama",
+        "fullStayAmount": "Nominal Seluruh Menginap"
+      },
+      "hintPercentage": "{value}% dari seluruh menginap dikenakan",
+      "hintNone": "Tanpa denda no-show",
+      "hintFirstNight": "Denda satu malam pertama",
+      "hintFullStay": "Nominal seluruh menginap dikenakan"
+    },
+    "actions": {
+      "cancel": "Batal",
+      "saving": "Menyimpan...",
+      "saveChanges": "Simpan Perubahan",
+      "addPolicy": "Tambah Kebijakan"
+    }
+  }
+}

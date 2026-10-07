@@ -1,0 +1,26 @@
+{
+  "shell": {
+    "shiftBadge": "Shift A (07:00 - 15:00)",
+    "deskLabel": "Darajat Desk #01",
+    "footerTitle": "Green Hero Darajat Admin System • Operational Back-Office",
+    "footerNote": "Authorized staff access only. Green Hero Darajat operational workspace."
+  },
+  "card": {
+    "brandEyebrow": "GREEN HERO DARAJAT",
+    "title": "Welcome back",
+    "description": "Sign in to manage reservations, rooms, payments, and hotel operations.",
+    "serverStatus": "PMS Server Online",
+    "version": "v3.4.12-darajat"
+  },
+  "form": {
+    "usernameLabel": "Username / Staff ID",
+    "passwordLabel": "Password",
+    "showPassword": "Show password",
+    "hidePassword": "Hide password",
+    "demoCaption": "Demo Owner · Default password: admin123",
+    "signIn": "Sign In",
+    "signingIn": "Signing in...",
+    "loginFailedTitle": "Login failed",
+    "loginFailed": "Login failed. Please try again."
+  }
+}

@@ -1,0 +1,245 @@
+{
+  "shell": {
+    "title": "Laporan",
+    "roomPerformanceContext": "Performa Kamar",
+    "revenueContext": "Pendapatan",
+    "reservationsContext": "Reservasi"
+  },
+  "common": {
+    "reset": "Atur Ulang",
+    "exportCsv": "Ekspor CSV",
+    "exporting": "Mengekspor…",
+    "loading": "Memuat…",
+    "loadFailed": "Laporan gagal dimuat.",
+    "exportFailed": "Ekspor gagal.",
+    "allSources": "Semua Sumber",
+    "allRoomTypes": "Semua Tipe Kamar"
+  },
+  "source": {
+    "website": "Website",
+    "phone": "Telepon",
+    "walk_in": "Walk-in",
+    "ota": "OTA"
+  },
+  "reservationStatus": {
+    "pending": "Menunggu",
+    "confirmed": "Terkonfirmasi",
+    "checked_in": "Check-in",
+    "checked_out": "Check-out",
+    "cancelled": "Dibatalkan",
+    "expired": "Kedaluwarsa"
+  },
+  "paymentStatus": {
+    "unpaid": "Belum Dibayar",
+    "partial": "Sebagian",
+    "paid": "Lunas",
+    "failed": "Gagal",
+    "expired": "Kedaluwarsa",
+    "refunded": "Dikembalikan"
+  },
+  "roomPerformance": {
+    "title": "Performa Kamar",
+    "description": "Okupansi, room night, dan pendapatan kamar per tipe kamar untuk periode tujuh hari.",
+    "printAuditSheet": "Cetak Lembar Audit",
+    "filters": {
+      "ariaLabel": "Filter laporan",
+      "weekStarting": "Minggu mulai",
+      "roomType": "Tipe Kamar",
+      "source": "Sumber",
+      "occupancyMode": "Mode Okupansi",
+      "compareWith": "Bandingkan Dengan"
+    },
+    "occupancyMode": {
+      "actual": "Terisi Aktual",
+      "projected": "Aktual + Terkonfirmasi"
+    },
+    "comparison": {
+      "previous": "Minggu Sebelumnya",
+      "lastYear": "Minggu yang Sama Tahun Lalu",
+      "none": "Tanpa Perbandingan"
+    },
+    "period": "{start} – {end} · {rooms} kamar fisik · 7 malam",
+    "kpis": {
+      "ariaLabel": "Ringkasan performa",
+      "availableRoomNights": "Room Night Tersedia",
+      "soldRoomNights": "Room Night Terjual",
+      "occupancyRate": "Tingkat Okupansi",
+      "arr": "Tarif Kamar Rata-rata (ARR)",
+      "totalRoomRevenue": "Total Pendapatan Kamar"
+    },
+    "byRoomType": {
+      "title": "Performa per Tipe Kamar",
+      "subtitle": "Room night dan pendapatan kamar aktual",
+      "table": {
+        "roomType": "Tipe Kamar",
+        "physicalRooms": "Kamar Fisik",
+        "availableRN": "RN Tersedia",
+        "soldRN": "RN Terjual",
+        "unsoldRN": "RN Tak Terjual",
+        "occupancy": "Okupansi",
+        "arr": "ARR",
+        "roomRevenue": "Pendapatan Kamar",
+        "cancelledRN": "RN Dibatalkan"
+      },
+      "total": "Total"
+    },
+    "comparisonSection": {
+      "title": "Perbandingan Minggu",
+      "subtitle": "vs {comparison} ({start} – {end})",
+      "noBaseline": "— tidak ada data pembanding",
+      "changeVsComparison": "{change} vs minggu pembanding",
+      "cards": {
+        "occupancyRate": "Tingkat Okupansi",
+        "soldRoomNights": "Room Night Terjual",
+        "averageRoomRate": "Tarif Kamar Rata-rata",
+        "roomRevenue": "Pendapatan Kamar"
+      }
+    },
+    "dailyBreakdown": {
+      "title": "Rincian Okupansi Harian",
+      "subtitle": "Tampilan tujuh hari",
+      "table": {
+        "date": "Tanggal",
+        "physicalRooms": "Kamar Fisik",
+        "availableRN": "RN Tersedia",
+        "soldRN": "RN Terjual",
+        "occupancy": "Okupansi",
+        "arr": "ARR",
+        "roomRevenue": "Pendapatan Kamar",
+        "status": "Status"
+      },
+      "recorded": "Tercatat",
+      "empty": "Tidak ada data pada periode ini."
+    },
+    "note": "Angka menggunakan room night tercatat dan tarif pemesanan aktual. Pendapatan tidak termasuk deposit dan add-on. Room night tersedia menghitung kamar fisik operasional (tidak termasuk unit perawatan dan tidak beroperasi)."
+  },
+  "revenue": {
+    "title": "Laporan Pendapatan",
+    "description": "Pantau nilai pemesanan, pembayaran, pengembalian dana, sisa tagihan, dan penerimaan bersih.",
+    "reservationCount": "{total} reservasi",
+    "kpis": {
+      "ariaLabel": "Ringkasan pendapatan",
+      "grossBookingValue": "Nilai Pemesanan Kotor",
+      "discount": "Diskon",
+      "netBookingValue": "Nilai Pemesanan Bersih",
+      "netCollected": "Diterima Bersih",
+      "paid": "Dibayar",
+      "refunded": "Dikembalikan",
+      "outstanding": "Sisa Tagihan"
+    },
+    "disclaimer": "Deposit Keamanan tidak termasuk dalam perhitungan pendapatan dan penerimaan bersih. Data diskon belum tersedia, sehingga ditampilkan Rp0.",
+    "filters": {
+      "ariaLabel": "Filter pendapatan",
+      "currency": "Mata Uang: IDR (Rupiah)",
+      "dateBy": "Berdasarkan Tanggal:",
+      "fromDate": "Dari tanggal",
+      "toDate": "Sampai tanggal",
+      "sourceAriaLabel": "Sumber",
+      "paymentStatusAriaLabel": "Status pembayaran",
+      "reservationStatusAriaLabel": "Status reservasi",
+      "paymentMethodAriaLabel": "Metode pembayaran",
+      "roomTypeAriaLabel": "Tipe kamar",
+      "allPaymentStatus": "Semua Status Pembayaran",
+      "allResvStatus": "Semua Status Resv",
+      "allMethods": "Semua Metode"
+    },
+    "dateBy": {
+      "payment": "Tanggal Pembayaran",
+      "booking": "Tanggal Pemesanan",
+      "checkIn": "Tanggal Check-in"
+    },
+    "bySource": {
+      "title": "Pendapatan per Sumber",
+      "activeChannels": "{count} Channel Aktif",
+      "table": {
+        "source": "Sumber",
+        "reservations": "Reservasi",
+        "bookingValue": "Nilai Pemesanan",
+        "paid": "Dibayar",
+        "refunded": "Dikembalikan",
+        "outstanding": "Sisa Tagihan",
+        "netCollected": "Diterima Bersih"
+      },
+      "total": "Total"
+    },
+    "byMethod": {
+      "title": "Pendapatan per Metode Pembayaran",
+      "paymentTypes": "{count} Jenis Pembayaran",
+      "table": {
+        "paymentMethod": "Metode Pembayaran",
+        "transactions": "Transaksi",
+        "paid": "Dibayar",
+        "refunded": "Dikembalikan",
+        "netCollected": "Diterima Bersih"
+      },
+      "total": "Total",
+      "empty": "Tidak ada transaksi pada filter ini."
+    },
+    "note": "Diterima Bersih = Dibayar − Dikembalikan. Semua angka mengikuti filter aktif."
+  },
+  "reservations": {
+    "title": "Laporan Reservasi",
+    "description": "Pantau aktivitas reservasi, tanggal menginap, room night, nilai pemesanan, pembayaran, dan sisa tagihan.",
+    "reservationCount": "{total} reservasi",
+    "summary": {
+      "title": "▣   Ringkasan Reservasi",
+      "totalResv": "Total Resv",
+      "confirmed": "Terkonfirmasi",
+      "checkedIn": "Check-in",
+      "checkedOut": "Check-out",
+      "cancelled": "Dibatalkan",
+      "roomNights": "Room Night"
+    },
+    "financial": {
+      "title": "▣   Ringkasan Keuangan",
+      "bookingValue": "Nilai Pemesanan",
+      "paid": "Dibayar",
+      "outstanding": "Sisa Tagihan",
+      "note": "Nilai keuangan mencakup reservasi aktif dalam filter. Deposit tidak termasuk."
+    },
+    "filters": {
+      "searchPlaceholder": "Cari ID pemesanan, tamu, atau WhatsApp",
+      "searchAriaLabel": "Cari laporan reservasi",
+      "dateBy": "Berdasarkan Tanggal",
+      "fromDate": "Dari tanggal",
+      "toDate": "Sampai tanggal",
+      "reservationStatusAriaLabel": "Status reservasi",
+      "sourceAriaLabel": "Sumber",
+      "roomTypeAriaLabel": "Tipe kamar",
+      "otaChannelAriaLabel": "Channel OTA",
+      "allStatus": "Semua Status",
+      "allOta": "Semua OTA",
+      "allOtaInactive": "Semua OTA (Nonaktif)"
+    },
+    "dateBy": {
+      "booking": "Tanggal Pemesanan",
+      "checkIn": "Tanggal Check-in",
+      "checkOut": "Tanggal Check-out"
+    },
+    "table": {
+      "bookingId": "ID Pemesanan",
+      "bookingDate": "Tanggal Pemesanan",
+      "guest": "Tamu",
+      "source": "Sumber",
+      "roomType": "Tipe Kamar",
+      "roomQty": "Jml Kamar",
+      "checkIn": "Check-in",
+      "checkOut": "Check-out",
+      "nights": "Malam",
+      "roomNights": "Room Night",
+      "reservationStatus": "Status Reservasi",
+      "bookingTotal": "Total Pemesanan",
+      "discount": "Diskon",
+      "paid": "Dibayar",
+      "outstanding": "Sisa Tagihan"
+    },
+    "empty": "Tidak ada reservasi yang sesuai filter.",
+    "pagination": {
+      "showing": "Menampilkan {start}–{end} dari {total} reservasi",
+      "prev": "Sebelumnya",
+      "next": "Berikutnya",
+      "pageOf": "{page} / {total}"
+    },
+    "note": "Semua angka keuangan dalam Rupiah (IDR). Ekspor CSV mengikuti filter aktif."
+  }
+}

@@ -1,0 +1,273 @@
+{
+  "shell": {
+    "title": "Kamar",
+    "roomTypesContext": "Tipe Kamar",
+    "roomNumbersContext": "Nomor Kamar"
+  },
+  "roomTypes": {
+    "breadcrumb": "Kamar / Tipe Kamar",
+    "heading": "Tipe Kamar",
+    "description": "Kelola tipe kamar, fasilitas, dan pola kapasitas untuk reservasi.",
+    "addButton": "Tambah Tipe Kamar",
+    "filters": {
+      "searchPlaceholder": "Cari tipe kamar...",
+      "searchAriaLabel": "Cari tipe kamar",
+      "statusAriaLabel": "Filter status tipe kamar",
+      "statusAll": "Status: Semua Status",
+      "statusActive": "Status: Aktif",
+      "statusInactive": "Status: Nonaktif",
+      "reset": "Atur Ulang",
+      "total": "{total} Total Tipe Kamar"
+    },
+    "panel": {
+      "heading": "Semua Tipe Kamar",
+      "shownCount": "{count} tipe kamar ditampilkan"
+    },
+    "table": {
+      "no": "NO",
+      "roomType": "TIPE KAMAR",
+      "specification": "SPESIFIKASI",
+      "mealType": "JENIS MAKANAN",
+      "extraBed": "KASUR TAMBAHAN",
+      "capacityPatterns": "POLA KAPASITAS",
+      "status": "STATUS",
+      "action": "AKSI"
+    },
+    "cell": {
+      "bed": "kasur",
+      "capacityPatterns": "{count} pola",
+      "extraBedNotAvailable": "Tidak tersedia",
+      "edit": "Ubah",
+      "editAriaLabel": "Ubah {name}"
+    },
+    "status": {
+      "active": "Aktif",
+      "inactive": "Nonaktif"
+    },
+    "messages": {
+      "empty": "Tidak ada tipe kamar yang cocok.",
+      "loadError": "Gagal memuat tipe kamar."
+    },
+    "pagination": {
+      "previous": "Sebelumnya",
+      "next": "Berikutnya",
+      "pageInfo": "Halaman {page} dari {total}"
+    }
+  },
+  "roomNumbers": {
+    "heading": "Nomor Kamar",
+    "description": "Kelola kamar fisik yang digunakan saat check-in",
+    "addButton": "Tambah Nomor Kamar",
+    "filters": {
+      "searchPlaceholder": "Cari nomor kamar...",
+      "searchAriaLabel": "Cari nomor kamar",
+      "typeAriaLabel": "Filter tipe kamar",
+      "typeAll": "Tipe Kamar: Semua Tipe Kamar",
+      "statusAriaLabel": "Filter status",
+      "statusAll": "Status: Semua Status",
+      "statusInactive": "Nonaktif",
+      "occupancyAriaLabel": "Filter okupansi",
+      "occupancyAll": "Okupansi: Semua",
+      "occupancyAvailable": "Tersedia",
+      "occupancyOccupied": "Terisi",
+      "reset": "Atur Ulang",
+      "total": "{total} Total Nomor Kamar"
+    },
+    "table": {
+      "roomNumber": "NOMOR KAMAR",
+      "roomType": "TIPE KAMAR",
+      "floor": "LANTAI",
+      "occupancy": "OKUPANSI",
+      "operationalStatus": "STATUS OPERASIONAL",
+      "action": "AKSI"
+    },
+    "cell": {
+      "edit": "Ubah"
+    },
+    "status": {
+      "available": "Tersedia",
+      "occupied": "Terisi",
+      "cleaning": "Pembersihan",
+      "maintenance": "Perawatan",
+      "outOfService": "Tidak Beroperasi",
+      "unavailable": "Tidak Tersedia",
+      "inactive": "Nonaktif"
+    },
+    "messages": {
+      "empty": "Tidak ada kamar yang cocok.",
+      "requestFailed": "Permintaan gagal. Coba lagi.",
+      "retry": "Coba lagi"
+    },
+    "pagination": {
+      "showing": "Menampilkan {from}–{to} dari {total} nomor kamar",
+      "previous": "Sebelumnya",
+      "next": "Berikutnya"
+    },
+    "modal": {
+      "titleDetail": "Detail Nomor Kamar",
+      "titleEdit": "Ubah Nomor Kamar",
+      "titleAdd": "Tambah Nomor Kamar",
+      "subtitleDetail": "Kamar sedang ditempati tamu",
+      "subtitleEdit": "Perbarui informasi kamar fisik",
+      "subtitleAdd": "Tambahkan kamar fisik baru",
+      "closeAriaLabel": "Tutup modal",
+      "currentOccupancy": "Okupansi Saat Ini",
+      "currentOccupancyHint": "Status kamar mengikuti status operasional dan proses check-in.",
+      "occupiedNotice": "Kamar masih ditempati tamu. Data kamar hanya dapat dilihat dan baru bisa diubah setelah tamu check-out.",
+      "roomNumberLabel": "Nomor Kamar",
+      "roomNumberPlaceholder": "mis. 101",
+      "roomNumberHint": "Nomor unik kamar fisik",
+      "floorLabel": "Lantai / Area",
+      "optional": "(Opsional)",
+      "floorPlaceholder": "Pilih lantai",
+      "floorHint": "Lokasi lantai atau blok",
+      "roomTypeLabel": "Tipe Kamar",
+      "roomTypePlaceholder": "Pilih tipe kamar",
+      "operationalStatusLabel": "Status Operasional",
+      "operationalStatusHint": "Hanya kamar berstatus Tersedia yang siap ditetapkan saat check-in.",
+      "activeRoomNumber": "Nomor kamar aktif",
+      "internalNoteLabel": "Catatan Internal",
+      "internalNotePlaceholder": "Catatan internal staf front office atau housekeeping...",
+      "internalNoteHint": "Catatan internal belum didukung API dan belum disimpan.",
+      "close": "Tutup",
+      "cancel": "Batal",
+      "saving": "Menyimpan...",
+      "saveChanges": "Simpan Perubahan",
+      "addRoomNumber": "Tambah Nomor Kamar"
+    },
+    "validation": {
+      "occupiedCannotSave": "Kamar masih ditempati tamu. Perubahan dapat disimpan setelah check-out.",
+      "requiredFields": "Nomor kamar dan tipe kamar wajib diisi."
+    }
+  },
+  "wizard": {
+    "titleEdit": "Ubah Tipe Kamar",
+    "titleAdd": "Tambah Tipe Kamar",
+    "breadcrumbRooms": "Kamar",
+    "breadcrumbRoomTypes": "Tipe Kamar",
+    "steps": {
+      "basicInfo": "Info Dasar",
+      "photos": "Foto",
+      "amenities": "Fasilitas",
+      "capacity": "Kapasitas"
+    },
+    "stepDescriptions": {
+      "basicInfo": "Tambahkan informasi dasar tipe kamar",
+      "photos": "Tambahkan foto untuk tipe kamar",
+      "amenities": "Pilih fasilitas yang tersedia untuk tipe kamar ini",
+      "capacity": "Atur kapasitas tamu untuk tipe kamar"
+    },
+    "stepStatus": {
+      "inProgress": "Sedang Berjalan",
+      "visited": "Dikunjungi",
+      "notVisited": "Belum dikunjungi"
+    },
+    "stepsNavAriaLabel": "Bagian formulir Tipe Kamar",
+    "editDescription": "Perbarui {name} · {step}",
+    "basic": {
+      "sectionTitle": "Informasi Dasar",
+      "statusToggleAriaLabel": "Status tipe kamar",
+      "active": "Aktif",
+      "inactive": "Nonaktif",
+      "nameLabel": "Nama Tipe Kamar",
+      "namePlaceholder": "Masukkan nama tipe kamar",
+      "descriptionLabel": "Deskripsi",
+      "descriptionPlaceholder": "Deskripsikan kamar",
+      "descriptionCounter": "{count} / 1000",
+      "specificationTitle": "Spesifikasi Kamar",
+      "roomSizeLabel": "Ukuran Kamar (m²)",
+      "bedTypeLabel": "Jenis Kasur",
+      "bedTypePlaceholder": "Pilih jenis kasur",
+      "numberOfBedsLabel": "Jumlah Kasur",
+      "mealTypeTitle": "Jenis Makanan",
+      "mealTypeDescription": "Pilih paket makanan standar untuk tarif dasar kamar.",
+      "breakfastDetailTitle": "Rincian Tambahan Sarapan",
+      "adultBreakfastPriceLabel": "Harga Sarapan Dewasa",
+      "childBreakfastPriceLabel": "Harga Sarapan Anak",
+      "extraBedTitle": "Kasur Tambahan",
+      "extraBedDescription": "Izinkan kasur tambahan untuk tipe kamar ini.",
+      "extraBedPriceLabel": "Harga Kasur Tambahan / malam",
+      "maxExtraBedsLabel": "Maksimum Kasur Tambahan"
+    },
+    "photos": {
+      "coverTitle": "Foto Sampul",
+      "coverDescription": "Foto baru akan diunggah saat tipe kamar disimpan.",
+      "preview": "Pratinjau",
+      "noPreview": "Tanpa pratinjau",
+      "coverAlt": "Sampul tipe kamar",
+      "coverCaption": "{size} · Foto Sampul",
+      "replace": "Ganti",
+      "remove": "Hapus",
+      "uploadCover": "Unggah Foto Sampul",
+      "coverHint": "PNG, JPG, WebP hingga 4 MB · disarankan 16:9",
+      "galleryTitle": "Galeri",
+      "galleryDescription": "Tambahkan beberapa foto untuk menampilkan detail kamar.",
+      "galleryCount": "{count} / 10 foto",
+      "photoAlt": "Foto kamar {index}",
+      "moveLeftAriaLabel": "Geser {name} ke kiri",
+      "moveRightAriaLabel": "Geser {name} ke kanan",
+      "setCover": "Jadikan Sampul",
+      "uploadPhotos": "Unggah Foto",
+      "galleryHint": "PNG, JPG, WebP · hingga 4 MB",
+      "error": "Gunakan foto PNG, JPG, atau WebP dengan ukuran maksimal 4 MB."
+    },
+    "amenities": {
+      "title": "Pemilihan Fasilitas",
+      "selectedCount": "{count} fasilitas dipilih",
+      "searchPlaceholder": "Cari fasilitas...",
+      "searchAriaLabel": "Cari fasilitas",
+      "otherAmenities": "Fasilitas Lainnya",
+      "selectAll": "Pilih Semua",
+      "empty": "Tidak ada fasilitas yang cocok."
+    },
+    "capacity": {
+      "extraBedConfigTitle": "Konfigurasi Kasur Tambahan",
+      "extraBedConfigHint": "Maksimum Kasur Tambahan: {count} · Dikonfigurasi di Langkah 1: Info Dasar",
+      "step1Button": "Langkah 1: Info Dasar",
+      "patternsTitle": "Pola Kapasitas",
+      "patternsDescription": "Pilih semua kombinasi tamu yang diperbolehkan untuk tipe kamar ini.",
+      "info": "Pilih semua pola kapasitas yang valid, bukan hanya kapasitas maksimum. Setiap pola menentukan izin reservasi dan alokasi kasur tambahan.",
+      "combinationHead": "Kombinasi Okupansi Tamu",
+      "selectedLabel": "{count} Dipilih",
+      "selectAll": "Pilih Semua",
+      "table": {
+        "select": "PILIH",
+        "combination": "JUMLAH ORANG / KOMBINASI TAMU",
+        "extraBed": "KASUR TAMBAHAN"
+      },
+      "adult": "Dewasa",
+      "adults": "Dewasa",
+      "child": "Anak",
+      "children": "Anak",
+      "personsCount": "({count} Orang)",
+      "selectAriaLabel": "Pilih {adults} dewasa {children} anak",
+      "extraBedAriaLabel": "Kasur tambahan untuk {adults} dewasa {children} anak",
+      "extraBedOption": "{count} Kasur Tambahan",
+      "note": "Engine reservasi hanya akan menampilkan kamar ini tersedia apabila kombinasi tamu yang dicari cocok dengan pola yang dicentang di atas."
+    },
+    "footer": {
+      "cancel": "Batal",
+      "previous": "Sebelumnya: {step}",
+      "next": "Berikutnya: {step}",
+      "saving": "Menyimpan...",
+      "saveChanges": "Simpan Perubahan",
+      "saveRoomType": "Simpan Tipe Kamar"
+    },
+    "messages": {
+      "notFound": "Tipe kamar tidak ditemukan",
+      "backToRoomTypes": "Tipe Kamar",
+      "loadError": "Gagal memuat tipe kamar.",
+      "saveError": "Gagal menyimpan tipe kamar."
+    },
+    "validation": {
+      "nameRequired": "Nama Tipe Kamar wajib diisi.",
+      "sizeInvalid": "Ukuran Kamar harus lebih dari 0.",
+      "bedTypeRequired": "Pilih Jenis Kasur.",
+      "mealTypeRequired": "Pilih Jenis Makanan.",
+      "bedCountInvalid": "Jumlah Kasur harus minimal 1.",
+      "extraBedInvalid": "Periksa konfigurasi Kasur Tambahan.",
+      "breakfastNegative": "Harga sarapan tidak boleh negatif.",
+      "capacityRequired": "Pilih minimal satu pola kapasitas tamu."
+    }
+  }
+}

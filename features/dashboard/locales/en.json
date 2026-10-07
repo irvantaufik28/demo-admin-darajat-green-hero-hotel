@@ -1,0 +1,82 @@
+{
+  "shell": {
+    "title": "Dashboard",
+    "context": "Front Desk Overview"
+  },
+  "header": {
+    "title": "Dashboard",
+    "description": "Today's operational overview",
+    "newReservation": "New Reservation"
+  },
+  "errors": {
+    "loadFailed": "Failed to load dashboard.",
+    "retry": "Try again"
+  },
+  "summary": {
+    "arrivalsToday": "Arrivals Today",
+    "arrivalsPending": "{count} not checked in",
+    "departuresToday": "Departures Today",
+    "departuresPending": "{count} not checked out",
+    "inHouse": "In House",
+    "inHouseDetail": "{count} active guests",
+    "pendingPayment": "Pending Payment",
+    "ariaLabel": "Operational summary"
+  },
+  "todayActivity": {
+    "title": "Today Activity",
+    "description": "Guests requiring action today",
+    "pendingActions": "{count} Pending Actions",
+    "table": {
+      "guest": "Guest",
+      "room": "Room",
+      "type": "Type",
+      "status": "Status",
+      "action": "Action"
+    },
+    "view": "View",
+    "empty": "No activity requiring action yet."
+  },
+  "recentReservations": {
+    "title": "Recent Reservations",
+    "description": "Latest reservations across all channels",
+    "viewAll": "View All Reservations",
+    "table": {
+      "booking": "Booking",
+      "guest": "Guest",
+      "source": "Source",
+      "stay": "Stay",
+      "payment": "Payment",
+      "status": "Status",
+      "action": "Action"
+    },
+    "view": "View",
+    "empty": "No reservations yet."
+  },
+  "availability": {
+    "title": "Today's Availability",
+    "ariaLabel": "Today's room availability",
+    "notSet": "Not set",
+    "available": "{count} available",
+    "empty": "No active room types yet.",
+    "manage": "Manage Prices & Stocks"
+  },
+  "reservationStatus": {
+    "pending": "Pending",
+    "confirmed": "Confirmed",
+    "checked_in": "Checked-in",
+    "checked_out": "Checked-out",
+    "cancelled": "Cancelled",
+    "expired": "Expired",
+    "unpaid": "Unpaid",
+    "partial": "Partial",
+    "paid": "Paid",
+    "failed": "Failed",
+    "refunded": "Refunded"
+  },
+  "source": {
+    "website": "Website",
+    "phone": "Phone",
+    "walk_in": "Walk-in",
+    "ota": "OTA"
+  }
+}

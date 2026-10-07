@@ -1,0 +1,49 @@
+{
+  "shell": {
+    "title": "Akun",
+    "profileContext": "Profil",
+    "changePasswordContext": "Ubah Kata Sandi"
+  },
+  "profile": {
+    "description": "Informasi akun pemilik Green Hero Darajat.",
+    "photo": {
+      "alt": "Foto profil Owner",
+      "ownerRole": "Owner · Green Hero Darajat",
+      "upload": "Unggah Foto",
+      "remove": "Hapus",
+      "hint": "JPG, PNG, atau WebP · maks. 2 MB. Foto hanya tampil selama halaman ini dibuka.",
+      "error": "Pilih gambar JPG, PNG, atau WebP maksimal 2 MB."
+    },
+    "personalInformation": {
+      "title": "Informasi Pribadi",
+      "fullName": "Nama Lengkap",
+      "role": "Peran",
+      "email": "Email",
+      "phone": "Telepon",
+      "property": "Properti",
+      "propertyValue": "Green Hero Darajat",
+      "location": "Lokasi",
+      "locationValue": "Darajat Pass, Garut, Jawa Barat"
+    },
+    "accountAccess": {
+      "title": "Akun & Akses",
+      "username": "Username",
+      "usernameValue": "admin.darajat",
+      "status": "Status",
+      "lastLogin": "Login Terakhir",
+      "access": "Akses",
+      "accessValue": "Hak akses Owner"
+    },
+    "changePassword": "Ubah Kata Sandi →"
+  },
+  "changePassword": {
+    "title": "Ubah Kata Sandi",
+    "description": "Formulir kata sandi untuk tampilan demo.",
+    "panelTitle": "Kata Sandi",
+    "currentPassword": "Kata Sandi Saat Ini",
+    "newPassword": "Kata Sandi Baru",
+    "confirmNewPassword": "Konfirmasi Kata Sandi Baru",
+    "demoNote": "Formulir demo ini belum mengubah kata sandi login.",
+    "saveChanges": "Simpan Perubahan"
+  }
+}

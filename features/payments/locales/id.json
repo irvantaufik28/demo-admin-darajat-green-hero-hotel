@@ -1,0 +1,370 @@
+{
+  "shell": {
+    "title": "Pembayaran",
+    "paymentsContext": "Pembayaran",
+    "paymentDetailContext": "Detail Pembayaran"
+  },
+  "list": {
+    "heading": "Pembayaran",
+    "description": "Pantau status pembayaran dan catat pembayaran reservasi",
+    "exportCsv": "Ekspor CSV",
+    "exporting": "Mengekspor...",
+    "note": "Deposit jaminan dicatat terpisah dari saldo pembayaran reservasi.",
+    "filters": {
+      "searchAriaLabel": "Cari pembayaran",
+      "searchPlaceholder": "Cari booking, tamu, atau WhatsApp",
+      "reservationStatusAriaLabel": "Status reservasi",
+      "reservationStatusAll": "Reservasi: Semua Status",
+      "paymentStatusAriaLabel": "Status pembayaran",
+      "paymentStatusAll": "Pembayaran: Semua",
+      "sourceAriaLabel": "Sumber",
+      "sourceAll": "Sumber: Semua",
+      "methodAriaLabel": "Metode pembayaran",
+      "methodAll": "Metode: Semua",
+      "fromDateAriaLabel": "Tanggal check-in dari",
+      "toDateAriaLabel": "Tanggal check-in sampai",
+      "reset": "Atur Ulang"
+    },
+    "table": {
+      "booking": "Booking",
+      "guest": "Tamu",
+      "source": "Sumber",
+      "reservationStatus": "Status Reservasi",
+      "bookingTotal": "Total Booking",
+      "paid": "Dibayar",
+      "refunded": "Dikembalikan",
+      "remaining": "Sisa",
+      "paymentStatus": "Status Pembayaran",
+      "method": "Metode",
+      "action": "Aksi",
+      "view": "Lihat",
+      "emptyCell": "—"
+    },
+    "messages": {
+      "empty": "Tidak ada pembayaran yang sesuai filter.",
+      "loadError": "Pembayaran gagal dimuat.",
+      "exportError": "Ekspor pembayaran gagal."
+    },
+    "pagination": {
+      "showing": "Menampilkan {count} dari {total} transaksi reservasi",
+      "previous": "Sebelumnya",
+      "next": "Berikutnya",
+      "pageInfo": "Halaman {page} dari {total}"
+    }
+  },
+  "csv": {
+    "fileName": "payments.csv",
+    "columns": {
+      "booking": "Booking",
+      "guest": "Tamu",
+      "source": "Sumber",
+      "reservationStatus": "Status Reservasi",
+      "bookingTotal": "Total Booking",
+      "paid": "Dibayar",
+      "refunded": "Dikembalikan",
+      "remaining": "Sisa",
+      "paymentStatus": "Status Pembayaran",
+      "method": "Metode"
+    }
+  },
+  "queues": {
+    "refunds": {
+      "title": "Pengembalian Dana",
+      "description": "Reservasi yang dibatalkan dengan pembayaran dan penyelesaian refund."
+    },
+    "outstanding": {
+      "title": "Sisa Tagihan",
+      "description": "Sisa tagihan reservasi yang sudah check-out.",
+      "totalOutstanding": "Total sisa tagihan: {amount}"
+    },
+    "filters": {
+      "searchAriaLabel": "Cari pembayaran",
+      "searchPlaceholder": "Cari booking, tamu, atau WhatsApp",
+      "sourceAriaLabel": "Sumber",
+      "sourceAll": "Sumber: Semua",
+      "reset": "Atur Ulang"
+    },
+    "table": {
+      "booking": "Booking",
+      "guest": "Tamu",
+      "source": "Sumber",
+      "policy": "Kebijakan",
+      "paid": "Dibayar",
+      "estimatedRefund": "Perkiraan Refund",
+      "refunded": "Dikembalikan",
+      "status": "Status",
+      "checkOut": "Check-out",
+      "bookingTotal": "Total Booking",
+      "outstanding": "Sisa Tagihan",
+      "paymentStatus": "Status Pembayaran",
+      "action": "Aksi",
+      "view": "Lihat",
+      "manualReview": "Peninjauan manual",
+      "review": "Tinjau"
+    },
+    "messages": {
+      "empty": "Tidak ada data yang sesuai filter.",
+      "loadError": "Data pembayaran gagal dimuat."
+    },
+    "pagination": {
+      "showing": "Menampilkan {count} dari {total} data",
+      "previous": "Sebelumnya",
+      "next": "Berikutnya",
+      "pageInfo": "Halaman {page} dari {total}"
+    }
+  },
+  "status": {
+    "walkIn": "Walk-in",
+    "ota": "OTA"
+  },
+  "detail": {
+    "shellContext": "Detail Pembayaran",
+    "breadcrumb": "Pembayaran",
+    "title": "Detail Pembayaran",
+    "subtitle": "Detail booking dan riwayat pembayaran",
+    "printInvoice": "Cetak Faktur",
+    "backToPayments": "Kembali ke Pembayaran",
+    "backToPaymentsLink": "Kembali ke Pembayaran",
+    "cards": {
+      "bookingGuest": "Booking & Tamu",
+      "rooms": "Kamar",
+      "addOns": "Tambahan",
+      "chargesPayments": "Tagihan & Pembayaran",
+      "paymentHistory": "Riwayat Pembayaran",
+      "paymentSummary": "Ringkasan Pembayaran"
+    },
+    "facts": {
+      "bookingId": "ID Booking",
+      "guest": "Tamu",
+      "source": "Sumber",
+      "whatsapp": "WhatsApp",
+      "checkIn": "Check-in",
+      "email": "Email",
+      "checkOut": "Check-out",
+      "durationGuests": "Durasi & Tamu",
+      "night": "Malam",
+      "nights": "Malam",
+      "adults": "Dewasa",
+      "children": "Anak"
+    },
+    "charges": {
+      "item": "Item",
+      "qty": "Qty",
+      "nights": "Malam",
+      "rate": "Tarif",
+      "subtotal": "Subtotal",
+      "roomCharge": "Biaya kamar",
+      "roomsEmpty": "Rincian kamar belum tersedia.",
+      "addOnsEmpty": "Tidak ada add-on untuk reservasi ini.",
+      "roomsSubtotal": "Subtotal Kamar",
+      "addOnsAdjustments": "Tambahan & Penyesuaian",
+      "bookingTotal": "Total Booking"
+    },
+    "history": {
+      "date": "Tanggal",
+      "amount": "Jumlah",
+      "method": "Metode",
+      "reference": "Referensi",
+      "recordedBy": "Dicatat Oleh",
+      "refund": "Pengembalian",
+      "empty": "Belum ada pembayaran yang tercatat."
+    },
+    "summary": {
+      "bookingTotal": "Total Booking",
+      "paid": "Dibayar",
+      "refunded": "Dikembalikan",
+      "remaining": "Sisa",
+      "securityDeposit": "Deposit Jaminan",
+      "securityDepositNote": "Dicatat terpisah dari total reservasi.",
+      "checkoutOutstandingReason": "Alasan check-out dengan sisa tagihan: {reason}",
+      "recordPayment": "Catat Pembayaran",
+      "viewRefund": "Lihat Pengembalian"
+    },
+    "state": {
+      "paidTitle": "Lunas",
+      "paidDescription": "Seluruh tagihan reservasi sudah lunas.",
+      "partialTitle": "Dibayar Sebagian",
+      "partialDescription": "Masih ada sisa tagihan yang perlu ditindaklanjuti.",
+      "unpaidTitle": "Menunggu Pembayaran",
+      "unpaidDescription": "Belum ada pembayaran yang diterima untuk reservasi ini.",
+      "failedTitle": "Pembayaran Gagal",
+      "failedDescription": "Percobaan pembayaran gagal. Belum ada dana yang diterima.",
+      "refundedTitle": "Pengembalian Selesai",
+      "refundedDescription": "Pembayaran telah dikembalikan kepada tamu.",
+      "defaultDescription": "Lihat rincian pembayaran reservasi."
+    },
+    "messages": {
+      "methodsLoadError": "Metode pembayaran gagal dimuat.",
+      "detailLoadError": "Detail pembayaran gagal dimuat.",
+      "notFound": "Data pembayaran tidak ditemukan.",
+      "amountInvalid": "Jumlah pembayaran harus lebih dari Rp0 dan tidak melebihi sisa tagihan.",
+      "recordError": "Pembayaran gagal dicatat.",
+      "refundCalcLoadError": "Perhitungan pembatalan gagal dimuat."
+    }
+  },
+  "recordPaymentModal": {
+    "ariaLabel": "Catat pembayaran",
+    "title": "Catat Pembayaran",
+    "close": "Tutup",
+    "remainingBalance": "Sisa Tagihan",
+    "amountLabel": "Jumlah (IDR)",
+    "methodLabel": "Metode Pembayaran",
+    "loadingMethods": "Memuat metode...",
+    "selectMethod": "Pilih metode pembayaran",
+    "noMethods": "Tidak ada metode pembayaran aktif yang tersedia.",
+    "cancel": "Batal",
+    "saving": "Menyimpan...",
+    "savePayment": "Simpan Pembayaran"
+  },
+  "refundModal": {
+    "ariaLabel": "Kelola pengembalian dana",
+    "title": "Pengembalian Manual",
+    "closeAriaLabel": "Tutup pengembalian",
+    "loading": "Memuat kelayakan refund...",
+    "loadError": "Data refund gagal dimuat.",
+    "summary": {
+      "booking": "Booking",
+      "paid": "Dibayar",
+      "cancellationPolicy": "Kebijakan pembatalan",
+      "manualReview": "Peninjauan manual",
+      "cancellationCharge": "Biaya pembatalan",
+      "review": "Tinjau",
+      "estimatedRefund": "Perkiraan refund",
+      "alreadyRefunded": "Sudah dikembalikan"
+    },
+    "calculation": {
+      "ariaLabel": "Rincian perhitungan pembatalan",
+      "title": "Perhitungan pembatalan",
+      "cancelledDaysBefore": "Dibatalkan {days} hari sebelum check-in.",
+      "cancelledAfterCheckIn": "Dibatalkan setelah tanggal check-in.",
+      "room": "Kamar",
+      "nonRefundable": "Non-refundable · 100% biaya kamar",
+      "needsManualReview": "Aturan memerlukan peninjauan manual",
+      "roomCharge": "Harga kamar {amount}",
+      "cancellationCharge": "Biaya pembatalan {amount}",
+      "roomTotal": "Harga seluruh kamar",
+      "otherCharges": "Extra bed, breakfast, experience, dan biaya lain",
+      "bookingTotal": "Total booking",
+      "netPaid": "Pembayaran bersih setelah refund sebelumnya",
+      "totalCancellationCharge": "Total biaya pembatalan kamar",
+      "refundLimit": "Batas refund menurut kebijakan",
+      "pendingRefund": "Refund yang masih diproses",
+      "note": "Biaya lain memerlukan peninjauan manual. Nominal refund mengikuti hasil perhitungan kebijakan dan tidak dapat diubah."
+    },
+    "rule": {
+      "needsManualReview": "Aturan memerlukan peninjauan manual",
+      "moreThan": "Lebih dari {days} hari sebelum check-in",
+      "within": "Dalam {days} hari sebelum check-in",
+      "percentage": "{value}% dari harga kamar",
+      "nights": "{value} malam",
+      "chargeTemplate": "{timing} · biaya {charge}"
+    },
+    "needsReview": "Perlu ditinjau: {reasons}",
+    "zeroRefundWarning": "Kebijakan pembatalan menghasilkan refund Rp0. Catat No Refund, atau centang pengecualian kebijakan jika staf memutuskan mengembalikan dana.",
+    "noRefundCompleted": "No Refund selesai. Alasan: {reason}",
+    "form": {
+      "title": "Pengembalian",
+      "fundsNote": "Dana dikembalikan dari transaksi pembayaran yang tersedia, dimulai dari transaksi paling awal.",
+      "overrideCheckbox": "Abaikan kebijakan pembatalan yang berlaku saat reservasi",
+      "overrideWarning": "Refund dapat melebihi hasil kebijakan, maksimal sebesar pembayaran yang belum dikembalikan. Keputusan ini dicatat di audit trail.",
+      "refundAmountLabel": "Jumlah refund (IDR)",
+      "refundAmountHintWithOverride": "Nominal pasti tanpa kebijakan pembatalan; tidak dapat dikurangi atau ditambah.",
+      "refundAmountHintWithPolicy": "Nominal pasti sesuai kebijakan pembatalan; tidak dapat dikurangi atau ditambah.",
+      "noRefundReason": "Alasan No Refund",
+      "refundReason": "Alasan refund",
+      "overrideReason": "Alasan pengecualian",
+      "manualReviewReason": "Alasan peninjauan manual",
+      "noRefund": "No Refund",
+      "completeRefund": "Refund Selesai"
+    },
+    "history": {
+      "title": "Riwayat Pengembalian",
+      "reference": "Referensi: {reference}",
+      "refundReference": "Referensi refund",
+      "markCompleted": "Tandai Selesai",
+      "failureReason": "Alasan gagal",
+      "markFailed": "Tandai Gagal"
+    },
+    "notices": {
+      "refundCompleted": "Refund selesai dan tercatat dalam riwayat pembayaran.",
+      "noRefundCompleted": "No Refund selesai dan tercatat dalam audit trail.",
+      "refundMarkedCompleted": "Refund berhasil diselesaikan.",
+      "refundMarkedFailed": "Refund ditandai gagal."
+    },
+    "errors": {
+      "noRefundAvailable": "Tidak ada refund yang dapat diselesaikan. Selesaikan refund pending terlebih dahulu.",
+      "reasonRequired": "Alasan refund wajib diisi.",
+      "overrideReasonRequired": "Alasan pengecualian atau peninjauan manual wajib diisi.",
+      "noRefundReasonRequired": "Alasan No Refund wajib diisi.",
+      "processFailed": "Proses refund gagal."
+    }
+  },
+  "invoice": {
+    "ariaLabel": "Pratinjau faktur",
+    "title": "Pratinjau Faktur Tamu",
+    "printSavePdf": "Cetak / Simpan PDF",
+    "closeAriaLabel": "Tutup faktur",
+    "brandName": "Green Hero Darajat",
+    "brandAddress": "Jl. Raya Kamojang - Darajat, Samarang, Garut, Jawa Barat 44161",
+    "invoiceTitle": "FAKTUR",
+    "reservationCancelled": "Reservasi Dibatalkan",
+    "billedTo": "Ditagihkan Kepada",
+    "bookingRef": "Ref Booking",
+    "night": "malam",
+    "nights": "malam",
+    "table": {
+      "item": "Item",
+      "qty": "Qty",
+      "rate": "Tarif",
+      "subtotal": "Subtotal",
+      "noItems": "Tidak ada item."
+    },
+    "totals": {
+      "totalCharges": "Total Tagihan",
+      "amountPaid": "Jumlah Dibayar",
+      "refundCompleted": "Pengembalian Selesai",
+      "netPaidAfterRefund": "Pembayaran Bersih Setelah Refund",
+      "balanceDue": "Sisa Tagihan"
+    },
+    "transactions": {
+      "title": "Transaksi Pembayaran & Pengembalian",
+      "type": "Tipe",
+      "date": "Tanggal",
+      "methodReference": "Metode / Referensi",
+      "status": "Status",
+      "amount": "Jumlah",
+      "payment": "Pembayaran",
+      "refund": "Pengembalian"
+    },
+    "cancellation": {
+      "title": "Pembatalan & Pengembalian",
+      "loading": "Memuat perhitungan pembatalan...",
+      "loadError": "Perhitungan pembatalan gagal dimuat: {error}",
+      "savedPolicyDaysBefore": "Kebijakan yang tersimpan saat reservasi dibuat, dihitung berdasarkan pembatalan {days} hari sebelum check-in.",
+      "savedPolicyAfterCheckIn": "Kebijakan yang tersimpan saat reservasi dibuat, dihitung berdasarkan pembatalan setelah tanggal check-in.",
+      "room": "Kamar",
+      "needsReview": "Perlu ditinjau",
+      "nonRefundable": "Non-refundable · 100% harga kamar",
+      "needsManualReview": "Aturan memerlukan peninjauan manual",
+      "policyNeedsManualReview": "Kebijakan memerlukan peninjauan manual",
+      "roomChargeLine": "Harga kamar {roomTotal} · Biaya pembatalan {charge}",
+      "review": "Tinjau",
+      "roomCharges": "Biaya Kamar",
+      "otherCharges": "Biaya Lain",
+      "cancellationCharge": "Biaya Pembatalan",
+      "refundLimit": "Sisa Batas Refund Menurut Kebijakan",
+      "refundPending": "Refund Diproses",
+      "refundCompleted": "Pengembalian Selesai",
+      "reviewReasons": "Perhitungan memerlukan peninjauan: {reasons}.",
+      "note": "Refund yang selesai dicatat terpisah dari batas menurut kebijakan. Pengecualian kebijakan dapat menghasilkan jumlah refund yang berbeda.",
+      "rule": {
+        "moreThan": "Lebih dari {days} hari sebelum check-in",
+        "within": "Dalam {days} hari sebelum check-in",
+        "percentage": "{value}% harga kamar",
+        "nights": "{value} malam",
+        "template": "{timing} · {charge}"
+      }
+    },
+    "depositNote": "Deposit jaminan dicatat terpisah dari tagihan reservasi."
+  }
+}

@@ -1,0 +1,106 @@
+{
+  "shell": {
+    "title": "Master",
+    "capacityContext": "Capacity Patterns",
+    "notFoundContext": "Not Found"
+  },
+  "common": {
+    "eyebrow": "MASTER DATA",
+    "retry": "Retry",
+    "cancel": "Cancel",
+    "edit": "Edit",
+    "delete": "Delete",
+    "deleting": "Deleting...",
+    "saving": "Saving...",
+    "add": "Add",
+    "saveChanges": "Save Changes",
+    "close": "Close",
+    "status": {
+      "active": "Active",
+      "inactive": "Inactive"
+    }
+  },
+  "capacityPatterns": {
+    "title": "Capacity Patterns",
+    "description": "Manage adult and child combinations available for room types.",
+    "addButton": "+ Add Capacity Pattern",
+    "panelTitle": "Capacity Patterns",
+    "count": "{total} items",
+    "searchPlaceholder": "Search capacity patterns...",
+    "searchAriaLabel": "Search capacity patterns",
+    "label": {
+      "adult": "{count} Adult",
+      "adults": "{count} Adults",
+      "child": "{count} Child",
+      "children": "{count} Children"
+    },
+    "table": {
+      "no": "No.",
+      "capacity": "Capacity",
+      "sortOrder": "Sort Order",
+      "status": "Status",
+      "action": "Action"
+    },
+    "errors": {
+      "loadFailed": "Failed to load capacity patterns.",
+      "unableToLoad": "Unable to load items.",
+      "saveFailed": "Failed to save capacity pattern.",
+      "deleteFailed": "Failed to delete capacity pattern.",
+      "validation": "Enter Adults (1–99), Children (0–99), and Sort Order (0–10000).",
+      "duplicate": "This capacity combination already exists."
+    },
+    "empty": "No capacity patterns found.",
+    "notices": {
+      "added": "Capacity pattern added.",
+      "updated": "Capacity pattern updated.",
+      "deleted": "Capacity pattern deleted."
+    },
+    "deleteConfirm": "Delete {label}?",
+    "modal": {
+      "addTitle": "Add Capacity Pattern",
+      "editTitle": "Edit Capacity Pattern",
+      "description": "Set a valid guest combination for room type capacity.",
+      "adults": "Adults",
+      "children": "Children",
+      "sortOrder": "Sort Order",
+      "active": "Active"
+    }
+  },
+  "list": {
+    "notFound": "Master category not found",
+    "eyebrow": "MASTER DATA",
+    "descriptionPrefix": "Manage the available",
+    "descriptionSuffix": "for Green Hero.",
+    "addButton": "+ Add {category}",
+    "count": "{total} items",
+    "searchPlaceholder": "Search {category}...",
+    "searchAriaLabel": "Search {category}",
+    "table": {
+      "no": "No.",
+      "name": "Name",
+      "action": "Action"
+    },
+    "inactive": "Inactive",
+    "errors": {
+      "loadFailed": "Failed to load master data.",
+      "unableToLoad": "Unable to load items.",
+      "saveFailed": "Failed to save master data.",
+      "deleteFailed": "Failed to delete master data.",
+      "nameRequired": "Name is required.",
+      "duplicate": "This name already exists."
+    },
+    "empty": "No items found.",
+    "notices": {
+      "added": "{name} added.",
+      "updated": "{name} updated.",
+      "deleted": "{name} deleted."
+    },
+    "deleteConfirm": "Delete {name}?",
+    "modal": {
+      "addTitle": "Add {category}",
+      "editTitle": "Edit {category}",
+      "description": "Enter the name to display in {category}.",
+      "name": "Name"
+    }
+  }
+}

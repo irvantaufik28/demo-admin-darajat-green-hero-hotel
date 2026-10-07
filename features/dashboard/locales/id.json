@@ -1,0 +1,82 @@
+{
+  "shell": {
+    "title": "Dasbor",
+    "context": "Ringkasan Front Desk"
+  },
+  "header": {
+    "title": "Dasbor",
+    "description": "Ringkasan operasional hari ini",
+    "newReservation": "Reservasi Baru"
+  },
+  "errors": {
+    "loadFailed": "Dasbor gagal dimuat.",
+    "retry": "Coba lagi"
+  },
+  "summary": {
+    "arrivalsToday": "Kedatangan Hari Ini",
+    "arrivalsPending": "{count} belum check-in",
+    "departuresToday": "Keberangkatan Hari Ini",
+    "departuresPending": "{count} belum check-out",
+    "inHouse": "Tamu Menginap",
+    "inHouseDetail": "{count} tamu aktif",
+    "pendingPayment": "Pembayaran Tertunda",
+    "ariaLabel": "Ringkasan operasional"
+  },
+  "todayActivity": {
+    "title": "Aktivitas Hari Ini",
+    "description": "Tamu yang membutuhkan tindakan hari ini",
+    "pendingActions": "{count} Tindakan Tertunda",
+    "table": {
+      "guest": "Tamu",
+      "room": "Kamar",
+      "type": "Tipe",
+      "status": "Status",
+      "action": "Aksi"
+    },
+    "view": "Lihat",
+    "empty": "Belum ada aktivitas yang perlu ditindak."
+  },
+  "recentReservations": {
+    "title": "Reservasi Terbaru",
+    "description": "Reservasi terbaru dari seluruh channel",
+    "viewAll": "Lihat Semua Reservasi",
+    "table": {
+      "booking": "Pemesanan",
+      "guest": "Tamu",
+      "source": "Sumber",
+      "stay": "Menginap",
+      "payment": "Pembayaran",
+      "status": "Status",
+      "action": "Aksi"
+    },
+    "view": "Lihat",
+    "empty": "Belum ada reservasi."
+  },
+  "availability": {
+    "title": "Ketersediaan Hari Ini",
+    "ariaLabel": "Ketersediaan kamar hari ini",
+    "notSet": "Belum diatur",
+    "available": "{count} tersedia",
+    "empty": "Belum ada tipe kamar aktif.",
+    "manage": "Kelola Harga & Stok"
+  },
+  "reservationStatus": {
+    "pending": "Menunggu",
+    "confirmed": "Terkonfirmasi",
+    "checked_in": "Check-in",
+    "checked_out": "Check-out",
+    "cancelled": "Dibatalkan",
+    "expired": "Kedaluwarsa",
+    "unpaid": "Belum Dibayar",
+    "partial": "Sebagian",
+    "paid": "Lunas",
+    "failed": "Gagal",
+    "refunded": "Dikembalikan"
+  },
+  "source": {
+    "website": "Website",
+    "phone": "Telepon",
+    "walk_in": "Walk-in",
+    "ota": "OTA"
+  }
+}

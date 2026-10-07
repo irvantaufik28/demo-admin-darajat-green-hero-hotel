@@ -1,0 +1,136 @@
+{
+  "shell": {
+    "title": "Operations",
+    "context": "Cancellation Policies"
+  },
+  "page": {
+    "title": "Cancellation Policies",
+    "description": "Manage cancellation rules based on room type and stay period"
+  },
+  "actions": {
+    "addPolicy": "Add Cancellation Policy",
+    "reset": "Reset",
+    "edit": "Edit",
+    "enable": "Enable",
+    "disable": "Disable",
+    "previous": "Previous",
+    "next": "Next"
+  },
+  "filters": {
+    "searchPlaceholder": "Search policy name or room type",
+    "allRoomTypes": "All Room Types",
+    "status": {
+      "all": "All Status",
+      "active": "Active",
+      "inactive": "Inactive"
+    },
+    "counts": {
+      "active": "{count} Active",
+      "inactive": "{count} Inactive"
+    }
+  },
+  "table": {
+    "policyName": "Policy Name",
+    "stayPeriod": "Stay Period",
+    "roomType": "Room Type",
+    "bookingSource": "Booking Source",
+    "cancellationPolicy": "Cancellation Policy",
+    "status": "Status",
+    "action": "Action",
+    "allRoomTypes": "All Room Types"
+  },
+  "status": {
+    "active": "Active",
+    "inactive": "Inactive"
+  },
+  "pagination": {
+    "showing": "Showing {from}–{to} of {total} policies"
+  },
+  "notice": {
+    "title": "Cancellation Policy Note:",
+    "body": "The cancellation policy selected on a reservation or promo campaign is saved as a snapshot of the booking history. Changing a policy on this page will not alter the terms of reservations created earlier."
+  },
+  "messages": {
+    "empty": "No policies match the filter.",
+    "optionsLoadFailed": "Failed to load policy options.",
+    "policiesLoadFailed": "Failed to load policies.",
+    "detailLoadFailed": "Failed to load policy detail.",
+    "saveFailed": "Failed to save policy.",
+    "statusChangeFailed": "Failed to change policy status."
+  },
+  "modal": {
+    "titleAdd": "Add Cancellation Policy",
+    "titleEdit": "Edit Cancellation Policy",
+    "descriptionAdd": "Create a new cancellation policy",
+    "descriptionEdit": "Update cancellation rules and no-show charges",
+    "closeAria": "Close modal",
+    "sections": {
+      "policyInformation": "1. Policy Information",
+      "bookingSource": "Booking Source",
+      "applicableRoomTypes": "2. Applicable Room Types",
+      "stayPeriod": "3. Stay Period",
+      "cancellationRules": "4. Cancellation Rules",
+      "noShowRule": "5. No-show Rule"
+    },
+    "fields": {
+      "policyName": "Policy Name",
+      "selectPolicyType": "Select policy type",
+      "inactiveSuffix": " (Inactive)",
+      "status": "Status",
+      "statusActive": "Active",
+      "statusInactive": "Inactive",
+      "sourceWebsite": "Website",
+      "sourcePhone": "Phone",
+      "sourceHint": "Pick one or both. The policy applies to the selected channels.",
+      "selectAll": "Select All",
+      "applyToAllDates": "Apply to All Dates",
+      "from": "From",
+      "to": "To",
+      "activeTier": "{count} active tier",
+      "activeTiers": "{count} active tiers",
+      "addRule": "+ Add Rule",
+      "noShowCharge": "No-show Charge",
+      "chargeType": "Charge Type:",
+      "deletePolicy": "Delete Policy",
+      "deletePolicyTitle": "Delete Policy is not available in the API yet. Use the Inactive status instead."
+    },
+    "rule": {
+      "cancellationTime": "Cancellation Time:",
+      "daysBeforeCheckin": "Days Before Check-in",
+      "chargeType": "Charge Type:",
+      "removeAria": "Remove rule",
+      "timing": {
+        "moreThan": "More than",
+        "within": "Within"
+      },
+      "charge": {
+        "percentage": "Percentage",
+        "fixedAmount": "Fixed Amount",
+        "nightsCount": "Nights Count"
+      },
+      "unit": {
+        "percent": "%",
+        "nights": "night(s)",
+        "currency": "Rp"
+      }
+    },
+    "noShow": {
+      "options": {
+        "none": "None",
+        "percentage": "Percentage",
+        "firstNightCharge": "First Night Charge",
+        "fullStayAmount": "Full Stay Amount"
+      },
+      "hintPercentage": "{value}% of entire stay charged",
+      "hintNone": "No no-show charge",
+      "hintFirstNight": "First night charged",
+      "hintFullStay": "Full stay amount charged"
+    },
+    "actions": {
+      "cancel": "Cancel",
+      "saving": "Saving...",
+      "saveChanges": "Save Changes",
+      "addPolicy": "Add Policy"
+    }
+  }
+}

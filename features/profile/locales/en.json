@@ -1,0 +1,49 @@
+{
+  "shell": {
+    "title": "Account",
+    "profileContext": "Profile",
+    "changePasswordContext": "Change Password"
+  },
+  "profile": {
+    "description": "Green Hero Darajat owner account information.",
+    "photo": {
+      "alt": "Owner profile photo",
+      "ownerRole": "Owner · Green Hero Darajat",
+      "upload": "Upload Photo",
+      "remove": "Remove",
+      "hint": "JPG, PNG, or WebP · max. 2 MB. Photo is only shown while this page is open.",
+      "error": "Choose a JPG, PNG, or WebP image up to 2 MB."
+    },
+    "personalInformation": {
+      "title": "Personal Information",
+      "fullName": "Full Name",
+      "role": "Role",
+      "email": "Email",
+      "phone": "Phone",
+      "property": "Property",
+      "propertyValue": "Green Hero Darajat",
+      "location": "Location",
+      "locationValue": "Darajat Pass, Garut, West Java"
+    },
+    "accountAccess": {
+      "title": "Account & Access",
+      "username": "Username",
+      "usernameValue": "admin.darajat",
+      "status": "Status",
+      "lastLogin": "Last Login",
+      "access": "Access",
+      "accessValue": "Owner permissions"
+    },
+    "changePassword": "Change Password →"
+  },
+  "changePassword": {
+    "title": "Change Password",
+    "description": "Password form for demo display.",
+    "panelTitle": "Password",
+    "currentPassword": "Current Password",
+    "newPassword": "New Password",
+    "confirmNewPassword": "Confirm New Password",
+    "demoNote": "This demo form does not change the login password yet.",
+    "saveChanges": "Save Changes"
+  }
+}

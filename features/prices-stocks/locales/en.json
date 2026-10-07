@@ -1,0 +1,140 @@
+{
+  "shell": {
+    "title": "Prices & Stocks",
+    "context": "Prices & Stocks"
+  },
+  "page": {
+    "title": "Prices & Stocks",
+    "description": "Manage prices, stock, minimum stay, and room availability per date"
+  },
+  "actions": {
+    "exportCsv": "Export CSV",
+    "cancelBulk": "Cancel Bulk",
+    "bulkUpdate": "▦ Bulk Update",
+    "saveChanges": "✓ Save Changes",
+    "retry": "Retry",
+    "previous": "‹ Previous",
+    "next": "Next ›"
+  },
+  "heading": {
+    "unsavedChanges": "{count} unsaved changes"
+  },
+  "toolbar": {
+    "roomType": "Room Type:",
+    "selectRoomType": "Select Room Type",
+    "dateRange": "Date Range:",
+    "fromDateAria": "From date",
+    "toDateAria": "To date",
+    "recordCount": "{count} dates"
+  },
+  "capacity": {
+    "ariaLabel": "Room type room count",
+    "totalRooms": "Total Room Numbers",
+    "totalRoomsHint": "Includes inactive rooms",
+    "activeRooms": "Active Rooms",
+    "activeRoomsHint": "Maximum Sellable Stock limit",
+    "operationalRooms": "Active Outside Maintenance",
+    "operationalRoomsHint": "Includes occupied and cleaning"
+  },
+  "table": {
+    "day": "Day",
+    "date": "Date",
+    "sellableStock": "Sellable Stock",
+    "sold": "Sold",
+    "soldTitle": "Counts rooms on Pending, Confirmed, and Checked-in reservations",
+    "remainingStock": "Remaining Stock",
+    "availableRooms": "Available Rooms",
+    "price": "Price (IDR)",
+    "websitePromo": "Website Promo",
+    "webPrice": "Web Price",
+    "frontDeskPromo": "Front Desk Promo",
+    "frontDeskPrice": "Front Desk Price",
+    "minNight": "Min. Night",
+    "stopSell": "Stop Sell"
+  },
+  "bulkRow": {
+    "label": "Bulk",
+    "includeStockAria": "Include sellable stock",
+    "includePriceAria": "Include price",
+    "includeMinNightAria": "Include minimum nights",
+    "includeStopSellAria": "Include stop sell",
+    "stopSellLabel": "Bulk stop sell"
+  },
+  "cell": {
+    "noPromo": "No Promo",
+    "empty": "—",
+    "sellableStockAria": "Sellable stock {date}",
+    "priceAria": "Price {date}",
+    "minNightAria": "Minimum nights {date}",
+    "stopSellAria": "Stop sell {date}"
+  },
+  "pagination": {
+    "showing": "Showing {from}–{to} of {total} dates",
+    "pageOf": "Page {page} of {pageCount}"
+  },
+  "helper": {
+    "body": "For a single date, edit Price, Sellable Stock, Min. Night, or Stop Sell directly on that date's row then click Save Changes. Dates that have not been set up require Price and Sellable Stock first. Capacity of {roomName}: the Sellable Stock limit follows {stockLimit} active rooms. Occupied and cleaning rooms are still part of the operational count in the API. Sold counts rooms booked on Pending, Confirmed, or Checked-in status. Remaining Stock and Available Rooms are calculated by the API based on reservations and room status. Website and Front Desk promos follow Campaigns & Promotions.",
+    "bulkPending": "Save the Bulk Update before editing individual rows."
+  },
+  "empty": {
+    "noDates": "Pick a valid date range of up to 366 days."
+  },
+  "bulkModal": {
+    "title": "▦ Bulk Update Prices & Stocks",
+    "closeAria": "Close modal",
+    "targetRoom": "Target Room:",
+    "targetRoomValue": "{roomName} ({units} Capacity Units)",
+    "from": "From",
+    "to": "To",
+    "applicableDays": "Applicable Days",
+    "applicableDaysLockedTitle": "{day} is used by Custom Day Price",
+    "applicableDaysNote": "Days used by Custom Day Price must stay selected and cannot be unchecked.",
+    "fieldChanges": "Field Changes",
+    "fields": {
+      "minNight": "Min. Night",
+      "stopSell": "Stop Sell",
+      "price": "Price (IDR)",
+      "stock": "Stock",
+      "stopSellOff": "Off (Open)",
+      "stopSellOn": "On (Close)"
+    },
+    "customDays": "Custom Day Price",
+    "customDaysNote": "Set a special price for specific days within the date range above.",
+    "customDayAria": "Custom day {index}",
+    "customPriceAria": "Custom price {index}",
+    "removeCustomDayAria": "Remove custom day {index}",
+    "addCustomDay": "＋ Add Custom Day Price",
+    "hint": "Pick a date range before changing fields. Changes appear as a preview until Save Changes is confirmed.",
+    "actions": {
+      "cancel": "Cancel",
+      "saveChanges": "✓ Save Changes"
+    }
+  },
+  "saveModal": {
+    "confirmTitle": "Confirm Changes",
+    "successTitle": "Changes Saved",
+    "confirmBody": "Save price and stock changes on {count} dates?",
+    "successBody": "Price and stock changes saved successfully.",
+    "cancel": "Cancel",
+    "saving": "Saving...",
+    "confirmSave": "Confirm Save",
+    "done": "Done"
+  },
+  "messages": {
+    "noActiveRoomType": "There are no active Room Types yet.",
+    "roomTypesLoadFailed": "Failed to load room types.",
+    "inventoryLoadFailed": "Failed to load prices and stock.",
+    "saveFailed": "Failed to save prices and stock.",
+    "duplicateCustomDay": "Each Custom Day Price must use a different day.",
+    "requireApplicableDay": "Pick at least one Applicable Day.",
+    "requireFieldOrCustom": "Pick at least one field or fill in a Custom Day Price.",
+    "requireRowFields": "Complete Price, Sellable Stock, and Min. Night for {date} before saving.",
+    "requireRowBasics": "Date {date} requires Price and Sellable Stock before saving.",
+    "tooManyChanges": "A maximum of 300 row changes per save. Use Bulk Update for longer date ranges.",
+    "saveBeforeBulk": "Save existing changes before opening Bulk Update."
+  },
+  "roomTypeFallback": "Room Type",
+  "notice": {
+    "ariaLabel": "Prices & stocks notice"
+  }
+}

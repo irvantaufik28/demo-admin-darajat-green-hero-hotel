@@ -1,0 +1,184 @@
+{
+  "shell": {
+    "title": "Operations",
+    "context": "Campaigns & Promotions"
+  },
+  "list": {
+    "page": {
+      "title": "Campaigns & Promotions",
+      "description": "Manage promotions that apply based on period, room type, and booking rules"
+    },
+    "actions": {
+      "addCampaign": "+ Add Campaign",
+      "resetFilter": "Reset Filter",
+      "edit": "Edit",
+      "delete": "Delete",
+      "previous": "Previous",
+      "next": "Next"
+    },
+    "filters": {
+      "searchPlaceholder": "Search campaign name or promo code...",
+      "channelAriaLabel": "Filter channel",
+      "status": {
+        "all": "All Status",
+        "active": "Active",
+        "inactive": "Inactive"
+      },
+      "channel": {
+        "all": "All Channels",
+        "website": "Website",
+        "frontDesk": "Front Desk"
+      },
+      "roomType": {
+        "all": "All Room Types"
+      }
+    },
+    "table": {
+      "campaignName": "Campaign Name",
+      "roomType": "Room Type",
+      "channel": "Channel",
+      "bookingPeriod": "Booking Period",
+      "stayPeriod": "Stay Period",
+      "discount": "Discount",
+      "minNight": "Min. Night",
+      "priority": "Priority",
+      "status": "Status",
+      "action": "Action"
+    },
+    "cell": {
+      "allRoomTypes": "All Room Types",
+      "channelWebsite": "Website",
+      "channelFrontDesk": "Front Desk",
+      "anyDate": "Any date",
+      "codeLabel": "Code:",
+      "noCode": "No Code (Auto-applied)",
+      "percentOff": "{value}% Off",
+      "amountOff": "Rp {value} Off",
+      "oneNight": "1 Night",
+      "nights": "{count} Nights",
+      "priorityTitle": "Priority {priority}"
+    },
+    "status": {
+      "active": "Active",
+      "inactive": "Inactive"
+    },
+    "switch": {
+      "enableAria": "Enable {name}",
+      "disableAria": "Disable {name}",
+      "enableTitle": "Enable campaign",
+      "disableTitle": "Disable campaign"
+    },
+    "pagination": {
+      "showing": "Showing {from}–{to} of {total} campaigns"
+    },
+    "notice": {
+      "priorityTitle": "Promo Priority Note:",
+      "priorityBody": "When several campaigns are active for the same channel, room type, and stay dates, the system automatically applies the promo with the highest priority (number 1 = top priority). Promos cannot be combined (non-stackable)."
+    },
+    "deleteDialog": {
+      "title": "Delete Campaign?",
+      "body": "Delete {name}? Promo history on reservations stays saved as a snapshot. Priority of other campaigns in the same channel will be updated automatically.",
+      "cancel": "Cancel",
+      "confirm": "Delete Campaign",
+      "deleting": "Deleting..."
+    },
+    "messages": {
+      "empty": "No campaigns match the filter.",
+      "roomTypesLoadFailed": "Failed to load room types.",
+      "campaignsLoadFailed": "Failed to load campaigns.",
+      "statusChangeFailed": "Failed to change campaign status.",
+      "deleteFailed": "Failed to delete campaign."
+    }
+  },
+  "form": {
+    "shell": {
+      "title": "Campaigns & Promotions",
+      "contextAdd": "Add Campaign",
+      "contextEdit": "Edit Campaign"
+    },
+    "page": {
+      "titleAdd": "Add Campaign",
+      "titleEdit": "Edit Campaign",
+      "descriptionAdd": "Create a promo based on period, room type, and booking rules",
+      "descriptionEdit": "Update settings for an existing promo"
+    },
+    "sections": {
+      "campaignInformation": "Campaign Information",
+      "applicableSource": "Applicable Source",
+      "applicableRoomTypes": "Applicable Room Types",
+      "period": "Period",
+      "applicableDays": "Applicable Days",
+      "bookingRequirement": "Booking Requirement",
+      "discount": "Discount",
+      "cancellationPolicy": "Cancellation Policy",
+      "promoCode": "Promo Code",
+      "blackoutDates": "Blackout Dates"
+    },
+    "fields": {
+      "campaignName": "Campaign Name",
+      "campaignNamePlaceholder": "Enter campaign name",
+      "status": "Status",
+      "statusActive": "Active",
+      "statusInactive": "Inactive",
+      "priority": "Priority",
+      "priorityHint": "Lower number = higher priority",
+      "channelWebsite": "Website",
+      "channelFrontDesk": "Front Desk (Walk-in & Phone)",
+      "channelHint": "(One channel per campaign)",
+      "allRoomTypes": "All Room Types",
+      "inactiveSuffix": " (Inactive)",
+      "bookingPeriod": "Booking Period",
+      "bookingPeriodNote": "Period a booking is created",
+      "stayPeriod": "Stay Period",
+      "stayPeriodNote": "Period the guest stays",
+      "minimumStay": "Minimum Stay:",
+      "nightsUnit": "Nights",
+      "minimumRooms": "Minimum Rooms (Optional):",
+      "roomsUnit": "Rooms",
+      "discountPercentage": "Percentage",
+      "discountFixed": "Fixed Amount",
+      "discountValue": "Value:",
+      "defaultCancellationPolicy": "Default cancellation policy",
+      "requirePromoCode": "Require Promo Code",
+      "promoCodeLabel": "Code:",
+      "promoCodePlaceholder": "e.g. PROMO2026",
+      "useBlackoutDates": "Use Blackout Dates",
+      "addBlackoutDate": "Add Blackout Date",
+      "removeBlackoutDateAria": "Remove blackout date"
+    },
+    "required": "*",
+    "actions": {
+      "cancel": "Cancel",
+      "saving": "Saving...",
+      "saveChanges": "Save Changes",
+      "saveCampaign": "Save Campaign"
+    },
+    "messages": {
+      "campaignNotFound": "Campaign not found.",
+      "loadFailed": "Failed to load campaign.",
+      "requireNameAndDay": "Fill in the campaign name and pick at least one Applicable Day.",
+      "requirePromoCode": "Enter a promo code when Require Promo Code is on.",
+      "requireBlackoutDates": "Complete the From and To dates on every Blackout Date.",
+      "saveFailed": "Failed to save campaign."
+    }
+  },
+  "dateRangePicker": {
+    "startDate": "Start date",
+    "endDate": "End date",
+    "previousMonthAria": "Previous month",
+    "nextMonthAria": "Next month",
+    "selectNewCheckout": "Select a new check-out date",
+    "selectEndDate": "Select end date",
+    "selectStartAndEnd": "Select start and end date",
+    "clear": "Clear",
+    "weekdays": {
+      "mon": "Mon",
+      "tue": "Tue",
+      "wed": "Wed",
+      "thu": "Thu",
+      "fri": "Fri",
+      "sat": "Sat",
+      "sun": "Sun"
+    }
+  }
+}

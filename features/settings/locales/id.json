@@ -1,0 +1,172 @@
+{
+  "shell": {
+    "title": "Pengaturan",
+    "rolesContext": "Peran & Izin",
+    "usersContext": "Pengguna",
+    "reservationContext": "Pengaturan Reservasi"
+  },
+  "common": {
+    "retry": "Coba Lagi",
+    "cancel": "Batal",
+    "close": "Tutup",
+    "saving": "Menyimpan...",
+    "saveChanges": "Simpan Perubahan",
+    "sessionExpired": "Sesi login berakhir. Silakan login kembali."
+  },
+  "roles": {
+    "eyebrow": "KONTROL AKSES",
+    "title": "Peran & Izin",
+    "description": "Pilih peran untuk melihat dan mengelola izinnya.",
+    "addRole": "+ Tambah Peran",
+    "listTitle": "Peran",
+    "count": "{total} peran",
+    "permissionsGranted": "{granted} dari {total} izin diberikan",
+    "edit": "Ubah",
+    "errors": {
+      "loadFailed": "Peran gagal dimuat.",
+      "unableToLoad": "Tidak dapat memuat peran.",
+      "createFailed": "Peran gagal dibuat.",
+      "nameTooShort": "Masukkan nama peran minimal 2 karakter.",
+      "duplicate": "Nama peran ini sudah ada."
+    },
+    "empty": "Peran tidak ditemukan.",
+    "modal": {
+      "title": "Tambah Peran",
+      "description": "Buat peran, lalu pilih izinnya di halaman detail.",
+      "nameLabel": "Nama Peran",
+      "namePlaceholder": "mis. Housekeeping",
+      "creating": "Membuat...",
+      "create": "Buat Peran"
+    }
+  },
+  "roleDetail": {
+    "notFound": "Peran tidak ditemukan",
+    "backToRoles": "← Kembali ke Peran",
+    "allRoles": "← Semua Peran",
+    "eyebrow": "DETAIL PERAN",
+    "description": "Tinjau dan sesuaikan akses peran ini terhadap operasional hotel.",
+    "discardChanges": "Buang Perubahan",
+    "matrixTitle": "Matriks Izin",
+    "matrixDescription": "Atur akses untuk {role}.",
+    "searchPlaceholder": "Cari izin...",
+    "searchAriaLabel": "Cari izin",
+    "table": {
+      "modulePermission": "Modul / Izin"
+    },
+    "empty": "Izin tidak ditemukan.",
+    "saved": "Izin peran tersimpan.",
+    "errors": {
+      "loadFailed": "Peran gagal dimuat.",
+      "saveFailed": "Izin gagal disimpan."
+    }
+  },
+  "users": {
+    "eyebrow": "AKSES TIM",
+    "title": "Pengguna",
+    "description": "Kelola akun admin, peran yang ditetapkan, dan status akses.",
+    "addUser": "+ Tambah Pengguna",
+    "listTitle": "Daftar Pengguna",
+    "count": "{total} pengguna",
+    "searchPlaceholder": "Cari nama, email, telepon...",
+    "searchAriaLabel": "Cari pengguna",
+    "statusFilterAriaLabel": "Filter status",
+    "statusOptions": {
+      "all": "Semua Status",
+      "active": "Aktif",
+      "inactive": "Tidak Aktif"
+    },
+    "table": {
+      "name": "Nama",
+      "emailUsername": "Email / Username",
+      "phone": "Telepon",
+      "role": "Peran",
+      "status": "Status",
+      "lastLogin": "Login Terakhir",
+      "action": "Aksi"
+    },
+    "status": {
+      "active": "Aktif",
+      "inactive": "Tidak Aktif"
+    },
+    "neverLoggedIn": "Belum Pernah",
+    "actions": {
+      "disable": "Nonaktifkan",
+      "enable": "Aktifkan",
+      "saving": "Menyimpan...",
+      "currentUser": "Pengguna Saat Ini"
+    },
+    "errors": {
+      "loadFailed": "Pengguna gagal dimuat.",
+      "unableToLoad": "Tidak dapat memuat pengguna.",
+      "createFailed": "Pengguna gagal dibuat.",
+      "statusChangeFailed": "Status pengguna gagal diubah.",
+      "validation": "Nama, email, peran, dan kata sandi minimal 5 karakter wajib diisi."
+    },
+    "empty": "Pengguna tidak ditemukan.",
+    "notices": {
+      "added": "{name} ditambahkan.",
+      "statusChanged": "{name} sekarang {status}."
+    },
+    "modal": {
+      "title": "Tambah Pengguna",
+      "description": "Atur informasi akun dan tetapkan peran.",
+      "name": "Nama",
+      "email": "Email",
+      "username": "Username",
+      "phone": "Telepon",
+      "role": "Peran",
+      "password": "Kata Sandi",
+      "status": "Status",
+      "addUser": "Tambah Pengguna"
+    }
+  },
+  "reservationSettings": {
+    "title": "Pengaturan Reservasi",
+    "description": "Konfigurasikan aturan utama reservasi dan menginap.",
+    "toggle": {
+      "on": "AKTIF",
+      "off": "NONAKTIF"
+    },
+    "stayTime": {
+      "title": "Waktu Menginap",
+      "checkInTime": "Waktu Check-in Default",
+      "checkOutTime": "Waktu Check-out Default"
+    },
+    "rules": {
+      "title": "Aturan Reservasi",
+      "autoConfirm": {
+        "label": "Konfirmasi Otomatis Pemesanan Website Setelah Pembayaran",
+        "description": "Reservasi website otomatis dikonfirmasi setelah pembayaran penuh berhasil."
+      },
+      "allowCheckIn": {
+        "label": "Izinkan Check-in Sebagian / Belum Lunas",
+        "description": "Staf dapat check-in tamu dengan sisa tagihan. Peringatan selalu ditampilkan sebelum check-in."
+      },
+      "allowCheckOut": {
+        "label": "Izinkan Check-out dengan Sisa Tagihan",
+        "description": "Staf dapat check-out tamu dengan tagihan belum lunas. Peringatan selalu ditampilkan, dan saldo tetap ada di Pembayaran."
+      }
+    },
+    "websiteBooking": {
+      "title": "Pemesanan Website",
+      "expiryLabel": "Batas Waktu Pembayaran Website",
+      "minutes": "Menit",
+      "help1": "Reservasi website yang belum dibayar kedaluwarsa setelah durasi ini.",
+      "help2": "Setelah kedaluwarsa, reservasi dan pembayaran menjadi Kedaluwarsa, dan inventaris kamar langsung dilepas."
+    },
+    "noShow": {
+      "title": "No-show",
+      "handlingLabel": "Penanganan No-show",
+      "handlingValue": "Manual oleh Staf",
+      "help": "Staf menandai secara manual tamu terkonfirmasi sebagai no-show ketika tamu tidak datang."
+    },
+    "saved": "Pengaturan reservasi tersimpan.",
+    "errors": {
+      "sessionUnavailable": "Sesi login tidak tersedia.",
+      "loadFailed": "Pengaturan reservasi gagal dimuat.",
+      "saveFailed": "Pengaturan reservasi gagal disimpan.",
+      "timesRequired": "Waktu check-in dan check-out wajib diisi.",
+      "expiryRange": "Batas waktu pembayaran website harus antara 1 dan 1.440 menit."
+    }
+  }
+}

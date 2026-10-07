@@ -1,0 +1,106 @@
+{
+  "shell": {
+    "title": "Master",
+    "capacityContext": "Pola Kapasitas",
+    "notFoundContext": "Tidak Ditemukan"
+  },
+  "common": {
+    "eyebrow": "DATA MASTER",
+    "retry": "Coba Lagi",
+    "cancel": "Batal",
+    "edit": "Ubah",
+    "delete": "Hapus",
+    "deleting": "Menghapus...",
+    "saving": "Menyimpan...",
+    "add": "Tambah",
+    "saveChanges": "Simpan Perubahan",
+    "close": "Tutup",
+    "status": {
+      "active": "Aktif",
+      "inactive": "Tidak Aktif"
+    }
+  },
+  "capacityPatterns": {
+    "title": "Pola Kapasitas",
+    "description": "Kelola kombinasi dewasa dan anak yang tersedia untuk tipe kamar.",
+    "addButton": "+ Tambah Pola Kapasitas",
+    "panelTitle": "Pola Kapasitas",
+    "count": "{total} item",
+    "searchPlaceholder": "Cari pola kapasitas...",
+    "searchAriaLabel": "Cari pola kapasitas",
+    "label": {
+      "adult": "{count} Dewasa",
+      "adults": "{count} Dewasa",
+      "child": "{count} Anak",
+      "children": "{count} Anak"
+    },
+    "table": {
+      "no": "No.",
+      "capacity": "Kapasitas",
+      "sortOrder": "Urutan",
+      "status": "Status",
+      "action": "Aksi"
+    },
+    "errors": {
+      "loadFailed": "Pola kapasitas gagal dimuat.",
+      "unableToLoad": "Tidak dapat memuat item.",
+      "saveFailed": "Pola kapasitas gagal disimpan.",
+      "deleteFailed": "Pola kapasitas gagal dihapus.",
+      "validation": "Isi Dewasa (1–99), Anak (0–99), dan Urutan (0–10000).",
+      "duplicate": "Kombinasi kapasitas ini sudah ada."
+    },
+    "empty": "Pola kapasitas tidak ditemukan.",
+    "notices": {
+      "added": "Pola kapasitas ditambahkan.",
+      "updated": "Pola kapasitas diperbarui.",
+      "deleted": "Pola kapasitas dihapus."
+    },
+    "deleteConfirm": "Hapus {label}?",
+    "modal": {
+      "addTitle": "Tambah Pola Kapasitas",
+      "editTitle": "Ubah Pola Kapasitas",
+      "description": "Tetapkan kombinasi tamu yang valid untuk kapasitas tipe kamar.",
+      "adults": "Dewasa",
+      "children": "Anak",
+      "sortOrder": "Urutan",
+      "active": "Aktif"
+    }
+  },
+  "list": {
+    "notFound": "Kategori master tidak ditemukan",
+    "eyebrow": "DATA MASTER",
+    "descriptionPrefix": "Kelola daftar",
+    "descriptionSuffix": "yang tersedia untuk Green Hero.",
+    "addButton": "+ Tambah {category}",
+    "count": "{total} item",
+    "searchPlaceholder": "Cari {category}...",
+    "searchAriaLabel": "Cari {category}",
+    "table": {
+      "no": "No.",
+      "name": "Nama",
+      "action": "Aksi"
+    },
+    "inactive": "Tidak Aktif",
+    "errors": {
+      "loadFailed": "Data master gagal dimuat.",
+      "unableToLoad": "Tidak dapat memuat item.",
+      "saveFailed": "Data master gagal disimpan.",
+      "deleteFailed": "Data master gagal dihapus.",
+      "nameRequired": "Nama wajib diisi.",
+      "duplicate": "Nama ini sudah ada."
+    },
+    "empty": "Item tidak ditemukan.",
+    "notices": {
+      "added": "{name} ditambahkan.",
+      "updated": "{name} diperbarui.",
+      "deleted": "{name} dihapus."
+    },
+    "deleteConfirm": "Hapus {name}?",
+    "modal": {
+      "addTitle": "Tambah {category}",
+      "editTitle": "Ubah {category}",
+      "description": "Masukkan nama yang akan ditampilkan di {category}.",
+      "name": "Nama"
+    }
+  }
+}

@@ -1,0 +1,92 @@
+{
+  "shell": {
+    "title": "Tamu",
+    "listContext": "Direktori Tamu",
+    "profileContext": "Profil Tamu"
+  },
+  "list": {
+    "eyebrow": "HUBUNGAN TAMU",
+    "title": "Tamu",
+    "description": "Profil dan riwayat reservasi.",
+    "panelTitle": "Daftar Tamu",
+    "count": "{total} tamu",
+    "searchPlaceholder": "Cari nama, telepon, email...",
+    "searchAriaLabel": "Cari tamu",
+    "statusFilterAriaLabel": "Filter status tamu",
+    "statusOptions": {
+      "all": "Semua Status",
+      "active": "Aktif",
+      "blacklisted": "Daftar Hitam"
+    },
+    "table": {
+      "guestName": "Nama Tamu",
+      "phone": "Telepon",
+      "email": "Email",
+      "totalStays": "Total Menginap",
+      "lastStay": "Terakhir Menginap",
+      "totalNights": "Total Malam",
+      "totalSpend": "Total Pengeluaran",
+      "guestStatus": "Status Tamu",
+      "action": "Aksi"
+    },
+    "view": "Lihat",
+    "retry": "Coba Lagi",
+    "errors": {
+      "loadFailed": "Daftar tamu gagal dimuat.",
+      "unableToLoad": "Tidak dapat memuat daftar tamu."
+    },
+    "empty": "Tamu tidak ditemukan."
+  },
+  "detail": {
+    "backToAll": "← Semua Tamu",
+    "notFound": "Tamu tidak ditemukan",
+    "eyebrow": "PROFIL TAMU",
+    "description": "Detail kontak, ringkasan menginap, dan riwayat reservasi.",
+    "errors": {
+      "profileLoadFailed": "Profil tamu gagal dimuat.",
+      "historyLoadFailed": "Riwayat reservasi gagal dimuat.",
+      "notesSaveFailed": "Catatan internal gagal disimpan."
+    },
+    "profile": {
+      "title": "Profil Tamu",
+      "name": "Nama",
+      "phone": "Telepon",
+      "email": "Email",
+      "address": "Alamat",
+      "notes": "Catatan"
+    },
+    "staySummary": {
+      "title": "Ringkasan Menginap",
+      "totalStays": "Total Menginap",
+      "totalNights": "Total Malam",
+      "totalSpend": "Total Pengeluaran",
+      "lastStay": "Terakhir Menginap"
+    },
+    "history": {
+      "title": "Riwayat Reservasi",
+      "count": "{total} pemesanan",
+      "table": {
+        "bookingId": "ID Pemesanan",
+        "stayDate": "Tanggal Menginap",
+        "roomType": "Tipe Kamar",
+        "source": "Sumber",
+        "reservationStatus": "Status Reservasi",
+        "bookingTotal": "Total Pemesanan"
+      },
+      "empty": "Reservasi tidak ditemukan."
+    },
+    "internalNotes": {
+      "title": "Catatan Internal",
+      "label": "Catatan yang terlihat oleh tim hotel",
+      "placeholder": "Tambahkan catatan internal tentang tamu ini...",
+      "save": "Simpan Catatan",
+      "saving": "Menyimpan...",
+      "saved": "Catatan internal tersimpan."
+    }
+  },
+  "pagination": {
+    "pageOf": "Halaman {page} dari {total}",
+    "previous": "Sebelumnya",
+    "next": "Berikutnya"
+  }
+}

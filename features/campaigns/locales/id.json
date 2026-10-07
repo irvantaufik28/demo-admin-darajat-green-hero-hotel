@@ -1,0 +1,184 @@
+{
+  "shell": {
+    "title": "Operasional",
+    "context": "Campaign & Promosi"
+  },
+  "list": {
+    "page": {
+      "title": "Campaign & Promosi",
+      "description": "Kelola promo yang berlaku berdasarkan periode, tipe kamar, dan aturan pemesanan"
+    },
+    "actions": {
+      "addCampaign": "+ Tambah Campaign",
+      "resetFilter": "Atur Ulang Filter",
+      "edit": "Ubah",
+      "delete": "Hapus",
+      "previous": "Sebelumnya",
+      "next": "Berikutnya"
+    },
+    "filters": {
+      "searchPlaceholder": "Cari nama campaign atau kode promo...",
+      "channelAriaLabel": "Filter kanal",
+      "status": {
+        "all": "Semua Status",
+        "active": "Aktif",
+        "inactive": "Nonaktif"
+      },
+      "channel": {
+        "all": "Semua Kanal",
+        "website": "Website",
+        "frontDesk": "Front Desk"
+      },
+      "roomType": {
+        "all": "Semua Tipe Kamar"
+      }
+    },
+    "table": {
+      "campaignName": "Nama Campaign",
+      "roomType": "Tipe Kamar",
+      "channel": "Kanal",
+      "bookingPeriod": "Periode Pemesanan",
+      "stayPeriod": "Periode Menginap",
+      "discount": "Diskon",
+      "minNight": "Min. Malam",
+      "priority": "Prioritas",
+      "status": "Status",
+      "action": "Aksi"
+    },
+    "cell": {
+      "allRoomTypes": "Semua Tipe Kamar",
+      "channelWebsite": "Website",
+      "channelFrontDesk": "Front Desk",
+      "anyDate": "Tanggal apa pun",
+      "codeLabel": "Kode:",
+      "noCode": "Tanpa Kode (Otomatis diterapkan)",
+      "percentOff": "Diskon {value}%",
+      "amountOff": "Diskon Rp {value}",
+      "oneNight": "1 Malam",
+      "nights": "{count} Malam",
+      "priorityTitle": "Prioritas {priority}"
+    },
+    "status": {
+      "active": "Aktif",
+      "inactive": "Nonaktif"
+    },
+    "switch": {
+      "enableAria": "Aktifkan {name}",
+      "disableAria": "Nonaktifkan {name}",
+      "enableTitle": "Aktifkan campaign",
+      "disableTitle": "Nonaktifkan campaign"
+    },
+    "pagination": {
+      "showing": "Menampilkan {from}–{to} dari {total} campaign"
+    },
+    "notice": {
+      "priorityTitle": "Catatan Prioritas Promo:",
+      "priorityBody": "Jika beberapa campaign aktif pada kanal, tipe kamar, dan tanggal menginap yang sama, sistem secara otomatis menerapkan promo dengan prioritas tertinggi (angka 1 = prioritas utama). Promo tidak dapat digabung (non-stackable)."
+    },
+    "deleteDialog": {
+      "title": "Hapus Campaign?",
+      "body": "Hapus {name}? Riwayat promo pada reservasi tetap tersimpan sebagai snapshot. Prioritas campaign lain dalam kanal yang sama akan diperbarui otomatis.",
+      "cancel": "Batal",
+      "confirm": "Hapus Campaign",
+      "deleting": "Menghapus..."
+    },
+    "messages": {
+      "empty": "Tidak ada campaign yang sesuai filter.",
+      "roomTypesLoadFailed": "Tipe kamar gagal dimuat.",
+      "campaignsLoadFailed": "Campaign gagal dimuat.",
+      "statusChangeFailed": "Status campaign gagal diubah.",
+      "deleteFailed": "Campaign gagal dihapus."
+    }
+  },
+  "form": {
+    "shell": {
+      "title": "Campaign & Promosi",
+      "contextAdd": "Tambah Campaign",
+      "contextEdit": "Ubah Campaign"
+    },
+    "page": {
+      "titleAdd": "Tambah Campaign",
+      "titleEdit": "Ubah Campaign",
+      "descriptionAdd": "Buat promo berdasarkan periode, tipe kamar, dan aturan pemesanan",
+      "descriptionEdit": "Perbarui pengaturan promo yang sudah ada"
+    },
+    "sections": {
+      "campaignInformation": "Informasi Campaign",
+      "applicableSource": "Sumber yang Berlaku",
+      "applicableRoomTypes": "Tipe Kamar yang Berlaku",
+      "period": "Periode",
+      "applicableDays": "Hari yang Berlaku",
+      "bookingRequirement": "Syarat Pemesanan",
+      "discount": "Diskon",
+      "cancellationPolicy": "Kebijakan Pembatalan",
+      "promoCode": "Kode Promo",
+      "blackoutDates": "Tanggal Blackout"
+    },
+    "fields": {
+      "campaignName": "Nama Campaign",
+      "campaignNamePlaceholder": "Masukkan nama campaign",
+      "status": "Status",
+      "statusActive": "Aktif",
+      "statusInactive": "Nonaktif",
+      "priority": "Prioritas",
+      "priorityHint": "Angka lebih kecil = prioritas lebih tinggi",
+      "channelWebsite": "Website",
+      "channelFrontDesk": "Front Desk (Walk-in & Telepon)",
+      "channelHint": "(Satu kanal per campaign)",
+      "allRoomTypes": "Semua Tipe Kamar",
+      "inactiveSuffix": " (Nonaktif)",
+      "bookingPeriod": "Periode Pemesanan",
+      "bookingPeriodNote": "Periode pemesanan dibuat",
+      "stayPeriod": "Periode Menginap",
+      "stayPeriodNote": "Periode tamu menginap",
+      "minimumStay": "Minimum Menginap:",
+      "nightsUnit": "Malam",
+      "minimumRooms": "Minimum Kamar (Opsional):",
+      "roomsUnit": "Kamar",
+      "discountPercentage": "Persentase",
+      "discountFixed": "Nominal Tetap",
+      "discountValue": "Nilai:",
+      "defaultCancellationPolicy": "Kebijakan pembatalan default",
+      "requirePromoCode": "Wajib Kode Promo",
+      "promoCodeLabel": "Kode:",
+      "promoCodePlaceholder": "mis. PROMO2026",
+      "useBlackoutDates": "Gunakan Tanggal Blackout",
+      "addBlackoutDate": "Tambah Tanggal Blackout",
+      "removeBlackoutDateAria": "Hapus tanggal blackout"
+    },
+    "required": "*",
+    "actions": {
+      "cancel": "Batal",
+      "saving": "Menyimpan...",
+      "saveChanges": "Simpan Perubahan",
+      "saveCampaign": "Simpan Campaign"
+    },
+    "messages": {
+      "campaignNotFound": "Campaign tidak ditemukan.",
+      "loadFailed": "Campaign gagal dimuat.",
+      "requireNameAndDay": "Isi nama campaign dan pilih minimal satu Hari yang Berlaku.",
+      "requirePromoCode": "Isi kode promo ketika Wajib Kode Promo aktif.",
+      "requireBlackoutDates": "Lengkapi tanggal Dari dan Sampai pada setiap Tanggal Blackout.",
+      "saveFailed": "Campaign gagal disimpan."
+    }
+  },
+  "dateRangePicker": {
+    "startDate": "Tanggal mulai",
+    "endDate": "Tanggal selesai",
+    "previousMonthAria": "Bulan sebelumnya",
+    "nextMonthAria": "Bulan berikutnya",
+    "selectNewCheckout": "Pilih tanggal check-out baru",
+    "selectEndDate": "Pilih tanggal selesai",
+    "selectStartAndEnd": "Pilih tanggal mulai dan selesai",
+    "clear": "Hapus",
+    "weekdays": {
+      "mon": "Sen",
+      "tue": "Sel",
+      "wed": "Rab",
+      "thu": "Kam",
+      "fri": "Jum",
+      "sat": "Sab",
+      "sun": "Min"
+    }
+  }
+}

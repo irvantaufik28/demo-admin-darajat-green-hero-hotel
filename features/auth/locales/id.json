@@ -1,0 +1,26 @@
+{
+  "shell": {
+    "shiftBadge": "Shift A (07:00 - 15:00)",
+    "deskLabel": "Meja Darajat #01",
+    "footerTitle": "Sistem Admin Green Hero Darajat • Back-Office Operasional",
+    "footerNote": "Akses hanya untuk staf berwenang. Ruang kerja operasional Green Hero Darajat."
+  },
+  "card": {
+    "brandEyebrow": "GREEN HERO DARAJAT",
+    "title": "Selamat datang kembali",
+    "description": "Masuk untuk mengelola reservasi, kamar, pembayaran, dan operasional hotel.",
+    "serverStatus": "Server PMS Online",
+    "version": "v3.4.12-darajat"
+  },
+  "form": {
+    "usernameLabel": "Username / ID Staf",
+    "passwordLabel": "Kata Sandi",
+    "showPassword": "Tampilkan kata sandi",
+    "hidePassword": "Sembunyikan kata sandi",
+    "demoCaption": "Demo Owner · Kata sandi default: admin123",
+    "signIn": "Masuk",
+    "signingIn": "Sedang masuk...",
+    "loginFailedTitle": "Login gagal",
+    "loginFailed": "Login gagal. Silakan coba lagi."
+  }
+}

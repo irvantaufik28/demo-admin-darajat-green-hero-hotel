@@ -1,0 +1,245 @@
+{
+  "shell": {
+    "title": "Reports",
+    "roomPerformanceContext": "Room Performance",
+    "revenueContext": "Revenue",
+    "reservationsContext": "Reservations"
+  },
+  "common": {
+    "reset": "Reset",
+    "exportCsv": "Export CSV",
+    "exporting": "Exporting…",
+    "loading": "Loading…",
+    "loadFailed": "Failed to load report.",
+    "exportFailed": "Export failed.",
+    "allSources": "All Sources",
+    "allRoomTypes": "All Room Types"
+  },
+  "source": {
+    "website": "Website",
+    "phone": "Phone",
+    "walk_in": "Walk-in",
+    "ota": "OTA"
+  },
+  "reservationStatus": {
+    "pending": "Pending",
+    "confirmed": "Confirmed",
+    "checked_in": "Checked-in",
+    "checked_out": "Checked-out",
+    "cancelled": "Cancelled",
+    "expired": "Expired"
+  },
+  "paymentStatus": {
+    "unpaid": "Unpaid",
+    "partial": "Partial",
+    "paid": "Paid",
+    "failed": "Failed",
+    "expired": "Expired",
+    "refunded": "Refunded"
+  },
+  "roomPerformance": {
+    "title": "Room Performance",
+    "description": "Occupancy, room nights, and room revenue by room type for a seven-day period.",
+    "printAuditSheet": "Print Audit Sheet",
+    "filters": {
+      "ariaLabel": "Report filters",
+      "weekStarting": "Week starting",
+      "roomType": "Room Type",
+      "source": "Source",
+      "occupancyMode": "Occupancy Mode",
+      "compareWith": "Compare With"
+    },
+    "occupancyMode": {
+      "actual": "Actual Occupied",
+      "projected": "Actual + Confirmed"
+    },
+    "comparison": {
+      "previous": "Previous Week",
+      "lastYear": "Same Week Last Year",
+      "none": "No Comparison"
+    },
+    "period": "{start} – {end} · {rooms} physical rooms · 7 nights",
+    "kpis": {
+      "ariaLabel": "Performance summary",
+      "availableRoomNights": "Available Room Nights",
+      "soldRoomNights": "Sold Room Nights",
+      "occupancyRate": "Occupancy Rate",
+      "arr": "Average Room Rate (ARR)",
+      "totalRoomRevenue": "Total Room Revenue"
+    },
+    "byRoomType": {
+      "title": "Performance by Room Type",
+      "subtitle": "Room nights and actual room revenue",
+      "table": {
+        "roomType": "Room Type",
+        "physicalRooms": "Physical Rooms",
+        "availableRN": "Available RN",
+        "soldRN": "Sold RN",
+        "unsoldRN": "Unsold RN",
+        "occupancy": "Occupancy",
+        "arr": "ARR",
+        "roomRevenue": "Room Revenue",
+        "cancelledRN": "Cancelled RN"
+      },
+      "total": "Total"
+    },
+    "comparisonSection": {
+      "title": "Week Comparison",
+      "subtitle": "vs {comparison} ({start} – {end})",
+      "noBaseline": "— no baseline data",
+      "changeVsComparison": "{change} vs comparison week",
+      "cards": {
+        "occupancyRate": "Occupancy Rate",
+        "soldRoomNights": "Sold Room Nights",
+        "averageRoomRate": "Average Room Rate",
+        "roomRevenue": "Room Revenue"
+      }
+    },
+    "dailyBreakdown": {
+      "title": "Daily Occupancy Breakdown",
+      "subtitle": "Seven-day view",
+      "table": {
+        "date": "Date",
+        "physicalRooms": "Physical Rooms",
+        "availableRN": "Available RN",
+        "soldRN": "Sold RN",
+        "occupancy": "Occupancy",
+        "arr": "ARR",
+        "roomRevenue": "Room Revenue",
+        "status": "Status"
+      },
+      "recorded": "Recorded",
+      "empty": "No data for this period."
+    },
+    "note": "Figures use recorded room nights and actual booking rates. Revenue excludes deposits and add-ons. Available room nights count operational physical rooms (excludes maintenance and out-of-service units)."
+  },
+  "revenue": {
+    "title": "Revenue Report",
+    "description": "Monitor booking value, payments, refunds, outstanding balances, and net collections.",
+    "reservationCount": "{total} reservations",
+    "kpis": {
+      "ariaLabel": "Revenue summary",
+      "grossBookingValue": "Gross Booking Value",
+      "discount": "Discount",
+      "netBookingValue": "Net Booking Value",
+      "netCollected": "Net Collected",
+      "paid": "Paid",
+      "refunded": "Refunded",
+      "outstanding": "Outstanding"
+    },
+    "disclaimer": "Security Deposit is excluded from revenue and net collection calculations. Discount data is not yet available, so it shows Rp0.",
+    "filters": {
+      "ariaLabel": "Revenue filters",
+      "currency": "Currency: IDR (Rupiah)",
+      "dateBy": "Date By:",
+      "fromDate": "From date",
+      "toDate": "To date",
+      "sourceAriaLabel": "Source",
+      "paymentStatusAriaLabel": "Payment status",
+      "reservationStatusAriaLabel": "Reservation status",
+      "paymentMethodAriaLabel": "Payment method",
+      "roomTypeAriaLabel": "Room type",
+      "allPaymentStatus": "All Payment Status",
+      "allResvStatus": "All Resv Status",
+      "allMethods": "All Methods"
+    },
+    "dateBy": {
+      "payment": "Payment Date",
+      "booking": "Booking Date",
+      "checkIn": "Check-in Date"
+    },
+    "bySource": {
+      "title": "Revenue by Source",
+      "activeChannels": "{count} Active Channels",
+      "table": {
+        "source": "Source",
+        "reservations": "Reservations",
+        "bookingValue": "Booking Value",
+        "paid": "Paid",
+        "refunded": "Refunded",
+        "outstanding": "Outstanding",
+        "netCollected": "Net Collected"
+      },
+      "total": "Total"
+    },
+    "byMethod": {
+      "title": "Revenue by Payment Method",
+      "paymentTypes": "{count} Payment Types",
+      "table": {
+        "paymentMethod": "Payment Method",
+        "transactions": "Transactions",
+        "paid": "Paid",
+        "refunded": "Refunded",
+        "netCollected": "Net Collected"
+      },
+      "total": "Total",
+      "empty": "No transactions for this filter."
+    },
+    "note": "Net Collected = Paid − Refunded. All figures follow the active filters."
+  },
+  "reservations": {
+    "title": "Reservations Report",
+    "description": "Monitor reservation activity, stay dates, room nights, booking value, payments, and outstanding balances.",
+    "reservationCount": "{total} reservations",
+    "summary": {
+      "title": "▣   Reservation Summary",
+      "totalResv": "Total Resv",
+      "confirmed": "Confirmed",
+      "checkedIn": "Checked-in",
+      "checkedOut": "Checked-out",
+      "cancelled": "Cancelled",
+      "roomNights": "Room Nights"
+    },
+    "financial": {
+      "title": "▣   Financial Snapshot",
+      "bookingValue": "Booking Value",
+      "paid": "Paid",
+      "outstanding": "Outstanding",
+      "note": "Financial figures include active reservations within the filter. Deposit excluded."
+    },
+    "filters": {
+      "searchPlaceholder": "Search booking ID, guest, or WhatsApp",
+      "searchAriaLabel": "Search reservations report",
+      "dateBy": "Date By",
+      "fromDate": "From date",
+      "toDate": "To date",
+      "reservationStatusAriaLabel": "Reservation status",
+      "sourceAriaLabel": "Source",
+      "roomTypeAriaLabel": "Room type",
+      "otaChannelAriaLabel": "OTA channel",
+      "allStatus": "All Status",
+      "allOta": "All OTA",
+      "allOtaInactive": "All OTA (Inactive)"
+    },
+    "dateBy": {
+      "booking": "Booking Date",
+      "checkIn": "Check-in Date",
+      "checkOut": "Check-out Date"
+    },
+    "table": {
+      "bookingId": "Booking ID",
+      "bookingDate": "Booking Date",
+      "guest": "Guest",
+      "source": "Source",
+      "roomType": "Room Type",
+      "roomQty": "Room Qty",
+      "checkIn": "Check-in",
+      "checkOut": "Check-out",
+      "nights": "Nights",
+      "roomNights": "Room Nights",
+      "reservationStatus": "Reservation Status",
+      "bookingTotal": "Booking Total",
+      "discount": "Discount",
+      "paid": "Paid",
+      "outstanding": "Outstanding"
+    },
+    "empty": "No reservations match the filter.",
+    "pagination": {
+      "showing": "Showing {start}–{end} of {total} reservations",
+      "prev": "Prev",
+      "next": "Next",
+      "pageOf": "{page} / {total}"
+    },
+    "note": "All financial figures are in Indonesian Rupiah (IDR). Export CSV follows the active filters."
+  }
+}

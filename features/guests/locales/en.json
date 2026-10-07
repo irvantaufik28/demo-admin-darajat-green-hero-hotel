@@ -1,0 +1,92 @@
+{
+  "shell": {
+    "title": "Guests",
+    "listContext": "Guest Directory",
+    "profileContext": "Guest Profile"
+  },
+  "list": {
+    "eyebrow": "GUEST RELATIONSHIPS",
+    "title": "Guests",
+    "description": "Profiles and reservation history.",
+    "panelTitle": "Guest List",
+    "count": "{total} guests",
+    "searchPlaceholder": "Search name, phone, email...",
+    "searchAriaLabel": "Search guests",
+    "statusFilterAriaLabel": "Filter guest status",
+    "statusOptions": {
+      "all": "All Status",
+      "active": "Active",
+      "blacklisted": "Blacklisted"
+    },
+    "table": {
+      "guestName": "Guest Name",
+      "phone": "Phone",
+      "email": "Email",
+      "totalStays": "Total Stays",
+      "lastStay": "Last Stay",
+      "totalNights": "Total Nights",
+      "totalSpend": "Total Spend",
+      "guestStatus": "Guest Status",
+      "action": "Action"
+    },
+    "view": "View",
+    "retry": "Retry",
+    "errors": {
+      "loadFailed": "Failed to load guest list.",
+      "unableToLoad": "Unable to load guests."
+    },
+    "empty": "No guests found."
+  },
+  "detail": {
+    "backToAll": "← All Guests",
+    "notFound": "Guest not found",
+    "eyebrow": "GUEST PROFILE",
+    "description": "Contact details, stay summary, and reservation history.",
+    "errors": {
+      "profileLoadFailed": "Failed to load guest profile.",
+      "historyLoadFailed": "Failed to load reservation history.",
+      "notesSaveFailed": "Failed to save internal notes."
+    },
+    "profile": {
+      "title": "Guest Profile",
+      "name": "Name",
+      "phone": "Phone",
+      "email": "Email",
+      "address": "Address",
+      "notes": "Notes"
+    },
+    "staySummary": {
+      "title": "Stay Summary",
+      "totalStays": "Total Stays",
+      "totalNights": "Total Nights",
+      "totalSpend": "Total Spend",
+      "lastStay": "Last Stay"
+    },
+    "history": {
+      "title": "Reservation History",
+      "count": "{total} bookings",
+      "table": {
+        "bookingId": "Booking ID",
+        "stayDate": "Stay Date",
+        "roomType": "Room Type",
+        "source": "Source",
+        "reservationStatus": "Reservation Status",
+        "bookingTotal": "Booking Total"
+      },
+      "empty": "No reservations found."
+    },
+    "internalNotes": {
+      "title": "Internal Notes",
+      "label": "Notes visible to the hotel team",
+      "placeholder": "Add an internal note about this guest...",
+      "save": "Save Notes",
+      "saving": "Saving...",
+      "saved": "Internal notes saved."
+    }
+  },
+  "pagination": {
+    "pageOf": "Page {page} of {total}",
+    "previous": "Previous",
+    "next": "Next"
+  }
+}

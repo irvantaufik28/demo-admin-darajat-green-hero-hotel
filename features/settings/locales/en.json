@@ -1,0 +1,172 @@
+{
+  "shell": {
+    "title": "Settings",
+    "rolesContext": "Roles & Permissions",
+    "usersContext": "Users",
+    "reservationContext": "Reservation Settings"
+  },
+  "common": {
+    "retry": "Retry",
+    "cancel": "Cancel",
+    "close": "Close",
+    "saving": "Saving...",
+    "saveChanges": "Save Changes",
+    "sessionExpired": "Login session expired. Please sign in again."
+  },
+  "roles": {
+    "eyebrow": "ACCESS CONTROL",
+    "title": "Roles & Permissions",
+    "description": "Select a role to view and manage its permissions.",
+    "addRole": "+ Add Role",
+    "listTitle": "Roles",
+    "count": "{total} roles",
+    "permissionsGranted": "{granted} of {total} permissions granted",
+    "edit": "Edit",
+    "errors": {
+      "loadFailed": "Failed to load roles.",
+      "unableToLoad": "Unable to load roles.",
+      "createFailed": "Failed to create role.",
+      "nameTooShort": "Enter a role name with at least 2 characters.",
+      "duplicate": "This role name already exists."
+    },
+    "empty": "No roles found.",
+    "modal": {
+      "title": "Add Role",
+      "description": "Create a role, then choose its permissions on the detail page.",
+      "nameLabel": "Role Name",
+      "namePlaceholder": "e.g. Housekeeping",
+      "creating": "Creating...",
+      "create": "Create Role"
+    }
+  },
+  "roleDetail": {
+    "notFound": "Role not found",
+    "backToRoles": "← Back to Roles",
+    "allRoles": "← All Roles",
+    "eyebrow": "ROLE DETAILS",
+    "description": "Review and adjust this role's access to hotel operations.",
+    "discardChanges": "Discard Changes",
+    "matrixTitle": "Permission Matrix",
+    "matrixDescription": "Set access for {role}.",
+    "searchPlaceholder": "Search permissions...",
+    "searchAriaLabel": "Search permissions",
+    "table": {
+      "modulePermission": "Module / Permission"
+    },
+    "empty": "No permissions found.",
+    "saved": "Role permissions saved.",
+    "errors": {
+      "loadFailed": "Failed to load role.",
+      "saveFailed": "Failed to save permissions."
+    }
+  },
+  "users": {
+    "eyebrow": "TEAM ACCESS",
+    "title": "Users",
+    "description": "Manage admin accounts, assigned roles, and access status.",
+    "addUser": "+ Add User",
+    "listTitle": "User List",
+    "count": "{total} users",
+    "searchPlaceholder": "Search name, email, phone...",
+    "searchAriaLabel": "Search users",
+    "statusFilterAriaLabel": "Filter status",
+    "statusOptions": {
+      "all": "All Status",
+      "active": "Active",
+      "inactive": "Inactive"
+    },
+    "table": {
+      "name": "Name",
+      "emailUsername": "Email / Username",
+      "phone": "Phone",
+      "role": "Role",
+      "status": "Status",
+      "lastLogin": "Last Login",
+      "action": "Action"
+    },
+    "status": {
+      "active": "Active",
+      "inactive": "Inactive"
+    },
+    "neverLoggedIn": "Never",
+    "actions": {
+      "disable": "Disable",
+      "enable": "Enable",
+      "saving": "Saving...",
+      "currentUser": "Current User"
+    },
+    "errors": {
+      "loadFailed": "Failed to load users.",
+      "unableToLoad": "Unable to load users.",
+      "createFailed": "Failed to create user.",
+      "statusChangeFailed": "Failed to change user status.",
+      "validation": "Name, email, role, and password of at least 5 characters are required."
+    },
+    "empty": "No users found.",
+    "notices": {
+      "added": "{name} added.",
+      "statusChanged": "{name} is now {status}."
+    },
+    "modal": {
+      "title": "Add User",
+      "description": "Set account information and assign a role.",
+      "name": "Name",
+      "email": "Email",
+      "username": "Username",
+      "phone": "Phone",
+      "role": "Role",
+      "password": "Password",
+      "status": "Status",
+      "addUser": "Add User"
+    }
+  },
+  "reservationSettings": {
+    "title": "Reservation Settings",
+    "description": "Configure the main reservation and stay rules.",
+    "toggle": {
+      "on": "ON",
+      "off": "OFF"
+    },
+    "stayTime": {
+      "title": "Stay Time",
+      "checkInTime": "Default Check-in Time",
+      "checkOutTime": "Default Check-out Time"
+    },
+    "rules": {
+      "title": "Reservation Rules",
+      "autoConfirm": {
+        "label": "Auto Confirm Website Booking After Payment",
+        "description": "Website reservations are automatically confirmed after successful full payment."
+      },
+      "allowCheckIn": {
+        "label": "Allow Partial / Unpaid Check-in",
+        "description": "Staff may check in guests with an outstanding balance. A warning is always shown before check-in."
+      },
+      "allowCheckOut": {
+        "label": "Allow Checkout with Outstanding Balance",
+        "description": "Staff may check out guests with an unpaid balance. A warning is always shown, and the balance remains in Payments."
+      }
+    },
+    "websiteBooking": {
+      "title": "Website Booking",
+      "expiryLabel": "Website Payment Expiry",
+      "minutes": "Minutes",
+      "help1": "Unpaid website reservations expire after this duration.",
+      "help2": "After expiry, the reservation and payment become Expired, and direct room inventory is released."
+    },
+    "noShow": {
+      "title": "No-show",
+      "handlingLabel": "No-show Handling",
+      "handlingValue": "Manual by Staff",
+      "help": "Staff manually marks a confirmed guest as no-show when the guest does not arrive."
+    },
+    "saved": "Reservation settings saved.",
+    "errors": {
+      "sessionUnavailable": "Login session unavailable.",
+      "loadFailed": "Failed to load reservation settings.",
+      "saveFailed": "Failed to save reservation settings.",
+      "timesRequired": "Check-in and check-out times are required.",
+      "expiryRange": "Website payment expiry must be between 1 and 1,440 minutes."
+    }
+  }
+}

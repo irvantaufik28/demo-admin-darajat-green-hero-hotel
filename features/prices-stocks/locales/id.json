@@ -1,0 +1,140 @@
+{
+  "shell": {
+    "title": "Harga & Stok",
+    "context": "Harga & Stok"
+  },
+  "page": {
+    "title": "Harga & Stok",
+    "description": "Kelola harga, stok, minimum menginap, dan ketersediaan kamar per tanggal"
+  },
+  "actions": {
+    "exportCsv": "Ekspor CSV",
+    "cancelBulk": "Batalkan Bulk",
+    "bulkUpdate": "▦ Pembaruan Massal",
+    "saveChanges": "✓ Simpan Perubahan",
+    "retry": "Coba Lagi",
+    "previous": "‹ Sebelumnya",
+    "next": "Berikutnya ›"
+  },
+  "heading": {
+    "unsavedChanges": "{count} perubahan belum disimpan"
+  },
+  "toolbar": {
+    "roomType": "Tipe Kamar:",
+    "selectRoomType": "Pilih Tipe Kamar",
+    "dateRange": "Rentang Tanggal:",
+    "fromDateAria": "Tanggal dari",
+    "toDateAria": "Tanggal sampai",
+    "recordCount": "{count} tanggal"
+  },
+  "capacity": {
+    "ariaLabel": "Jumlah kamar tipe kamar",
+    "totalRooms": "Total Nomor Kamar",
+    "totalRoomsHint": "Termasuk kamar nonaktif",
+    "activeRooms": "Kamar Aktif",
+    "activeRoomsHint": "Batas maksimum Sellable Stock",
+    "operationalRooms": "Aktif di Luar Maintenance",
+    "operationalRoomsHint": "Termasuk occupied dan cleaning"
+  },
+  "table": {
+    "day": "Hari",
+    "date": "Tanggal",
+    "sellableStock": "Sellable Stock",
+    "sold": "Terjual",
+    "soldTitle": "Menghitung kamar pada reservasi Pending, Confirmed, dan Checked-in",
+    "remainingStock": "Sisa Stok",
+    "availableRooms": "Kamar Tersedia",
+    "price": "Harga (IDR)",
+    "websitePromo": "Promo Website",
+    "webPrice": "Harga Web",
+    "frontDeskPromo": "Promo Front Desk",
+    "frontDeskPrice": "Harga Front Desk",
+    "minNight": "Min. Malam",
+    "stopSell": "Stop Sell"
+  },
+  "bulkRow": {
+    "label": "Massal",
+    "includeStockAria": "Sertakan sellable stock",
+    "includePriceAria": "Sertakan harga",
+    "includeMinNightAria": "Sertakan minimum malam",
+    "includeStopSellAria": "Sertakan stop sell",
+    "stopSellLabel": "Stop sell massal"
+  },
+  "cell": {
+    "noPromo": "Tanpa Promo",
+    "empty": "—",
+    "sellableStockAria": "Sellable stock {date}",
+    "priceAria": "Harga {date}",
+    "minNightAria": "Minimum malam {date}",
+    "stopSellAria": "Stop sell {date}"
+  },
+  "pagination": {
+    "showing": "Menampilkan {from}–{to} dari {total} tanggal",
+    "pageOf": "Halaman {page} dari {pageCount}"
+  },
+  "helper": {
+    "body": "Untuk satu tanggal, ubah langsung Harga, Sellable Stock, Min. Malam, atau Stop Sell pada baris tanggal itu lalu klik Simpan Perubahan. Tanggal yang belum disetel membutuhkan Harga dan Sellable Stock terlebih dahulu. Kapasitas {roomName}: batas Sellable Stock mengikuti {stockLimit} kamar aktif. Kamar occupied dan cleaning masih termasuk hitungan operasional API. Terjual menghitung kamar yang dipesan pada status Pending, Confirmed, atau Checked-in. Sisa Stok dan Kamar Tersedia dihitung oleh API berdasarkan reservasi serta status kamar. Promo Website dan Front Desk mengikuti Campaign & Promosi.",
+    "bulkPending": "Simpan Pembaruan Massal sebelum mengedit baris individual."
+  },
+  "empty": {
+    "noDates": "Pilih rentang tanggal valid hingga 366 hari."
+  },
+  "bulkModal": {
+    "title": "▦ Pembaruan Massal Harga & Stok",
+    "closeAria": "Tutup modal",
+    "targetRoom": "Target Kamar:",
+    "targetRoomValue": "{roomName} ({units} Unit Kapasitas)",
+    "from": "Dari",
+    "to": "Sampai",
+    "applicableDays": "Hari yang Berlaku",
+    "applicableDaysLockedTitle": "{day} digunakan Custom Day Price",
+    "applicableDaysNote": "Hari yang dipakai Custom Day Price harus tetap dipilih dan tidak dapat dihapus centangnya.",
+    "fieldChanges": "Perubahan Field",
+    "fields": {
+      "minNight": "Min. Malam",
+      "stopSell": "Stop Sell",
+      "price": "Harga (IDR)",
+      "stock": "Stok",
+      "stopSellOff": "Off (Buka)",
+      "stopSellOn": "On (Tutup)"
+    },
+    "customDays": "Harga Hari Khusus",
+    "customDaysNote": "Tetapkan harga khusus untuk hari tertentu dalam rentang tanggal di atas.",
+    "customDayAria": "Hari khusus {index}",
+    "customPriceAria": "Harga khusus {index}",
+    "removeCustomDayAria": "Hapus hari khusus {index}",
+    "addCustomDay": "＋ Tambah Harga Hari Khusus",
+    "hint": "Pilih rentang tanggal sebelum mengubah field. Perubahan terlihat sebagai pratinjau hingga Simpan Perubahan dikonfirmasi.",
+    "actions": {
+      "cancel": "Batal",
+      "saveChanges": "✓ Simpan Perubahan"
+    }
+  },
+  "saveModal": {
+    "confirmTitle": "Konfirmasi Perubahan",
+    "successTitle": "Perubahan Tersimpan",
+    "confirmBody": "Simpan perubahan harga dan stok pada {count} tanggal?",
+    "successBody": "Perubahan harga dan stok berhasil disimpan.",
+    "cancel": "Batal",
+    "saving": "Menyimpan...",
+    "confirmSave": "Konfirmasi Simpan",
+    "done": "Selesai"
+  },
+  "messages": {
+    "noActiveRoomType": "Belum ada Room Type aktif.",
+    "roomTypesLoadFailed": "Gagal memuat tipe kamar.",
+    "inventoryLoadFailed": "Gagal memuat harga dan stok.",
+    "saveFailed": "Gagal menyimpan harga dan stok.",
+    "duplicateCustomDay": "Setiap Custom Day Price harus memakai hari yang berbeda.",
+    "requireApplicableDay": "Pilih minimal satu Applicable Day.",
+    "requireFieldOrCustom": "Pilih minimal satu field atau isi Custom Day Price.",
+    "requireRowFields": "Lengkapi Price, Sellable Stock, dan Min. Night untuk {date} sebelum menyimpan.",
+    "requireRowBasics": "Tanggal {date} memerlukan Price dan Sellable Stock sebelum disimpan.",
+    "tooManyChanges": "Maksimal 300 perubahan per baris dalam satu penyimpanan. Gunakan Pembaruan Massal untuk rentang tanggal lebih panjang.",
+    "saveBeforeBulk": "Simpan perubahan yang ada sebelum membuka Pembaruan Massal."
+  },
+  "roomTypeFallback": "Tipe Kamar",
+  "notice": {
+    "ariaLabel": "Catatan harga & stok"
+  }
+}

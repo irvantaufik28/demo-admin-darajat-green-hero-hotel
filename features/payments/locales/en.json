@@ -1,0 +1,370 @@
+{
+  "shell": {
+    "title": "Payments",
+    "paymentsContext": "Payments",
+    "paymentDetailContext": "Payment Detail"
+  },
+  "list": {
+    "heading": "Payments",
+    "description": "Monitor payment status and record reservation payments",
+    "exportCsv": "Export CSV",
+    "exporting": "Exporting...",
+    "note": "Security deposits are recorded separately from the reservation payment balance.",
+    "filters": {
+      "searchAriaLabel": "Search payments",
+      "searchPlaceholder": "Search booking, guest, or WhatsApp",
+      "reservationStatusAriaLabel": "Reservation status",
+      "reservationStatusAll": "Res: All Status",
+      "paymentStatusAriaLabel": "Payment status",
+      "paymentStatusAll": "Payment: All",
+      "sourceAriaLabel": "Source",
+      "sourceAll": "Source: All",
+      "methodAriaLabel": "Payment method",
+      "methodAll": "Method: All",
+      "fromDateAriaLabel": "From check-in date",
+      "toDateAriaLabel": "To check-in date",
+      "reset": "Reset"
+    },
+    "table": {
+      "booking": "Booking",
+      "guest": "Guest",
+      "source": "Source",
+      "reservationStatus": "Reservation Status",
+      "bookingTotal": "Booking Total",
+      "paid": "Paid",
+      "refunded": "Refunded",
+      "remaining": "Remaining",
+      "paymentStatus": "Payment Status",
+      "method": "Method",
+      "action": "Action",
+      "view": "View",
+      "emptyCell": "—"
+    },
+    "messages": {
+      "empty": "No payments match the filter.",
+      "loadError": "Failed to load payments.",
+      "exportError": "Failed to export payments."
+    },
+    "pagination": {
+      "showing": "Showing {count} of {total} reservation transactions",
+      "previous": "Previous",
+      "next": "Next",
+      "pageInfo": "Page {page} of {total}"
+    }
+  },
+  "csv": {
+    "fileName": "payments.csv",
+    "columns": {
+      "booking": "Booking",
+      "guest": "Guest",
+      "source": "Source",
+      "reservationStatus": "Reservation Status",
+      "bookingTotal": "Booking Total",
+      "paid": "Paid",
+      "refunded": "Refunded",
+      "remaining": "Remaining",
+      "paymentStatus": "Payment Status",
+      "method": "Method"
+    }
+  },
+  "queues": {
+    "refunds": {
+      "title": "Refunds",
+      "description": "Cancelled reservations with payments and refund settlement."
+    },
+    "outstanding": {
+      "title": "Outstanding Balance",
+      "description": "Remaining reservation balances that have already checked out.",
+      "totalOutstanding": "Total outstanding: {amount}"
+    },
+    "filters": {
+      "searchAriaLabel": "Search payments",
+      "searchPlaceholder": "Search booking, guest, or WhatsApp",
+      "sourceAriaLabel": "Source",
+      "sourceAll": "Source: All",
+      "reset": "Reset"
+    },
+    "table": {
+      "booking": "Booking",
+      "guest": "Guest",
+      "source": "Source",
+      "policy": "Policy",
+      "paid": "Paid",
+      "estimatedRefund": "Estimated Refund",
+      "refunded": "Refunded",
+      "status": "Status",
+      "checkOut": "Check-out",
+      "bookingTotal": "Booking Total",
+      "outstanding": "Outstanding",
+      "paymentStatus": "Payment Status",
+      "action": "Action",
+      "view": "View",
+      "manualReview": "Manual review",
+      "review": "Review"
+    },
+    "messages": {
+      "empty": "No data matches the filter.",
+      "loadError": "Failed to load payment data."
+    },
+    "pagination": {
+      "showing": "Showing {count} of {total} records",
+      "previous": "Previous",
+      "next": "Next",
+      "pageInfo": "Page {page} of {total}"
+    }
+  },
+  "status": {
+    "walkIn": "Walk-in",
+    "ota": "OTA"
+  },
+  "detail": {
+    "shellContext": "Payment Detail",
+    "breadcrumb": "Payments",
+    "title": "Payment Detail",
+    "subtitle": "Booking details and payment history",
+    "printInvoice": "Print Invoice",
+    "backToPayments": "Back to Payments",
+    "backToPaymentsLink": "Return to Payments",
+    "cards": {
+      "bookingGuest": "Booking & Guest",
+      "rooms": "Rooms",
+      "addOns": "Add-ons",
+      "chargesPayments": "Charges & Payments",
+      "paymentHistory": "Payment History",
+      "paymentSummary": "Payment Summary"
+    },
+    "facts": {
+      "bookingId": "Booking ID",
+      "guest": "Guest",
+      "source": "Source",
+      "whatsapp": "WhatsApp",
+      "checkIn": "Check-in",
+      "email": "Email",
+      "checkOut": "Check-out",
+      "durationGuests": "Duration & Guests",
+      "night": "Night",
+      "nights": "Nights",
+      "adults": "Adults",
+      "children": "Children"
+    },
+    "charges": {
+      "item": "Item",
+      "qty": "Qty",
+      "nights": "Nights",
+      "rate": "Rate",
+      "subtotal": "Subtotal",
+      "roomCharge": "Room charge",
+      "roomsEmpty": "Room details are not yet available.",
+      "addOnsEmpty": "No add-ons for this reservation.",
+      "roomsSubtotal": "Rooms Subtotal",
+      "addOnsAdjustments": "Add-ons & Adjustments",
+      "bookingTotal": "Booking Total"
+    },
+    "history": {
+      "date": "Date",
+      "amount": "Amount",
+      "method": "Method",
+      "reference": "Reference",
+      "recordedBy": "Recorded By",
+      "refund": "Refund",
+      "empty": "No payments recorded yet."
+    },
+    "summary": {
+      "bookingTotal": "Booking Total",
+      "paid": "Paid",
+      "refunded": "Refunded",
+      "remaining": "Remaining",
+      "securityDeposit": "Security Deposit",
+      "securityDepositNote": "Recorded separately from the reservation total.",
+      "checkoutOutstandingReason": "Reason for checking out with an outstanding balance: {reason}",
+      "recordPayment": "Record Payment",
+      "viewRefund": "View Refund"
+    },
+    "state": {
+      "paidTitle": "Paid in Full",
+      "paidDescription": "The entire reservation bill is fully paid.",
+      "partialTitle": "Partially Paid",
+      "partialDescription": "There is still a remaining balance that needs follow-up.",
+      "unpaidTitle": "Awaiting Payment",
+      "unpaidDescription": "No payment has been received for this reservation yet.",
+      "failedTitle": "Payment Failed",
+      "failedDescription": "The payment attempt failed. No funds have been received.",
+      "refundedTitle": "Refund Completed",
+      "refundedDescription": "The payment has been refunded to the guest.",
+      "defaultDescription": "View the reservation payment details."
+    },
+    "messages": {
+      "methodsLoadError": "Failed to load payment methods.",
+      "detailLoadError": "Failed to load payment detail.",
+      "notFound": "Payment data not found.",
+      "amountInvalid": "The payment amount must be greater than Rp0 and must not exceed the remaining balance.",
+      "recordError": "Failed to record payment.",
+      "refundCalcLoadError": "Failed to load the cancellation calculation."
+    }
+  },
+  "recordPaymentModal": {
+    "ariaLabel": "Record payment",
+    "title": "Record Payment",
+    "close": "Close",
+    "remainingBalance": "Remaining Balance",
+    "amountLabel": "Amount (IDR)",
+    "methodLabel": "Payment Method",
+    "loadingMethods": "Loading methods...",
+    "selectMethod": "Select payment method",
+    "noMethods": "No active payment methods are available.",
+    "cancel": "Cancel",
+    "saving": "Saving...",
+    "savePayment": "Save Payment"
+  },
+  "refundModal": {
+    "ariaLabel": "Manage refund",
+    "title": "Manual Refund",
+    "closeAriaLabel": "Close refund",
+    "loading": "Loading refund eligibility...",
+    "loadError": "Failed to load refund data.",
+    "summary": {
+      "booking": "Booking",
+      "paid": "Paid",
+      "cancellationPolicy": "Cancellation policy",
+      "manualReview": "Manual review",
+      "cancellationCharge": "Cancellation charge",
+      "review": "Review",
+      "estimatedRefund": "Estimated refund",
+      "alreadyRefunded": "Already refunded"
+    },
+    "calculation": {
+      "ariaLabel": "Cancellation calculation details",
+      "title": "Cancellation calculation",
+      "cancelledDaysBefore": "Cancelled {days} days before check-in.",
+      "cancelledAfterCheckIn": "Cancelled after the check-in date.",
+      "room": "Room",
+      "nonRefundable": "Non-refundable · 100% room charge",
+      "needsManualReview": "The rule requires manual review",
+      "roomCharge": "Room charge {amount}",
+      "cancellationCharge": "Cancellation charge {amount}",
+      "roomTotal": "Total of all rooms",
+      "otherCharges": "Extra bed, breakfast, experience, and other charges",
+      "bookingTotal": "Total booking",
+      "netPaid": "Net payment after previous refunds",
+      "totalCancellationCharge": "Total room cancellation charge",
+      "refundLimit": "Refund limit under policy",
+      "pendingRefund": "Refund still being processed",
+      "note": "Other charges require manual review. The refund amount follows the policy calculation and cannot be changed."
+    },
+    "rule": {
+      "needsManualReview": "The rule requires manual review",
+      "moreThan": "More than {days} days before check-in",
+      "within": "Within {days} days before check-in",
+      "percentage": "{value}% of the room charge",
+      "nights": "{value} nights",
+      "chargeTemplate": "{timing} · charge {charge}"
+    },
+    "needsReview": "Needs review: {reasons}",
+    "zeroRefundWarning": "The cancellation policy results in a Rp0 refund. Record No Refund, or check the policy override if staff decide to issue a refund.",
+    "noRefundCompleted": "No Refund completed. Reason: {reason}",
+    "form": {
+      "title": "Refund",
+      "fundsNote": "Funds are returned from the available payment transactions, starting from the earliest transaction.",
+      "overrideCheckbox": "Ignore the cancellation policy that applied at the time of reservation",
+      "overrideWarning": "The refund may exceed the policy result, up to the amount of unrefunded payments. This decision is recorded in the audit trail.",
+      "refundAmountLabel": "Refund amount (IDR)",
+      "refundAmountHintWithOverride": "Exact amount without the cancellation policy; it cannot be reduced or increased.",
+      "refundAmountHintWithPolicy": "Exact amount per the cancellation policy; it cannot be reduced or increased.",
+      "noRefundReason": "No Refund reason",
+      "refundReason": "Refund reason",
+      "overrideReason": "Override reason",
+      "manualReviewReason": "Manual review reason",
+      "noRefund": "No Refund",
+      "completeRefund": "Complete Refund"
+    },
+    "history": {
+      "title": "Refund History",
+      "reference": "Reference: {reference}",
+      "refundReference": "Refund reference",
+      "markCompleted": "Mark Completed",
+      "failureReason": "Failure reason",
+      "markFailed": "Mark Failed"
+    },
+    "notices": {
+      "refundCompleted": "The refund is completed and recorded in the payment history.",
+      "noRefundCompleted": "No Refund completed and recorded in the audit trail.",
+      "refundMarkedCompleted": "The refund was marked completed.",
+      "refundMarkedFailed": "The refund was marked failed."
+    },
+    "errors": {
+      "noRefundAvailable": "No refund can be completed. Resolve the pending refund first.",
+      "reasonRequired": "The refund reason is required.",
+      "overrideReasonRequired": "The override or manual review reason is required.",
+      "noRefundReasonRequired": "The No Refund reason is required.",
+      "processFailed": "The refund process failed."
+    }
+  },
+  "invoice": {
+    "ariaLabel": "Invoice preview",
+    "title": "Guest Invoice Preview",
+    "printSavePdf": "Print / Save PDF",
+    "closeAriaLabel": "Close invoice",
+    "brandName": "Green Hero Darajat",
+    "brandAddress": "Jl. Raya Kamojang - Darajat, Samarang, Garut, Jawa Barat 44161",
+    "invoiceTitle": "INVOICE",
+    "reservationCancelled": "Reservation Cancelled",
+    "billedTo": "Billed To",
+    "bookingRef": "Booking Ref",
+    "night": "night",
+    "nights": "nights",
+    "table": {
+      "item": "Item",
+      "qty": "Qty",
+      "rate": "Rate",
+      "subtotal": "Subtotal",
+      "noItems": "No items."
+    },
+    "totals": {
+      "totalCharges": "Total Charges",
+      "amountPaid": "Amount Paid",
+      "refundCompleted": "Refund Completed",
+      "netPaidAfterRefund": "Net Paid After Refund",
+      "balanceDue": "Balance Due"
+    },
+    "transactions": {
+      "title": "Payment & Refund Transactions",
+      "type": "Type",
+      "date": "Date",
+      "methodReference": "Method / Reference",
+      "status": "Status",
+      "amount": "Amount",
+      "payment": "Payment",
+      "refund": "Refund"
+    },
+    "cancellation": {
+      "title": "Cancellation & Refund",
+      "loading": "Loading cancellation calculation...",
+      "loadError": "Failed to load the cancellation calculation: {error}",
+      "savedPolicyDaysBefore": "The policy saved when the reservation was created, calculated based on a cancellation {days} days before check-in.",
+      "savedPolicyAfterCheckIn": "The policy saved when the reservation was created, calculated based on a cancellation after the check-in date.",
+      "room": "Room",
+      "needsReview": "Needs review",
+      "nonRefundable": "Non-refundable · 100% room charge",
+      "needsManualReview": "The rule requires manual review",
+      "policyNeedsManualReview": "The policy requires manual review",
+      "roomChargeLine": "Room charge {roomTotal} · Cancellation charge {charge}",
+      "review": "Review",
+      "roomCharges": "Room Charges",
+      "otherCharges": "Other Charges",
+      "cancellationCharge": "Cancellation Charge",
+      "refundLimit": "Remaining Refund Limit Under Policy",
+      "refundPending": "Refund Pending",
+      "refundCompleted": "Refund Completed",
+      "reviewReasons": "The calculation requires review: {reasons}.",
+      "note": "Completed refunds are recorded separately from the policy limit. A policy override may result in a different refund amount.",
+      "rule": {
+        "moreThan": "More than {days} days before check-in",
+        "within": "Within {days} days before check-in",
+        "percentage": "{value}% room charge",
+        "nights": "{value} nights",
+        "template": "{timing} · {charge}"
+      }
+    },
+    "depositNote": "Security deposits are recorded separately from the reservation bill."
+  }
+}

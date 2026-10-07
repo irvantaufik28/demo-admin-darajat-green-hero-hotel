@@ -1,0 +1,168 @@
+{
+  "shell": {
+    "title": "Admin",
+    "context": "Experiences"
+  },
+  "list": {
+    "page": {
+      "title": "Experiences",
+      "description": "Kelola add-on dan pilihan paket untuk reservasi tamu"
+    },
+    "actions": {
+      "addExperience": "+ Tambah Experience",
+      "reset": "Atur Ulang",
+      "edit": "Ubah",
+      "enable": "Aktifkan",
+      "disable": "Nonaktifkan",
+      "previous": "Sebelumnya",
+      "next": "Berikutnya"
+    },
+    "filters": {
+      "searchPlaceholder": "Cari experience...",
+      "allTypes": "Semua Tipe",
+      "status": {
+        "all": "Semua Status",
+        "active": "Aktif",
+        "inactive": "Nonaktif"
+      },
+      "count": "Total {total} experience tercatat"
+    },
+    "table": {
+      "experience": "Experience",
+      "category": "Kategori",
+      "packages": "Paket",
+      "priceRange": "Rentang Harga",
+      "maxQty": "Maks. Qty",
+      "status": "Status",
+      "action": "Aksi"
+    },
+    "cell": {
+      "package": "{count} paket",
+      "packages": "{count} paket",
+      "noPrice": "—",
+      "priceRange": "{min} – {max}"
+    },
+    "status": {
+      "active": "Aktif",
+      "inactive": "Nonaktif"
+    },
+    "pagination": {
+      "showing": "Menampilkan {from}–{to} dari {total} experience"
+    },
+    "notice": {
+      "title": "Informasi Operasional:",
+      "body": "Harga paket experience disalin ke reservasi saat pemesanan. Perubahan harga berikutnya tidak mengubah transaksi sebelumnya."
+    },
+    "messages": {
+      "empty": "Tidak ada experience yang sesuai filter.",
+      "categoriesLoadFailed": "Kategori gagal dimuat.",
+      "experiencesLoadFailed": "Experiences gagal dimuat.",
+      "detailLoadFailed": "Detail experience gagal dimuat.",
+      "saveFailed": "Experience gagal disimpan.",
+      "statusChangeFailed": "Status experience gagal diubah."
+    }
+  },
+  "modal": {
+    "titleAdd": "Tambah Experience",
+    "titleEdit": "Ubah Experience",
+    "closeAria": "Tutup",
+    "fields": {
+      "experienceName": "Nama Experience",
+      "experienceNamePlaceholder": "mis. Kambing Guling",
+      "typeCategory": "Kategori Tipe",
+      "inactive": "Nonaktif",
+      "shortDescription": "Deskripsi Singkat",
+      "packagesAndPrices": "Paket & Harga",
+      "packagesHint": "Tambahkan varian paket dengan deskripsi dan harga masing-masing.",
+      "addPackage": "Tambah Paket",
+      "packageHeading": "Paket {index}",
+      "removePackageAria": "Hapus paket {index}",
+      "packageName": "Nama Paket",
+      "packageNamePlaceholder": "mis. Paket 1",
+      "price": "Harga (IDR)",
+      "pricePlaceholder": "0",
+      "description": "Deskripsi",
+      "descriptionPlaceholder": "Isi paket dan ketentuannya",
+      "maxQuantity": "Jumlah Maksimum",
+      "imageUrl": "URL Gambar",
+      "imageUrlPlaceholder": "https://...",
+      "code": "Kode",
+      "slug": "Slug",
+      "status": "Status",
+      "statusActive": "Aktif",
+      "statusInactive": "Nonaktif"
+    },
+    "required": "*",
+    "actions": {
+      "cancel": "Batal",
+      "saving": "Menyimpan...",
+      "saveChanges": "Simpan Perubahan",
+      "saveExperience": "Simpan Experience"
+    },
+    "validation": {
+      "requireBasics": "Isi nama, kategori, kode, dan slug experience.",
+      "requirePackageNameAndPrice": "Setiap paket harus memiliki nama dan harga.",
+      "duplicatePackageName": "Nama paket dalam satu experience tidak boleh sama.",
+      "invalidPrice": "Harga paket harus berupa angka bulat yang tidak negatif."
+    }
+  },
+  "form": {
+    "shell": {
+      "title": "Experiences",
+      "contextAdd": "Tambah Experience",
+      "contextEdit": "Ubah Experience"
+    },
+    "page": {
+      "titleAdd": "Tambah Experience",
+      "titleEdit": "Ubah Experience",
+      "descriptionAdd": "Tambah add-on baru yang tersedia untuk reservasi tamu",
+      "descriptionEdit": "Perbarui detail add-on untuk reservasi tamu"
+    },
+    "sections": {
+      "basicInformation": "Informasi Dasar",
+      "pricing": "Harga",
+      "availability": "Ketersediaan",
+      "internalNote": "Catatan Internal"
+    },
+    "fields": {
+      "experienceName": "Nama Experience",
+      "experienceNamePlaceholder": "mis. Paket BBQ & Grill",
+      "typeCategory": "Kategori Tipe",
+      "typeDining": "Dining",
+      "typeDiningSub": "Makanan, minuman, dan paket kuliner",
+      "typeCelebrate": "Celebrate",
+      "typeCelebrateSub": "Dekorasi, setup ulang tahun & bunga",
+      "shortDescription": "Deskripsi Singkat",
+      "shortDescriptionHint": "(Tampil di front-office & booking engine)",
+      "shortDescriptionPlaceholder": "Ringkasan paket layanan...",
+      "price": "Harga (IDR)",
+      "pricingType": "Tipe Harga",
+      "pricingPerPackage": "Per Paket",
+      "pricingPerPerson": "Per Orang",
+      "pricingPerItem": "Per Item",
+      "status": "Status",
+      "statusActive": "Aktif",
+      "statusInactive": "Nonaktif",
+      "minQty": "Qty Min",
+      "maxQty": "Qty Maks",
+      "maxQtyPlaceholder": "Tanpa batas",
+      "leadTime": "Lead Time",
+      "leadTimeSameDay": "Hari Sama",
+      "leadTimeH1": "H-1 (24 Jam)",
+      "leadTimeH2": "H-2 (48 Jam)",
+      "leadTimeH3": "H-3 (72 Jam)",
+      "availableDays": "Hari Tersedia",
+      "applicableRoomTypes": "Tipe Kamar yang Berlaku",
+      "allRoomTypes": "Semua Tipe Kamar",
+      "staffNote": "Catatan Staf",
+      "staffNoteHint": "(Koordinasi dapur — tidak terlihat oleh tamu)",
+      "staffNotePlaceholder": "Catatan khusus operasional dapur atau housekeeping..."
+    },
+    "required": "*",
+    "actions": {
+      "cancel": "Batal",
+      "saveChanges": "Simpan Perubahan",
+      "saveExperience": "Simpan Experience"
+    }
+  }
+}

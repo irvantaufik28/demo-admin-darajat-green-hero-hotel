@@ -1,0 +1,273 @@
+{
+  "shell": {
+    "title": "Rooms",
+    "roomTypesContext": "Room Types",
+    "roomNumbersContext": "Room Numbers"
+  },
+  "roomTypes": {
+    "breadcrumb": "Rooms / Room Types",
+    "heading": "Room Types",
+    "description": "Manage room types, amenities, and capacity patterns for reservations.",
+    "addButton": "Add Room Type",
+    "filters": {
+      "searchPlaceholder": "Search room type...",
+      "searchAriaLabel": "Search room type",
+      "statusAriaLabel": "Filter room type status",
+      "statusAll": "Status: All Status",
+      "statusActive": "Status: Active",
+      "statusInactive": "Status: Inactive",
+      "reset": "Reset",
+      "total": "{total} Room Types Total"
+    },
+    "panel": {
+      "heading": "All Room Types",
+      "shownCount": "{count} room types shown"
+    },
+    "table": {
+      "no": "NO",
+      "roomType": "ROOM TYPE",
+      "specification": "SPECIFICATION",
+      "mealType": "MEAL TYPE",
+      "extraBed": "EXTRA BED",
+      "capacityPatterns": "CAPACITY PATTERNS",
+      "status": "STATUS",
+      "action": "ACTION"
+    },
+    "cell": {
+      "bed": "bed",
+      "capacityPatterns": "{count} patterns",
+      "extraBedNotAvailable": "Not available",
+      "edit": "Edit",
+      "editAriaLabel": "Edit {name}"
+    },
+    "status": {
+      "active": "Active",
+      "inactive": "Inactive"
+    },
+    "messages": {
+      "empty": "No room types match.",
+      "loadError": "Failed to load room types."
+    },
+    "pagination": {
+      "previous": "Previous",
+      "next": "Next",
+      "pageInfo": "Page {page} of {total}"
+    }
+  },
+  "roomNumbers": {
+    "heading": "Room Numbers",
+    "description": "Manage the physical rooms used during check-in",
+    "addButton": "Add Room Number",
+    "filters": {
+      "searchPlaceholder": "Search room number...",
+      "searchAriaLabel": "Search room number",
+      "typeAriaLabel": "Filter room type",
+      "typeAll": "Room Type: All Room Types",
+      "statusAriaLabel": "Filter status",
+      "statusAll": "Status: All Status",
+      "statusInactive": "Inactive",
+      "occupancyAriaLabel": "Filter occupancy",
+      "occupancyAll": "Occupancy: All",
+      "occupancyAvailable": "Available",
+      "occupancyOccupied": "Occupied",
+      "reset": "Reset",
+      "total": "{total} Room Numbers Total"
+    },
+    "table": {
+      "roomNumber": "ROOM NUMBER",
+      "roomType": "ROOM TYPE",
+      "floor": "FLOOR",
+      "occupancy": "OCCUPANCY",
+      "operationalStatus": "OPERATIONAL STATUS",
+      "action": "ACTION"
+    },
+    "cell": {
+      "edit": "Edit"
+    },
+    "status": {
+      "available": "Available",
+      "occupied": "Occupied",
+      "cleaning": "Cleaning",
+      "maintenance": "Maintenance",
+      "outOfService": "Out of Service",
+      "unavailable": "Unavailable",
+      "inactive": "Inactive"
+    },
+    "messages": {
+      "empty": "No rooms match.",
+      "requestFailed": "Request failed. Please try again.",
+      "retry": "Try again"
+    },
+    "pagination": {
+      "showing": "Showing {from}–{to} of {total} room numbers",
+      "previous": "Previous",
+      "next": "Next"
+    },
+    "modal": {
+      "titleDetail": "Room Number Detail",
+      "titleEdit": "Edit Room Number",
+      "titleAdd": "Add Room Number",
+      "subtitleDetail": "The room is currently occupied by a guest",
+      "subtitleEdit": "Update the physical room information",
+      "subtitleAdd": "Add a new physical room",
+      "closeAriaLabel": "Close modal",
+      "currentOccupancy": "Current Occupancy",
+      "currentOccupancyHint": "The room status follows the operational status and check-in process.",
+      "occupiedNotice": "The room is still occupied by a guest. Room data can only be viewed and can be edited once the guest has checked out.",
+      "roomNumberLabel": "Room Number",
+      "roomNumberPlaceholder": "e.g. 101",
+      "roomNumberHint": "Unique physical room number",
+      "floorLabel": "Floor / Area",
+      "optional": "(Optional)",
+      "floorPlaceholder": "Select floor",
+      "floorHint": "Floor or block location",
+      "roomTypeLabel": "Room Type",
+      "roomTypePlaceholder": "Select room type",
+      "operationalStatusLabel": "Operational Status",
+      "operationalStatusHint": "Only rooms with Available status are ready to be assigned at check-in.",
+      "activeRoomNumber": "Active room number",
+      "internalNoteLabel": "Internal Note",
+      "internalNotePlaceholder": "Internal note for front office or housekeeping staff...",
+      "internalNoteHint": "Internal notes are not yet supported by the API and are not saved.",
+      "close": "Close",
+      "cancel": "Cancel",
+      "saving": "Saving...",
+      "saveChanges": "Save Changes",
+      "addRoomNumber": "Add Room Number"
+    },
+    "validation": {
+      "occupiedCannotSave": "The room is still occupied by a guest. Changes can be saved after check-out.",
+      "requiredFields": "Room number and room type are required."
+    }
+  },
+  "wizard": {
+    "titleEdit": "Edit Room Type",
+    "titleAdd": "Add Room Type",
+    "breadcrumbRooms": "Rooms",
+    "breadcrumbRoomTypes": "Room Types",
+    "steps": {
+      "basicInfo": "Basic Info",
+      "photos": "Photos",
+      "amenities": "Amenities",
+      "capacity": "Capacity"
+    },
+    "stepDescriptions": {
+      "basicInfo": "Add basic room type information",
+      "photos": "Add photos for the room type",
+      "amenities": "Select the amenities available for this room type",
+      "capacity": "Set guest capacity for the room type"
+    },
+    "stepStatus": {
+      "inProgress": "In Progress",
+      "visited": "Visited",
+      "notVisited": "Not visited"
+    },
+    "stepsNavAriaLabel": "Room Type form sections",
+    "editDescription": "Update {name} · {step}",
+    "basic": {
+      "sectionTitle": "Basic Information",
+      "statusToggleAriaLabel": "Room type status",
+      "active": "Active",
+      "inactive": "Inactive",
+      "nameLabel": "Room Type Name",
+      "namePlaceholder": "Enter room type name",
+      "descriptionLabel": "Description",
+      "descriptionPlaceholder": "Describe the room",
+      "descriptionCounter": "{count} / 1000",
+      "specificationTitle": "Room Specification",
+      "roomSizeLabel": "Room Size (m²)",
+      "bedTypeLabel": "Bed Type",
+      "bedTypePlaceholder": "Select bed type",
+      "numberOfBedsLabel": "Number of Beds",
+      "mealTypeTitle": "Meal Type",
+      "mealTypeDescription": "Select the standard meal package for the base room rate.",
+      "breakfastDetailTitle": "Additional Breakfast Details",
+      "adultBreakfastPriceLabel": "Adult Breakfast Price",
+      "childBreakfastPriceLabel": "Child Breakfast Price",
+      "extraBedTitle": "Extra Bed",
+      "extraBedDescription": "Allow extra beds for this room type.",
+      "extraBedPriceLabel": "Extra Bed Price / night",
+      "maxExtraBedsLabel": "Maximum Extra Beds"
+    },
+    "photos": {
+      "coverTitle": "Cover Photo",
+      "coverDescription": "New photos will be uploaded when the room type is saved.",
+      "preview": "Preview",
+      "noPreview": "No preview",
+      "coverAlt": "Room type cover",
+      "coverCaption": "{size} · Cover Photo",
+      "replace": "Replace",
+      "remove": "Remove",
+      "uploadCover": "Upload Cover Photo",
+      "coverHint": "PNG, JPG, WebP up to 4 MB · 16:9 recommended",
+      "galleryTitle": "Gallery",
+      "galleryDescription": "Add several photos to showcase the room details.",
+      "galleryCount": "{count} / 10 photos",
+      "photoAlt": "Room photo {index}",
+      "moveLeftAriaLabel": "Move {name} left",
+      "moveRightAriaLabel": "Move {name} right",
+      "setCover": "Set Cover",
+      "uploadPhotos": "Upload Photos",
+      "galleryHint": "PNG, JPG, WebP · up to 4 MB",
+      "error": "Use a PNG, JPG, or WebP photo with a maximum size of 4 MB."
+    },
+    "amenities": {
+      "title": "Amenities Selection",
+      "selectedCount": "{count} amenities selected",
+      "searchPlaceholder": "Search amenities...",
+      "searchAriaLabel": "Search amenities",
+      "otherAmenities": "Other Amenities",
+      "selectAll": "Select All",
+      "empty": "No amenities match."
+    },
+    "capacity": {
+      "extraBedConfigTitle": "Extra Bed Configuration",
+      "extraBedConfigHint": "Maximum Extra Beds: {count} · Configured in Step 1: Basic Info",
+      "step1Button": "Step 1: Basic Info",
+      "patternsTitle": "Capacity Patterns",
+      "patternsDescription": "Select all guest combinations allowed for this room type.",
+      "info": "Select all valid capacity patterns, not just the maximum capacity. Each pattern determines reservation eligibility and extra bed allocation.",
+      "combinationHead": "Guest Occupancy Combinations",
+      "selectedLabel": "{count} Selected",
+      "selectAll": "Select All",
+      "table": {
+        "select": "SELECT",
+        "combination": "NUMBER OF PERSONS / GUEST COMBINATION",
+        "extraBed": "EXTRA BED"
+      },
+      "adult": "Adult",
+      "adults": "Adults",
+      "child": "Child",
+      "children": "Children",
+      "personsCount": "({count} People)",
+      "selectAriaLabel": "Select {adults} adults {children} children",
+      "extraBedAriaLabel": "Extra bed for {adults} adults {children} children",
+      "extraBedOption": "{count} Extra Bed",
+      "note": "The reservation engine will only show this room as available when the requested guest combination matches a pattern checked above."
+    },
+    "footer": {
+      "cancel": "Cancel",
+      "previous": "Previous: {step}",
+      "next": "Next: {step}",
+      "saving": "Saving...",
+      "saveChanges": "Save Changes",
+      "saveRoomType": "Save Room Type"
+    },
+    "messages": {
+      "notFound": "Room type not found",
+      "backToRoomTypes": "Room Types",
+      "loadError": "Failed to load room type.",
+      "saveError": "Failed to save room type."
+    },
+    "validation": {
+      "nameRequired": "Room Type Name is required.",
+      "sizeInvalid": "Room Size must be greater than 0.",
+      "bedTypeRequired": "Please select a Bed Type.",
+      "mealTypeRequired": "Please select a Meal Type.",
+      "bedCountInvalid": "Number of Beds must be at least 1.",
+      "extraBedInvalid": "Check the Extra Bed configuration.",
+      "breakfastNegative": "Breakfast price cannot be negative.",
+      "capacityRequired": "Select at least one guest capacity pattern."
+    }
+  }
+}

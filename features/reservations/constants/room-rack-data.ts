@@ -38,6 +38,7 @@ export type Reservation = {
   maintenanceNote?: string;
   checkIn: string; // ISO date (YYYY-MM-DD)
   checkOut: string; // ISO date (YYYY-MM-DD)
+  displayCheckOut?: string; // Room Rack bar end; actual checkout or current overdue day
 };
 
 export type RoomUnit = {

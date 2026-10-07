@@ -17,6 +17,7 @@ type RackBooking = {
   otaChannelName: string | null;
   checkInDate: string;
   checkOutDate: string;
+  displayCheckOutDate: string;
   reservationStatus: "pending" | "confirmed" | "checked_in" | "checked_out";
   paymentStatus: "unpaid" | "partial" | "paid" | "failed" | "expired" | "refunded";
   operationalStatus: { code: string; label: string } | null;
@@ -52,7 +53,7 @@ type RackRoom = {
 };
 
 type RackGroup = {
-  roomType: { id: string; name: string; code: string; isActive: boolean };
+  roomType: { id: string; name: string; code: string; bedTypeName: string | null; isActive: boolean };
   rooms: RackRoom[];
   unassignedReservations: RackBooking[];
   inventory: RackInventory[];
@@ -70,6 +71,13 @@ export type RoomRackResponse = {
 export function getRoomRack(startDate: string, signal?: AbortSignal) {
   const query = new URLSearchParams({ startDate, days: "14" });
   return apiRequest<RoomRackResponse>(`reservations/room-rack?${query}`, { signal });
+}
+
+export function markRoomAvailable(roomId: string) {
+  return apiRequest(`room-numbers/${roomId}/operational-status`, {
+    method: "PATCH",
+    body: { operationalStatus: "available" },
+  });
 }
 
 function sourceLabel(booking: RackBooking): string {
@@ -103,6 +111,7 @@ function toReservation(booking: RackBooking): Reservation {
     operationalStatus: booking.operationalStatus,
     checkIn: booking.checkInDate,
     checkOut: booking.checkOutDate,
+    displayCheckOut: booking.displayCheckOutDate,
   };
 }
 
@@ -135,7 +144,7 @@ export function toRoomRackGroups(response: RoomRackResponse): RoomTypeGroup[] {
     rooms: group.rooms.map((room) => ({
       id: room.id,
       number: room.roomNumber,
-      bedType: room.bedConfiguration ?? "—",
+      bedType: group.roomType.bedTypeName ?? "—",
       floor: room.floorName ?? "—",
       status: roomStatus(room),
       isActive: room.isActive,

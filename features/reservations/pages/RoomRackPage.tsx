@@ -9,6 +9,10 @@ import { LoadingSkeleton } from "../../../components/ui/LoadingSkeleton";
 import { restoreSession } from "../../../lib/auth";
 import "../components/room-rack.css";
 import { RoomRackReservationSummary } from "../components/RoomRackReservationSummary";
+import { RoomRackCleaningModal } from "../components/RoomRackCleaningModal";
+import { SaveReservationConfirmation } from "../components/SaveReservationConfirmation";
+import { ReservationSuccessTransition } from "../components/ReservationSuccessTransition";
+import { getReservationDetail, type ApiReservationDetail } from "../services/api";
 import {
   RACK_DAYS,
   buildDateWindow,
@@ -24,7 +28,22 @@ import {
   type RoomTypeGroup,
   type RoomUnit,
 } from "../constants/room-rack-data";
-import { extras as addonOptions, getExtraCost, formatStayDate } from "../constants/walk-in-data";
+import { formatStayDate } from "../constants/walk-in-data";
+import { listPolicies, type PolicyRecord } from "../../cancellation-policies/services/cancellation-policies";
+import {
+  createReservation,
+  getCreateCheckInContext,
+  getReservationAvailability,
+  getReservationExperiences,
+  getReservationPaymentMethods,
+  quoteReservation,
+  type AvailableRoom,
+  type ExperienceOption,
+  type PaymentMethod,
+  type ReservationQuote,
+  type ReservationSource,
+} from "../services/create";
+import type { CheckInContext, EarlyCheckInInput } from "../services/api";
 import { getRoomRack, summarizeRoomRack, toRoomRackGroups, type RoomRackResponse } from "../services/room-rack";
 import { todayJakarta } from "../utils/stay-dates";
 
@@ -46,9 +65,10 @@ function barGeometry(res: Reservation, window: Date[]): BarGeom | null {
   const windowStart = window[0];
   const windowEnd = window[window.length - 1];
   const [ciY, ciM, ciD] = res.checkIn.split("-").map(Number);
-  const [coY, coM, coD] = res.checkOut.split("-").map(Number);
+  const [coY, coM, coD] = (res.displayCheckOut ?? res.checkOut).split("-").map(Number);
   const checkIn = new Date(ciY, ciM - 1, ciD);
   const checkOut = new Date(coY, coM - 1, coD);
+  if (checkOut <= checkIn) return null;
 
   // A stay occupies nights from check-in up to (but not including) check-out.
   const lastNight = new Date(checkOut);
@@ -91,6 +111,8 @@ type DragState = {
 };
 
 type NewBookingDraft = {
+  roomTypeId: string;
+  roomUnitId: string;
   roomNumber: string;
   roomBedType: string;
   roomFloor: string;
@@ -106,7 +128,7 @@ function isDayOccupied(room: RoomUnit, dayIdx: number, window: Date[]): boolean 
   return room.reservations.some((res) => {
     if (res.reservationStatus === "checked_out") return false;
     const ci = res.checkIn;
-    const [coY, coM, coD] = res.checkOut.split("-").map(Number);
+    const [coY, coM, coD] = (res.displayCheckOut ?? res.checkOut).split("-").map(Number);
     const lastNight = new Date(coY, coM - 1, coD);
     lastNight.setDate(lastNight.getDate() - 1);
     const lastNightISO = toISODate(lastNight);
@@ -162,6 +184,10 @@ export function RoomRackPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [refreshKey, setRefreshKey] = useState(0);
+  const [detail, setDetail] = useState<ApiReservationDetail | null>(null);
+  const [detailLoading, setDetailLoading] = useState(false);
+  const [detailError, setDetailError] = useState("");
+  const [actionNotice, setActionNotice] = useState("");
   const [roomTypeFilter, setRoomTypeFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
   const [sourceFilter, setSourceFilter] = useState("all");
@@ -200,7 +226,35 @@ export function RoomRackPage() {
   const [drag, setDrag] = useState<DragState | null>(null);
   const [pending, setPending] = useState<NewBookingDraft | null>(null);
   const [booking, setBooking] = useState<NewBookingDraft | null>(null);
+  const [cleaningRoom, setCleaningRoom] = useState<{ id: string; number: string; groupName: string } | null>(null);
   const isDragging = useRef(false);
+
+  useEffect(() => {
+    const reservationId = selected?.res.reservationId;
+    if (!reservationId) {
+      setDetail(null);
+      setDetailError("");
+      setDetailLoading(false);
+      return;
+    }
+    const controller = new AbortController();
+    setDetail(null);
+    setDetailError("");
+    setDetailLoading(true);
+    getReservationDetail(reservationId, controller.signal)
+      .then((response) => { if (!controller.signal.aborted) setDetail(response); })
+      .catch((cause) => {
+        if (!controller.signal.aborted) setDetailError(cause instanceof Error ? cause.message : "Detail reservasi gagal dimuat.");
+      })
+      .finally(() => { if (!controller.signal.aborted) setDetailLoading(false); });
+    return () => controller.abort();
+  }, [selected?.res.reservationId]);
+
+  async function onReservationUpdated(message: string) {
+    setActionNotice(message);
+    setSelected(null);
+    setRefreshKey((value) => value + 1);
+  }
 
   const visibleGroups = roomTypeFilter === "all"
     ? roomTypeGroups
@@ -276,6 +330,8 @@ export function RoomRackPage() {
       checkOutDate.setDate(checkOutDate.getDate() + 1);
       const found = findRoom(drag.roomNumber);
       setPending({
+        roomTypeId: found?.group.id ?? "",
+        roomUnitId: found?.room.id ?? "",
         roomNumber: drag.roomNumber,
         roomBedType: found?.room.bedType ?? "",
         roomFloor: found?.room.floor ?? "",
@@ -318,6 +374,7 @@ export function RoomRackPage() {
         </div>
 
         {/* Metrics */}
+        {actionNotice && <div className="rr-action-notice" role="status">{actionNotice}</div>}
         <div className="room-rack__metrics">
           {metrics.map((m) => (
             <div key={m.key} className={`rr-metric rr-metric--${m.tone}`}>
@@ -476,6 +533,9 @@ export function RoomRackPage() {
                     onDragEnd={handleDragEnd}
                     pending={pending}
                     onPendingClick={(draft) => setBooking(draft)}
+                    onCleaningClick={(room) => {
+                      if (room.id) setCleaningRoom({ id: room.id, number: room.number, groupName: group.name });
+                    }}
                   />
                 ))}
                 {visibleGroups.length === 0 && <div className="rr-empty-state">No room types found.</div>}
@@ -490,6 +550,10 @@ export function RoomRackPage() {
               room={selected.room}
               group={selected.group}
               todayISO={todayISO}
+              detail={detail?.reservation.id === selected.res.reservationId ? detail : null}
+              loading={detailLoading}
+              error={detailError}
+              onUpdated={onReservationUpdated}
               onClose={() => setSelected(null)}
             />
           )}
@@ -497,7 +561,18 @@ export function RoomRackPage() {
 
         {/* Drag-to-create booking form */}
         {booking && (
-          <NewBookingForm draft={booking} groups={roomTypeGroups} onClose={() => setBooking(null)} />
+          <NewBookingForm draft={booking} onClose={() => setBooking(null)} />
+        )}
+        {cleaningRoom && (
+          <RoomRackCleaningModal
+            room={cleaningRoom}
+            onClose={() => setCleaningRoom(null)}
+            onSaved={() => {
+              setCleaningRoom(null);
+              setActionNotice(`Room ${cleaningRoom.number} sekarang Available.`);
+              setRefreshKey((value) => value + 1);
+            }}
+          />
         )}
       </div>
     </AdminShell>
@@ -517,6 +592,7 @@ function RoomGroup({
   onDragEnd,
   pending,
   onPendingClick,
+  onCleaningClick,
 }: {
   group: RoomTypeGroup;
   window: Date[];
@@ -530,6 +606,7 @@ function RoomGroup({
   onDragEnd: () => void;
   pending: NewBookingDraft | null;
   onPendingClick: (draft: NewBookingDraft) => void;
+  onCleaningClick: (room: RoomUnit) => void;
 }) {
   const [collapsed, setCollapsed] = useState(false);
 
@@ -595,6 +672,7 @@ function RoomGroup({
               const iso = toISODate(date);
               const isDragHighlight = dayIdx >= dragLo && dayIdx <= dragHi;
               const heldForUnassigned = isHeldForUnassigned(group, room, dayIdx, window);
+              const cleaningToday = room.status === "cleaning" && iso === todayISO;
               const bookable = isDayBookable(group, room, dayIdx, window, todayISO);
               const classes = [
                 "rr-day-cell",
@@ -602,13 +680,20 @@ function RoomGroup({
                 iso === todayISO ? "rr-day-cell--today" : "",
                 isDragHighlight ? "rr-day-cell--drag" : "",
                 heldForUnassigned ? "rr-day-cell--held" : "",
+                cleaningToday ? "rr-day-cell--cleaning" : "",
                 !bookable ? "rr-day-cell--unavailable" : "",
               ].filter(Boolean).join(" ");
               return (
                 <div
                   key={iso}
                   className={classes}
-                  title={heldForUnassigned ? "Kamar tersisa dialokasikan untuk reservasi Unassigned" : undefined}
+                  title={cleaningToday && heldForUnassigned
+                    ? "Cleaning · Held for Unassigned. Kamar belum siap dan dialokasikan untuk reservasi tanpa nomor kamar."
+                    : cleaningToday
+                      ? "Cleaning. Kamar belum siap dipakai."
+                      : heldForUnassigned
+                        ? "Kamar tersisa dialokasikan untuk reservasi Unassigned"
+                        : undefined}
                   onMouseDown={(e) => {
                     if (!bookable) return;
                     e.preventDefault();
@@ -617,6 +702,16 @@ function RoomGroup({
                   onMouseEnter={() => onDragMove(dayIdx)}
                   onMouseUp={onDragEnd}
                 >
+                  {cleaningToday && room.id && (
+                    <button
+                      type="button"
+                      className="rr-day-cell__cleaning"
+                      aria-label={`Room ${room.number} Cleaning. Ubah menjadi Available`}
+                      onClick={() => onCleaningClick(room)}
+                    >
+                      Cleaning
+                    </button>
+                  )}
                   {heldForUnassigned && !isDayOccupied(room, dayIdx, window) && (
                     <span className="rr-day-cell__held">
                       Held for<br />Unassigned
@@ -756,11 +851,9 @@ function RoomGroup({
 
 function NewBookingForm({
   draft,
-  groups,
   onClose,
 }: {
   draft: NewBookingDraft;
-  groups: RoomTypeGroup[];
   onClose: () => void;
 }) {
   const [adults, setAdults] = useState(2);
@@ -770,8 +863,8 @@ function NewBookingForm({
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
   const [guestNotes, setGuestNotes] = useState("");
-  const [source, setSource] = useState<string>("Walk-in");
-  const [addons, setAddons] = useState<{ id: string; quantity: number }[]>([]);
+  const [source, setSource] = useState<ReservationSource>(draft.checkIn === todayJakarta() ? "walk_in" : "phone");
+  const [addons, setAddons] = useState<{ variantId: string; quantity: number }[]>([]);
   const [addingAddon, setAddingAddon] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState("");
   const [paymentStatus, setPaymentStatus] = useState<"Unpaid" | "Partial" | "Paid">("Unpaid");
@@ -780,28 +873,189 @@ function NewBookingForm({
   const [depositAmount, setDepositAmount] = useState(500000);
   const [depositMethod, setDepositMethod] = useState("");
   const [depositNote, setDepositNote] = useState("");
+  const [availability, setAvailability] = useState<AvailableRoom | null>(null);
+  const [availabilityLoading, setAvailabilityLoading] = useState(true);
+  const [experiences, setExperiences] = useState<ExperienceOption[]>([]);
+  const [methods, setMethods] = useState<PaymentMethod[]>([]);
+  const [policies, setPolicies] = useState<PolicyRecord[]>([]);
+  const [selectedPolicyId, setSelectedPolicyId] = useState("");
+  const [quote, setQuote] = useState<ReservationQuote | null>(null);
+  const [quoteLoading, setQuoteLoading] = useState(true);
+  const [feedback, setFeedback] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [confirmation, setConfirmation] = useState<"save" | "check-in" | null>(null);
+  const [acknowledged, setAcknowledged] = useState(false);
+  const [checkInContext, setCheckInContext] = useState<CheckInContext | null>(null);
+  const [earlyCheckIn, setEarlyCheckIn] = useState<EarlyCheckInInput>({ acknowledged: false, chargeAmount: 0, paymentTiming: "later" });
+  const [saved, setSaved] = useState<{ bookingId: string; checkedIn: boolean } | null>(null);
+  const requestKey = useRef<{ body: string; key: string } | null>(null);
 
-  // Look up the group to get the rate.
-  const group = groups.find((g) => g.name === draft.groupName);
-  const rateIndex = group?.inventory?.findIndex((day) => day.stayDate === draft.checkIn) ?? -1;
-  const ratePerNight = rateIndex >= 0 ? group?.dailyRates[rateIndex] ?? 0 : 0;
-  const roomCharge = ratePerNight * draft.nights;
-  const extraBedRate = 250000;
-  const extraBedCharge = extraBed ? extraBedRate * draft.nights : 0;
-  const addonsTotal = addons.reduce((sum, a) => sum + getExtraCost(a.id, a.quantity, draft.nights), 0);
-  const subtotal = roomCharge + extraBedCharge + addonsTotal;
-  const tax = Math.round(subtotal * 0.11);
-  const service = Math.round(subtotal * 0.05);
-  const total = subtotal + tax + service;
-  const remaining = Math.max(0, total - amountPaid - (requireDeposit ? depositAmount : 0));
-
-  const handleSubmit = () => {
-    console.log("New booking:", { ...draft, guestName, phone, email, guestNotes, source, adults, children, paymentMethod, paymentStatus, amountPaid, requireDeposit, depositAmount, depositMethod, depositNote });
-    onClose();
+  const variants = experiences.flatMap((experience) => experience.variants.map((variant) => ({
+    ...variant,
+    label: `${experience.name} · ${variant.subName}`,
+  })));
+  const selectedRoom = {
+    roomTypeId: draft.roomTypeId,
+    roomUnitId: draft.roomUnitId,
+    adults,
+    children,
+    extraBeds: extraBed ? 1 : 0,
   };
+  const roomReady = Boolean(
+    availability?.bookable &&
+    availability.assignableRoomUnits.some((room) => room.id === draft.roomUnitId),
+  );
+  const total = quote?.bookingTotal ?? 0;
+  const amountCollected = paymentStatus === "Paid" ? total : paymentStatus === "Partial" ? amountPaid : 0;
+  const remaining = Math.max(0, total - amountCollected);
+  const roomCharge = (quote?.charges.rooms[0]?.roomAmount ?? 0) + (quote?.discountTotal ?? 0);
+  const extraBedCharge = quote?.charges.extraBedTotal ?? 0;
+  const roomDiscount = quote?.discountTotal ?? 0;
+  const lastStayDate = shiftDate(draft.checkOut, -1);
+  const applicablePolicies = policies.filter((policy) =>
+    (!policy.stayStart || policy.stayStart <= draft.checkIn) &&
+    (!policy.stayEnd || policy.stayEnd >= lastStayDate) &&
+    (policy.roomTypes.length === 0 || policy.roomTypes.some((room) => room.id === draft.roomTypeId)));
+  const policyId = applicablePolicies.some((policy) => policy.id === selectedPolicyId)
+    ? selectedPolicyId : applicablePolicies[0]?.id ?? "";
+  const activePolicy = applicablePolicies.find((policy) => policy.id === policyId);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    async function load() {
+      setAvailabilityLoading(true);
+      try {
+        if (!(await restoreSession())) return;
+        const [available, experienceResult, methodResult] = await Promise.all([
+          getReservationAvailability(draft.checkIn, draft.checkOut, controller.signal),
+          getReservationExperiences(controller.signal),
+          getReservationPaymentMethods(controller.signal),
+        ]);
+        if (controller.signal.aborted) return;
+        setAvailability(available.items.find((item) => item.roomType.id === draft.roomTypeId) ?? null);
+        setExperiences(experienceResult.items);
+        setMethods(methodResult.items.filter((item) => item.isActive));
+      } catch (cause) {
+        if (!controller.signal.aborted) setFeedback(cause instanceof Error ? cause.message : "Pilihan reservasi gagal dimuat.");
+      } finally {
+        if (!controller.signal.aborted) setAvailabilityLoading(false);
+      }
+    }
+    void load();
+    return () => controller.abort();
+  }, [draft.checkIn, draft.checkOut, draft.roomTypeId]);
+
+  useEffect(() => {
+    if (source !== "phone") return;
+    const controller = new AbortController();
+    const query = new URLSearchParams({ source: "phone", isActive: "true", limit: "100" });
+    listPolicies(query, controller.signal)
+      .then(async (response) => {
+        const pages = await Promise.all(Array.from(
+          { length: Math.ceil(response.total / response.limit) - 1 },
+          (_, index) => {
+            const pageQuery = new URLSearchParams(query);
+            pageQuery.set("page", String(index + 2));
+            return listPolicies(pageQuery, controller.signal);
+          },
+        ));
+        if (!controller.signal.aborted) setPolicies([response, ...pages].flatMap((page) => page.items));
+      })
+      .catch((cause) => { if (!controller.signal.aborted) setFeedback(cause instanceof Error ? cause.message : "Kebijakan pembatalan gagal dimuat."); });
+    return () => controller.abort();
+  }, [source]);
+
+  useEffect(() => {
+    setQuote(null);
+    const controller = new AbortController();
+    const timer = window.setTimeout(() => {
+      setQuoteLoading(true);
+      quoteReservation(source, {
+        checkInDate: draft.checkIn,
+        checkOutDate: draft.checkOut,
+        totalAdults: adults,
+        totalChildren: children,
+        rooms: [selectedRoom],
+        experiences: addons,
+      }, controller.signal)
+        .then((response) => { if (!controller.signal.aborted) { setQuote(response); setFeedback(""); } })
+        .catch((cause) => { if (!controller.signal.aborted) setFeedback(cause instanceof Error ? cause.message : "Quote reservasi gagal dihitung."); })
+        .finally(() => { if (!controller.signal.aborted) setQuoteLoading(false); });
+    }, 350);
+    return () => { window.clearTimeout(timer); controller.abort(); };
+  }, [source, draft.checkIn, draft.checkOut, draft.roomTypeId, draft.roomUnitId, adults, children, extraBed, addons]);
+
+  async function requestSave(checkInGuest: boolean) {
+    if (saving) return;
+    if (!draft.roomTypeId || !draft.roomUnitId || !roomReady) {
+      setFeedback("Nomor kamar ini tidak tersedia. Muat ulang Room Rack dan pilih kamar lain.");
+      return;
+    }
+    if (source === "walk_in" && draft.checkIn !== todayJakarta()) {
+      setFeedback("Walk-in hanya tersedia untuk check-in hari ini. Pilih Phone untuk tanggal mendatang.");
+      return;
+    }
+    if (checkInGuest && draft.checkIn !== todayJakarta()) {
+      setFeedback("Check-in hanya tersedia pada tanggal check-in hari ini.");
+      return;
+    }
+    if (!guestName.trim() || !phone.trim()) { setFeedback("Nama dan nomor WhatsApp tamu wajib diisi."); return; }
+    if (!quote || quoteLoading) { setFeedback("Tunggu quote reservasi dari API selesai."); return; }
+    if (paymentStatus === "Partial" && (amountPaid < 1 || amountPaid >= total)) {
+      setFeedback("Pembayaran partial harus lebih dari Rp0 dan kurang dari total reservasi."); return;
+    }
+    if (amountCollected > 0 && !paymentMethod) { setFeedback("Pilih metode pembayaran."); return; }
+    if (requireDeposit && (depositAmount < 1 || !depositMethod)) { setFeedback("Isi nominal dan metode deposit."); return; }
+    setFeedback("");
+    setAcknowledged(false);
+    setCheckInContext(null);
+    setEarlyCheckIn({ acknowledged: false, chargeAmount: 0, paymentTiming: "later" });
+    if (checkInGuest) {
+      try { setCheckInContext(await getCreateCheckInContext(draft.checkIn)); }
+      catch (cause) { setFeedback(cause instanceof Error ? cause.message : "Jam check-in gagal dimuat."); return; }
+    }
+    setConfirmation(checkInGuest ? "check-in" : "save");
+  }
+
+  async function submit() {
+    if (!confirmation || !quote || saving) return;
+    const checkInGuest = confirmation === "check-in";
+    const payload = {
+      guest: { fullName: guestName.trim(), phone: phone.trim(), ...(email.trim() ? { email: email.trim() } : {}) },
+      checkInDate: draft.checkIn,
+      checkOutDate: draft.checkOut,
+      totalAdults: adults,
+      totalChildren: children,
+      rooms: [{ ...selectedRoom, ...(source === "phone" ? { cancellationPolicyId: policyId || null } : {}) }],
+      experiences: addons,
+      ...(guestNotes.trim() ? { specialRequests: guestNotes.trim() } : {}),
+      confirm: checkInGuest,
+      checkIn: checkInGuest,
+      acknowledgeOutstanding: checkInGuest && remaining > 0,
+      ...(checkInGuest && checkInContext?.required ? { earlyCheckIn } : {}),
+      ...(amountCollected > 0 ? { payment: { methodId: paymentMethod, amount: amountCollected } } : {}),
+      ...(requireDeposit ? { deposit: { methodId: depositMethod, amount: depositAmount, notes: depositNote.trim() } } : {}),
+    };
+    const body = JSON.stringify({ source, ...payload });
+    if (requestKey.current?.body !== body) requestKey.current = { body, key: crypto.randomUUID() };
+    setSaving(true);
+    setFeedback("");
+    try {
+      const result = await createReservation(source, { idempotencyKey: requestKey.current.key, ...payload });
+      setConfirmation(null);
+      setSaved({ bookingId: result.reservation.bookingCode, checkedIn: checkInGuest });
+      requestKey.current = null;
+    } catch (cause) {
+      setFeedback(cause instanceof Error ? cause.message : "Reservasi gagal disimpan.");
+    } finally {
+      setSaving(false);
+    }
+  }
 
   return (
-    <div className="rr-drawer-overlay" onClick={onClose}>
+    <div className="rr-drawer-overlay" onClick={(event) => {
+      if (event.target === event.currentTarget && !saving && !confirmation && !saved) onClose();
+    }}>
       <aside
         className="rr-drawer"
         onClick={(e) => e.stopPropagation()}
@@ -813,7 +1067,7 @@ function NewBookingForm({
             <h2>New Reservation</h2>
             <span className="rr-drawer__sub">Room Rack · Drag-to-Book</span>
           </div>
-          <button type="button" className="rr-detail__close" onClick={onClose} aria-label="Close">×</button>
+          <button type="button" className="rr-detail__close" onClick={onClose} disabled={saving || Boolean(confirmation)} aria-label="Close">×</button>
         </div>
 
         {/* Scrollable body: form + summary */}
@@ -824,9 +1078,8 @@ function NewBookingForm({
             <section className="rr-drawer-section">
               <h3>Reservation Source</h3>
               <div className="rr-drawer-tabs">
-                {["Walk-in", "Phone"].map((s) => (
-                  <button key={s} type="button" className={source === s ? "rr-drawer-tab rr-drawer-tab--active" : "rr-drawer-tab"} onClick={() => setSource(s)}>{s}</button>
-                ))}
+                <button type="button" className={source === "walk_in" ? "rr-drawer-tab rr-drawer-tab--active" : "rr-drawer-tab"} disabled={draft.checkIn !== todayJakarta()} onClick={() => setSource("walk_in")}>Walk-in</button>
+                <button type="button" className={source === "phone" ? "rr-drawer-tab rr-drawer-tab--active" : "rr-drawer-tab"} onClick={() => setSource("phone")}>Phone</button>
               </div>
             </section>
 
@@ -872,12 +1125,34 @@ function NewBookingForm({
                     <label htmlFor="rr-extra-bed">Extra Bed</label>
                     <select id="rr-extra-bed" value={extraBed ? "1" : "0"} onChange={(e) => setExtraBed(e.target.value === "1")}>
                       <option value="0">No</option>
-                      <option value="1">Yes (+{formatRupiah(extraBedRate)}/night)</option>
+                      <option value="1" disabled={!availability?.roomType.extraBedEnabled}>Yes (+{formatRupiah(availability?.roomType.extraBedPricePerNight ?? 0)}/night)</option>
                     </select>
                   </div>
                 </div>
               </div>
             </section>
+
+            {source === "phone" && (
+              <section className="rr-drawer-section">
+                <h3>Cancellation Policy</h3>
+                <div className="rr-drawer-field">
+                  <label htmlFor="rr-policy">Policy for {draft.groupName}</label>
+                  <select id="rr-policy" value={policyId} onChange={(event) => setSelectedPolicyId(event.target.value)}>
+                    {applicablePolicies.length === 0 && <option value="">100% cancellation charge · Non-refundable</option>}
+                    {applicablePolicies.map((policy) => <option key={policy.id} value={policy.id}>{policy.name}</option>)}
+                  </select>
+                  {activePolicy && (
+                    <div className="rr-drawer-policy-rules">
+                      {activePolicy.rules.map((rule) => (
+                        <p key={rule.id}>
+                          {rule.timingType === "more_than" ? "Lebih dari" : "Dalam"} {rule.daysBefore} hari sebelum check-in: {rule.chargeType === "percentage" ? `${rule.chargeValue}%` : rule.chargeType === "fixed" ? formatRupiah(rule.chargeValue) : `${rule.chargeValue} malam`} biaya pembatalan.
+                        </p>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </section>
+            )}
 
             {/* Guest Information */}
             <section className="rr-drawer-section">
@@ -916,37 +1191,37 @@ function NewBookingForm({
                     value=""
                     onChange={(e) => {
                       if (e.target.value) {
-                        setAddons((prev) => [...prev, { id: e.target.value, quantity: 1 }]);
+                        setAddons((prev) => [...prev, { variantId: e.target.value, quantity: 1 }]);
                       }
                       setAddingAddon(false);
                     }}
                   >
                     <option value="">Pilih paket</option>
-                    {addonOptions.filter((opt) => !addons.some((a) => a.id === opt.id)).map((opt) => (
-                      <option key={opt.id} value={opt.id}>{opt.label} · {formatRupiah(opt.price)}</option>
+                    {variants.filter((variant) => !addons.some((item) => item.variantId === variant.id)).map((variant) => (
+                      <option key={variant.id} value={variant.id}>{variant.label} · {formatRupiah(variant.price)}</option>
                     ))}
                   </select>
                 </div>
               )}
               <div className="rr-drawer-addons">
                 {addons.map((item) => {
-                  const opt = addonOptions.find((o) => o.id === item.id);
+                  const opt = variants.find((variant) => variant.id === item.variantId);
                   if (!opt) return null;
-                  const cost = getExtraCost(item.id, item.quantity, draft.nights);
+                  const cost = quote?.charges.experiences.find((charge) => charge.variantId === item.variantId)?.amount ?? opt.price * item.quantity;
                   return (
-                    <div className="rr-drawer-addon" key={item.id}>
+                    <div className="rr-drawer-addon" key={item.variantId}>
                       <div className="rr-drawer-addon__info">
                         <strong>{opt.label}</strong>
-                        <small>{formatRupiah(opt.price)} {opt.unit}</small>
+                        <small>{formatRupiah(opt.price)} / package</small>
                       </div>
                       <div className="rr-drawer-addon__controls">
                         <div className="rr-drawer-qty">
-                          <button type="button" onClick={() => setAddons((prev) => prev.map((a) => a.id === item.id ? { ...a, quantity: Math.max(1, a.quantity - 1) } : a))}>−</button>
+                          <button type="button" onClick={() => setAddons((prev) => prev.map((a) => a.variantId === item.variantId ? { ...a, quantity: Math.max(1, a.quantity - 1) } : a))}>−</button>
                           <span>{item.quantity}</span>
-                          <button type="button" onClick={() => setAddons((prev) => prev.map((a) => a.id === item.id ? { ...a, quantity: Math.min(20, a.quantity + 1) } : a))}>+</button>
+                          <button type="button" onClick={() => setAddons((prev) => prev.map((a) => a.variantId === item.variantId ? { ...a, quantity: Math.min(20, a.quantity + 1) } : a))}>+</button>
                         </div>
                         <strong className="rr-drawer-addon__total">{formatRupiah(cost)}</strong>
-                        <button type="button" className="rr-drawer-addon__remove" aria-label={`Hapus ${opt.label}`} onClick={() => setAddons((prev) => prev.filter((a) => a.id !== item.id))}>×</button>
+                        <button type="button" className="rr-drawer-addon__remove" aria-label={`Hapus ${opt.label}`} onClick={() => setAddons((prev) => prev.filter((a) => a.variantId !== item.variantId))}>×</button>
                       </div>
                     </div>
                   );
@@ -963,11 +1238,7 @@ function NewBookingForm({
                   <label htmlFor="rr-pay-method">Payment Method</label>
                   <select id="rr-pay-method" value={paymentMethod} onChange={(e) => setPaymentMethod(e.target.value)}>
                     <option value="">Select method</option>
-                    <option value="cash">Cash</option>
-                    <option value="bca-va">BCA Virtual Account</option>
-                    <option value="bca-qris">BCA QRIS</option>
-                    <option value="mandiri">Mandiri Transfer</option>
-                    <option value="credit-card">Credit Card</option>
+                    {methods.map((method) => <option key={method.id} value={method.id}>{method.name}</option>)}
                   </select>
                 </div>
                 <div className="rr-drawer-field">
@@ -980,7 +1251,7 @@ function NewBookingForm({
                 </div>
                 <div className="rr-drawer-field">
                   <label htmlFor="rr-amount-paid">Amount Paid</label>
-                  <input id="rr-amount-paid" inputMode="numeric" disabled={paymentStatus !== "Partial"} value={formatRupiah(amountPaid)} onChange={(e) => setAmountPaid(Number(e.target.value.replace(/\D/g, "")) || 0)} />
+                  <input id="rr-amount-paid" inputMode="numeric" disabled={paymentStatus !== "Partial"} value={formatRupiah(amountCollected)} onChange={(e) => setAmountPaid(Number(e.target.value.replace(/\D/g, "")) || 0)} />
                 </div>
               </div>
             </section>
@@ -1001,9 +1272,7 @@ function NewBookingForm({
                     <label htmlFor="rr-dep-method">Deposit Method</label>
                     <select id="rr-dep-method" value={depositMethod} onChange={(e) => setDepositMethod(e.target.value)}>
                       <option value="">Select method</option>
-                      <option value="cash">Cash</option>
-                      <option value="bca-va">BCA Virtual Account</option>
-                      <option value="bca-qris">BCA QRIS</option>
+                      {methods.map((method) => <option key={method.id} value={method.id}>{method.name}</option>)}
                     </select>
                   </div>
                   <div className="rr-drawer-field rr-drawer-field--full">
@@ -1021,7 +1290,7 @@ function NewBookingForm({
               {/* Header */}
               <div className="booking-summary__header">
                 <h2>Booking Summary</h2>
-                <span>{source}</span>
+                <span>{source === "walk_in" ? "Walk-in" : "Phone"}</span>
               </div>
 
               {/* Stay dates */}
@@ -1034,23 +1303,30 @@ function NewBookingForm({
               <div className="booking-summary__lines">
                 <div>
                   <span>{draft.groupName} × 1</span>
-                  <strong>{formatRupiah(roomCharge)}</strong>
+                  <strong>{quote ? formatRupiah(roomCharge) : "—"}</strong>
                 </div>
 
                 {extraBed && (
                   <div>
                     <span>↳ Extra Bed · {draft.nights} malam</span>
-                    <strong>{formatRupiah(extraBedCharge)}</strong>
+                    <strong>{quote ? formatRupiah(extraBedCharge) : "—"}</strong>
+                  </div>
+                )}
+
+                {roomDiscount > 0 && (
+                  <div>
+                    <span>Campaign discount</span>
+                    <strong>−{formatRupiah(roomDiscount)}</strong>
                   </div>
                 )}
 
                 {addons.map((item) => {
-                  const opt = addonOptions.find((o) => o.id === item.id);
+                  const opt = variants.find((variant) => variant.id === item.variantId);
                   if (!opt) return null;
-                  const cost = getExtraCost(item.id, item.quantity, draft.nights);
+                  const cost = quote?.charges.experiences.find((charge) => charge.variantId === item.variantId)?.amount ?? opt.price * item.quantity;
                   return (
-                    <div key={item.id}>
-                      <span>{opt.label} × {item.quantity}{opt.perNight ? ` · ${draft.nights} malam` : ""}</span>
+                    <div key={item.variantId}>
+                      <span>{opt.label} × {item.quantity}</span>
                       <strong>{formatRupiah(cost)}</strong>
                     </div>
                   );
@@ -1061,14 +1337,32 @@ function NewBookingForm({
                 )}
               </div>
 
+              {quote && quote.appliedCampaigns.length > 0 && (
+                <details className="booking-summary__campaigns">
+                  <summary>See Campaign</summary>
+                  <ul>
+                    {quote.appliedCampaigns.map((campaign) => (
+                      <li key={campaign.id}>
+                        <strong>{campaign.name}</strong>
+                        <span>
+                          Berlaku sampai {campaign.stayEnd || campaign.bookingEnd
+                            ? formatStayDate(campaign.stayEnd ?? campaign.bookingEnd ?? "")
+                            : "tanpa batas tanggal"}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                </details>
+              )}
+
               {/* Totals */}
               <div className="booking-summary__totals">
                 <div>
                   <strong>Booking Total</strong>
-                  <strong>{formatRupiah(total)}</strong>
+                  <strong>{quote ? formatRupiah(total) : quoteLoading ? "Calculating…" : "—"}</strong>
                 </div>
 
-                {source === "Phone" ? (
+                {source === "phone" ? (
                   <>
                     <div>
                       <span>Payment Status</span>
@@ -1076,7 +1370,7 @@ function NewBookingForm({
                     </div>
                     <div>
                       <span>Amount Paid</span>
-                      <span>{formatRupiah(amountPaid)}</span>
+                      <span>{formatRupiah(amountCollected)}</span>
                     </div>
                     <div className="booking-summary__collected">
                       <strong>Remaining Balance</strong>
@@ -1091,36 +1385,43 @@ function NewBookingForm({
                     </div>
                     <div className="booking-summary__collected">
                       <strong>Total Collected</strong>
-                      <strong>{formatRupiah(amountPaid + (requireDeposit ? depositAmount : 0))}</strong>
+                      <strong>{formatRupiah(amountCollected + (requireDeposit ? depositAmount : 0))}</strong>
                     </div>
                   </>
                 )}
               </div>
 
               {/* Deposit note */}
-              {source !== "Phone" && (
+              {source !== "phone" && (
                 <p className="booking-summary__note">
                   Deposit is held separately and is not included in booking revenue.
                 </p>
               )}
 
+              {feedback && <p className="rr-drawer-feedback" role="alert">{feedback}</p>}
+              {!availabilityLoading && !roomReady && (
+                <p className="rr-drawer-feedback" role="alert">
+                  Room {draft.roomNumber} tidak tersedia untuk tanggal ini. Pilih kamar lain di Room Rack.
+                </p>
+              )}
+
               {/* Actions */}
               <div className="booking-summary__actions">
-                {source === "Phone" ? (
+                {source === "phone" ? (
                   <>
-                    <button type="button" className="action-button" onClick={() => handleSubmit()}>Save Reservation</button>
-                    <button type="button" className="reservation-secondary-button" onClick={() => handleSubmit()}>Save &amp; Check-in</button>
+                    <button type="button" className="action-button" disabled={saving || availabilityLoading || !roomReady || quoteLoading || !quote} onClick={() => void requestSave(false)}>Save Reservation</button>
+                    {draft.checkIn === todayJakarta() && <button type="button" className="reservation-secondary-button" disabled={saving || availabilityLoading || !roomReady || quoteLoading || !quote} onClick={() => void requestSave(true)}>Save &amp; Check-in</button>}
                   </>
                 ) : (
                   <>
-                    <button type="button" className="action-button" onClick={() => handleSubmit()}>Save &amp; Check-in</button>
-                    <button type="button" className="reservation-secondary-button" onClick={() => handleSubmit()}>Save Reservation</button>
+                    <button type="button" className="action-button" disabled={saving || availabilityLoading || !roomReady || quoteLoading || !quote} onClick={() => void requestSave(true)}>Save &amp; Check-in</button>
+                    <button type="button" className="reservation-secondary-button" disabled={saving || availabilityLoading || !roomReady || quoteLoading || !quote} onClick={() => void requestSave(false)}>Save Reservation</button>
                   </>
                 )}
               </div>
 
               {/* Phone mode note */}
-              {source === "Phone" && (
+              {source === "phone" && (
                 <p className="booking-summary__note booking-summary__note--after">
                   Nomor kamar dapat diubah saat tamu tiba. Check-in dengan sisa tagihan memerlukan konfirmasi petugas.
                 </p>
@@ -1129,6 +1430,27 @@ function NewBookingForm({
           </div>
         </div>
       </aside>
+      {confirmation && (
+        <SaveReservationConfirmation
+          guestName={guestName}
+          action={confirmation}
+          total={total}
+          rooms={1}
+          nights={draft.nights}
+          onCancel={() => { if (!saving) setConfirmation(null); }}
+          onConfirm={() => void submit()}
+          outstandingBalance={remaining}
+          acknowledged={acknowledged}
+          onAcknowledgedChange={setAcknowledged}
+          checkInContext={checkInContext}
+          earlyCheckIn={earlyCheckIn}
+          onEarlyCheckInChange={setEarlyCheckIn}
+          paymentMethods={methods}
+          error={feedback}
+          busy={saving}
+        />
+      )}
+      {saved && <ReservationSuccessTransition bookingId={saved.bookingId} checkedIn={saved.checkedIn} />}
     </div>
   );
 }

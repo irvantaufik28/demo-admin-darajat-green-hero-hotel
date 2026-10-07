@@ -1,4 +1,8 @@
 import type { ReactNode } from "react";
+import Link from "next/link";
+import { ReservationDetailActions } from "./ReservationDetailActions";
+import { RoomRackAssignRoom } from "./RoomRackAssignRoom";
+import type { ApiReservationDetail } from "../services/api";
 import {
   formatRupiah,
   type Reservation,
@@ -11,6 +15,10 @@ type Props = {
   room: RoomUnit | null;
   group: RoomTypeGroup;
   todayISO: string;
+  detail: ApiReservationDetail | null;
+  loading: boolean;
+  error: string;
+  onUpdated: (message: string) => Promise<void>;
   onClose: () => void;
 };
 
@@ -54,50 +62,48 @@ export function RoomRackReservationSummary({
   room,
   group,
   todayISO,
+  detail,
+  loading,
+  error,
+  onUpdated,
   onClose,
 }: Props) {
   const isMaintenance = reservation.status === "maintenance";
-  const nights = nightCount(reservation.checkIn, reservation.checkOut);
-  const bookingTotal = reservation.bookingTotal ?? null;
-  const paymentStatus = reservation.paymentStatus ?? "unpaid";
-  const paidAmount = reservation.paidAmount ?? null;
-  const remainingBalance = bookingTotal != null && paidAmount != null
-    ? Math.max(0, bookingTotal - paidAmount)
-    : null;
-  const checkedIn = reservation.reservationStatus === "checked_in";
-  const checkedOut = reservation.reservationStatus === "checked_out";
+  const nights = detail?.summary.nights ?? nightCount(reservation.checkIn, reservation.checkOut);
+  const bookingTotal = detail?.summary.bookingTotal ?? null;
+  const paymentStatus = detail?.reservation.paymentStatus ?? reservation.paymentStatus ?? "unpaid";
+  const paidAmount = detail?.summary.paidAmount ?? null;
+  const remainingBalance = detail?.summary.remainingBalance ?? null;
+  const reservationStatus = detail?.reservation.reservationStatus ?? reservation.reservationStatus;
+  const checkedIn = reservationStatus === "checked_in";
+  const checkedOut = reservationStatus === "checked_out";
+  const checkIn = detail?.reservation.checkInDate ?? reservation.checkIn;
+  const checkOut = detail?.reservation.checkOutDate ?? reservation.checkOut;
   const operationalStatus = reservation.operationalStatus?.label ?? (checkedIn
-    ? reservation.checkOut < todayISO
+    ? checkOut < todayISO
       ? "Overdue"
-      : reservation.checkOut === todayISO
+      : checkOut === todayISO
         ? "Due Out"
-        : reservation.checkIn === todayISO
+        : checkIn === todayISO
           ? "Checked In"
           : "In House"
-    : reservation.reservationStatus === "checked_out"
+    : reservationStatus === "checked_out"
       ? "Checked Out"
-    : reservation.reservationStatus === "pending"
+    : reservationStatus === "pending"
       ? "Awaiting Confirmation"
-    : reservation.checkIn === todayISO
+    : checkIn === todayISO
       ? "Ready to Check-in"
       : "Upcoming");
   const operationalTone =
-    operationalStatus === "Overdue"
+    operationalStatus.startsWith("Overdue")
       ? "danger"
       : operationalStatus === "Due Out" || operationalStatus === "Checked In"
         ? "info"
+        : operationalStatus === "Checked Out"
+          ? "neutral"
         : operationalStatus === "Ready to Check-in" || operationalStatus === "Upcoming"
           ? "warning"
           : "success";
-  const mainAction = !room
-    ? "Assign Room"
-    : checkedIn
-      ? "Check Out Guest"
-      : checkedOut
-        ? "View Reservation"
-      : paymentStatus !== "paid"
-        ? "Confirm & Check-in"
-        : "Check-in Guest";
 
   return (
     <aside
@@ -145,15 +151,15 @@ export function RoomRackReservationSummary({
           </>
         ) : (
           <>
-            <SummaryRow label="Booking ID">{reservation.id}</SummaryRow>
-            <SummaryRow label="Guest">{reservation.guestName}</SummaryRow>
-            <SummaryRow label="Source">{reservation.source}</SummaryRow>
+            <SummaryRow label="Booking ID">{detail?.reservation.bookingCode ?? reservation.id}</SummaryRow>
+            <SummaryRow label="Guest">{detail?.guest.fullName ?? reservation.guestName}</SummaryRow>
+            <SummaryRow label="Source">{detail?.reservation.source === "ota" && detail.otaChannel ? `OTA · ${detail.otaChannel.name}` : reservation.source}</SummaryRow>
             <SummaryRow label="Stay Period">
-              {dateLabel(reservation.checkIn)} → {dateLabel(reservation.checkOut)}
+              {dateLabel(checkIn)} → {dateLabel(checkOut)}
             </SummaryRow>
-            <SummaryRow label="Room Types">{group.name}</SummaryRow>
+            <SummaryRow label="Room Types">{detail ? detail.rooms.map((item) => item.roomTypeNameSnapshot).join(", ") : group.name}</SummaryRow>
             <SummaryRow label="Room Numbers">
-              {room?.number ?? "Not Assigned"}
+              {detail ? detail.rooms.map((item) => item.roomNumber ?? "Not Assigned").join(", ") : room?.number ?? "Not Assigned"}
             </SummaryRow>
             <div className="reservation-detail-summary-divider" />
             <SummaryRow label="Booking Total">
@@ -163,6 +169,9 @@ export function RoomRackReservationSummary({
             <SummaryRow label="Remaining Balance">
               {remainingBalance == null ? "—" : formatRupiah(remainingBalance)}
             </SummaryRow>
+            {detail && detail.deposits.length > 0 && (
+              <SummaryRow label="Deposit Balance">{formatRupiah(detail.summary.depositBalance)}</SummaryRow>
+            )}
             <SummaryRow label="Payment Status">
               <Badge
                 label={paymentStatus.charAt(0).toUpperCase() + paymentStatus.slice(1)}
@@ -177,19 +186,19 @@ export function RoomRackReservationSummary({
             </SummaryRow>
             <SummaryRow label="Reservation Status">
               <Badge
-                label={reservation.reservationStatus === "checked_out" ? "Checked-out" : checkedIn ? "Checked-in" : reservation.reservationStatus === "pending" ? "Pending" : "Confirmed"}
-                tone={checkedIn ? "info" : reservation.reservationStatus === "pending" ? "warning" : "success"}
+                label={checkedOut ? "Checked-out" : checkedIn ? "Checked-in" : reservationStatus === "pending" ? "Pending" : "Confirmed"}
+                tone={checkedOut ? "neutral" : checkedIn ? "info" : reservationStatus === "pending" ? "warning" : "success"}
               />
             </SummaryRow>
             <SummaryRow label="Operational Status">
               <Badge label={operationalStatus} tone={operationalTone} />
             </SummaryRow>
-            {!room && (
+            {detail && detail.rooms.some((item) => !item.roomUnitId) && (
               <p className="pending-detail-summary-warning">
                 Nomor kamar perlu ditetapkan sebelum check-in.
               </p>
             )}
-            {paymentStatus !== "paid" && !checkedOut && (
+            {detail && remainingBalance != null && remainingBalance > 0 && !checkedOut && (
               <p className="pending-detail-summary-warning">
                 {checkedIn
                   ? "Tamu sedang menginap dengan sisa tagihan yang perlu ditindaklanjuti."
@@ -201,32 +210,21 @@ export function RoomRackReservationSummary({
       </div>
       {!isMaintenance && (
         <div className="rr-detail-panel__actions">
-          <button type="button" className="action-button" disabled>
-            {mainAction}
-          </button>
-          {paymentStatus !== "paid" && !checkedOut && (
-            <button type="button" className="action-button" disabled>
-              Record Payment
-            </button>
-          )}
-          {!checkedIn && !checkedOut && (
-            <button type="button" className="reservation-secondary-button" disabled>
-              Cancel Reservation
-            </button>
-          )}
-          {checkedIn && (
-            <>
-              <button type="button" className="reservation-secondary-button" disabled>
-                Extend Stay
-              </button>
-              <button type="button" className="reservation-secondary-button" disabled>
-                Add Experience or Add-on
-              </button>
-              <button type="button" className="reservation-secondary-button" disabled>
-                Save Bill
-              </button>
-            </>
-          )}
+          {loading && <p className="rr-detail-panel__message">Loading reservation detail...</p>}
+          {error && <p className="rr-detail-panel__message rr-detail-panel__message--error" role="alert">{error}</p>}
+          {detail && reservation.reservationRoomId &&
+            (detail.reservation.reservationStatus === "pending" || detail.reservation.reservationStatus === "confirmed") &&
+            detail.rooms.some((item) => item.id === reservation.reservationRoomId && !item.roomUnitId) && (
+              <RoomRackAssignRoom
+                reservationId={detail.reservation.id}
+                reservationRoomId={reservation.reservationRoomId}
+                onUpdated={onUpdated}
+              />
+            )}
+          {detail && <ReservationDetailActions detail={detail} onUpdated={onUpdated} />}
+          <Link className="reservation-secondary-button rr-detail-panel__view-link" href={`/reservations/${encodeURIComponent(detail?.reservation.bookingCode ?? reservation.id)}`}>
+            View Reservation
+          </Link>
         </div>
       )}
     </aside>

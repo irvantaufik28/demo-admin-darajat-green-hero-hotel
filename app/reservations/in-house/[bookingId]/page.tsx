@@ -1,4 +1,4 @@
-import { InHouseDetailPage } from "../../../../features/reservations/components/InHouseDetailPage";
+import { InHouseDetailPage } from "../../../../features/reservations/pages/InHouseDetailPage";
 
 export default function InHouseDetailRoute() {
   return <InHouseDetailPage />;

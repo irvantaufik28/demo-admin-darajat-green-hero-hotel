@@ -1,4 +1,5 @@
 "use client";
+import "../styles/reservations.css";
 
 import { Fragment, useEffect, useState, type ReactNode } from "react";
 import Link from "next/link";

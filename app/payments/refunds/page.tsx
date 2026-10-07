@@ -1,3 +1,3 @@
-import { PaymentQueuesPage } from "../../../features/payments/components/PaymentQueuesPage";
+import { PaymentQueuesPage } from "../../../features/payments/pages/PaymentQueuesPage";
 
 export default function Page() { return <PaymentQueuesPage mode="refunds" />; }

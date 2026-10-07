@@ -1,4 +1,5 @@
 "use client";
+import "../styles/dashboard.css";
 
 import { LoadingSkeleton } from "../../../components/ui/LoadingSkeleton";
 import { useEffect, useState } from "react";

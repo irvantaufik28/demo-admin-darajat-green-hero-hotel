@@ -1,4 +1,5 @@
 "use client";
+import "../styles/prices-stocks.css";
 
 import { LoadingSkeleton } from "../../../components/ui/LoadingSkeleton";
 import { useEffect, useMemo, useRef, useState } from "react";

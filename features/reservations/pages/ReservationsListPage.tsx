@@ -1,4 +1,5 @@
 "use client";
+import "../styles/reservations.css";
 
 import { LoadingSkeleton } from "../../../components/ui/LoadingSkeleton";
 import { useEffect, useRef, useState } from "react";

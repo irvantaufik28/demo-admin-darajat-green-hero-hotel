@@ -1,11 +1,12 @@
 "use client";
+import "../styles/experiences.css";
 
 import { LoadingSkeleton } from "../../../components/ui/LoadingSkeleton";
 import { useEffect, useState } from "react";
 import { AdminShell } from "../../../components/layout/AdminShell";
 import { Icon } from "../../../components/ui/Icon";
 import { restoreSession } from "../../../lib/auth";
-import { ExperienceModal } from "./ExperienceModal";
+import { ExperienceModal } from "../components/ExperienceModal";
 import {
   createExperience,
   getExperience,

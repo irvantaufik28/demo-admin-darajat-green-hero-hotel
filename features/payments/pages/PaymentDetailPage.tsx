@@ -6,9 +6,9 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { AdminShell } from "../../../components/layout/AdminShell";
 import { getCurrentUser, restoreSession } from "../../../lib/auth";
-import { RefundModal } from "./RefundModal";
-import { RecordPaymentModal } from "./RecordPaymentModal";
-import { PaymentInvoicePreview } from "./PaymentInvoicePreview";
+import { RefundModal } from "../components/RefundModal";
+import { RecordPaymentModal } from "../components/RecordPaymentModal";
+import { PaymentInvoicePreview } from "../components/PaymentInvoicePreview";
 import { getRefundEligibility, type RefundEligibility } from "../services/payments";
 import {
   getPaymentMethods,

@@ -1,12 +1,13 @@
 "use client";
+import "../styles/reservations.css";
 
 import { LoadingSkeleton } from "../../../components/ui/LoadingSkeleton";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { AdminShell } from "../../../components/layout/AdminShell";
-import { formatStayDate } from "../constants/walk-in-data";
+import { formatRupiah, formatStayDate } from "../constants/walk-in-data";
 import { restoreSession } from "../../../lib/auth";
-import { getDeparturesToday, type DepartureTodayItem } from "../services/api";
+import { getInHouse, type InHouseItem } from "../services/api";
 import { useOperationalRefresh } from "../hooks/useOperationalRefresh";
 
 const pageSize = 20;
@@ -15,29 +16,22 @@ function label(value: string) {
   return value.split("_").map(part => part[0].toUpperCase() + part.slice(1)).join("-");
 }
 
-function depositLabel(item: DepartureTodayItem) {
-  if (item.deposit.heldBalance > 0) {
-    return `Rp${new Intl.NumberFormat("id-ID").format(item.deposit.heldBalance)}`;
-  }
-  return item.deposit.label;
-}
-
 function paymentTone(status: string) {
   if (status === "Paid") return "success";
   if (status === "Unpaid") return "danger";
   return "warning";
 }
 
-export function DeparturesTodayPage() {
-  const [departures, setDepartures] = useState<DepartureTodayItem[]>([]);
-  const [summary, setSummary] = useState({ total: 0, dueOut: 0, overdue: 0, checkedOut: 0 });
+export function InHousePage() {
   const operationalRefresh = useOperationalRefresh();
+  const [guests, setGuests] = useState<InHouseItem[]>([]);
+  const [summary, setSummary] = useState({ guestsInHouse: 0, roomsOccupied: 0 });
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [search, setSearch] = useState("");
-  const [status, setStatus] = useState("all");
+  const [checkOut, setCheckOut] = useState("all");
   const [payment, setPayment] = useState("all");
 
   useEffect(() => {
@@ -49,37 +43,38 @@ export function DeparturesTodayPage() {
         if (!(await restoreSession())) return;
         const query = new URLSearchParams({ page: String(page), limit: String(pageSize) });
         if (search.trim()) query.set("search", search.trim());
-        if (status !== "all") query.set("operationalStatus", status);
+        if (checkOut !== "all") query.set("operationalStatus", checkOut);
         if (payment !== "all") query.set("paymentStatus", payment);
-        const response = await getDeparturesToday(query, controller.signal);
+        const response = await getInHouse(query, controller.signal);
         if (!controller.signal.aborted) {
-          setDepartures(response.items);
+          setGuests(response.items);
           setSummary(response.summary);
           setTotal(response.total);
         }
       } catch (cause) {
         if (!controller.signal.aborted) {
-          setError(cause instanceof Error ? cause.message : "Data keberangkatan gagal dimuat.");
+          setError(cause instanceof Error ? cause.message : "Data tamu menginap gagal dimuat.");
         }
       } finally {
         if (!controller.signal.aborted) setLoading(false);
       }
     }, search ? 300 : 0);
     return () => { window.clearTimeout(timer); controller.abort(); };
-  }, [page, search, status, payment, operationalRefresh]);
+  }, [page, search, checkOut, payment, operationalRefresh]);
 
   return (
-    <AdminShell title="Reservations" context="Departures Today">
-      <div className="departures-page">
-        <div className="departures-heading">
+    <AdminShell title="Reservations" context="In House">
+      <div className="in-house-page">
+        <div className="in-house-heading">
           <div>
-            <div className="departures-heading-title">
-              <h1>Departures Today</h1>
-              <span className="departures-count">
-                {summary.total} departures today · {summary.dueOut} Due Out · {summary.overdue} Overdue
+            <div className="in-house-title">
+              <h1>In House</h1>
+              <span>
+                {summary.guestsInHouse} guests in house · {summary.roomsOccupied} rooms
+                occupied
               </span>
             </div>
-            <p>Tamu yang dijadwalkan atau sudah check-out hari ini.</p>
+            <p>Tamu yang masih berstatus Checked-in.</p>
           </div>
           <Link
             href="/reservations/create-reservation-walkin"
@@ -88,23 +83,23 @@ export function DeparturesTodayPage() {
             ＋ New Reservation
           </Link>
         </div>
-        <div className="departures-filters">
-          <div className="departures-filter-controls">
+        <div className="in-house-filters">
+          <div className="in-house-filter-controls">
             <input
               value={search}
               onChange={(event) => { setSearch(event.target.value); setPage(1); }}
-              placeholder="Search guest or booking ID"
-              aria-label="Search guest or booking ID"
+              placeholder="Search guest, room, or booking ID"
+              aria-label="Search in-house guests"
             />
             <select
-              value={status}
-              onChange={(event) => { setStatus(event.target.value); setPage(1); }}
-              aria-label="Filter departure status"
+              value={checkOut}
+              onChange={(event) => { setCheckOut(event.target.value); setPage(1); }}
+              aria-label="Filter check-out status"
             >
-              <option value="all">Status: All</option>
-              <option value="due_out">Due Out</option>
-              <option value="overdue">Overdue</option>
-              <option value="checked_out">Checked Out</option>
+              <option value="all">Check-out: All</option>
+              <option value="in_house">Check-out: Later</option>
+              <option value="due_out">Check-out: Today</option>
+              <option value="overdue">Check-out: Overdue</option>
             </select>
             <select
               value={payment}
@@ -112,15 +107,15 @@ export function DeparturesTodayPage() {
               aria-label="Filter payment status"
             >
               <option value="all">Payment: All Payments</option>
-              <option value="unpaid">Unpaid</option>
-              <option value="partial">Partial</option>
-              <option value="paid">Paid</option>
+              <option value="unpaid">Payment: Unpaid</option>
+              <option value="partial">Payment: Partial</option>
+              <option value="paid">Payment: Paid</option>
             </select>
             <button
               type="button"
               onClick={() => {
                 setSearch("");
-                setStatus("all");
+                setCheckOut("all");
                 setPayment("all");
                 setPage(1);
               }}
@@ -129,19 +124,20 @@ export function DeparturesTodayPage() {
             </button>
           </div>
           <span>
-            Showing {departures.length} of {total} entries
+            Showing <strong>{guests.length}</strong> of{" "}
+            <strong>{total}</strong> entries
           </span>
         </div>
-        <section className="departures-table-shell">
-          <div className="departures-table-scroll">
-            <table className="departures-table">
+        <section className="in-house-table-shell">
+          <div className="in-house-table-scroll">
+            <table className="in-house-table">
               <thead>
                 <tr>
                   <th>NO</th>
                   <th>GUEST</th>
                   <th>BOOKING</th>
-                  <th>CHECK-OUT</th>
                   <th>ROOM</th>
+                  <th>CHECK-OUT</th>
                   <th>PAYMENT</th>
                   <th>RESERVATION STATUS</th>
                   <th>OPERATIONAL STATUS</th>
@@ -150,15 +146,8 @@ export function DeparturesTodayPage() {
                 </tr>
               </thead>
               <tbody>
-                {!loading && departures.map((item, index) => (
-                  <tr
-                    key={item.id}
-                    className={
-                      item.reservationStatus === "checked_out"
-                        ? "departures-row--complete"
-                        : undefined
-                    }
-                  >
+                {!loading && guests.map((item, index) => (
+                  <tr key={item.id}>
                     <td className="reservations-no">{(page - 1) * pageSize + index + 1}</td>
                     <td>
                       <div className="reservations-guest">
@@ -166,14 +155,16 @@ export function DeparturesTodayPage() {
                         <small>{item.guest.phone}</small>
                       </div>
                     </td>
-                    <td className="departures-booking">{item.bookingCode}</td>
-                    <td>{formatStayDate(item.checkOutDate)}</td>
-                    <td className="departures-room">
+                    <td>
+                      <span className="in-house-booking">{item.bookingCode}</span>
+                    </td>
+                    <td className="in-house-room">
                       {item.roomSummary || "—"}
                       {item.rooms.some(room => room.roomNumber)
-                        ? " · " + item.rooms.map(room => room.roomNumber).filter(Boolean).join(", ")
+                        ? ` · ${item.rooms.map(room => room.roomNumber).filter(Boolean).join(", ")}`
                         : ""}
                     </td>
+                    <td>{formatStayDate(item.checkOutDate)}</td>
                     <td>
                       <span
                         className={
@@ -185,12 +176,7 @@ export function DeparturesTodayPage() {
                       </span>
                     </td>
                     <td>
-                      <span
-                        className={
-                          "reservations-badge reservations-badge--" +
-                          (item.reservationStatus === "checked_in" ? "info" : "neutral")
-                        }
-                      >
+                      <span className="reservations-badge reservations-badge--info">
                         {label(item.reservationStatus)}
                       </span>
                     </td>
@@ -202,43 +188,37 @@ export function DeparturesTodayPage() {
                             ? "danger"
                             : item.operationalStatus.code === "due_out"
                               ? "warning"
-                              : "neutral")
+                              : "info")
                         }
                       >
                         {item.operationalStatus.label}
                       </span>
                     </td>
                     <td>
-                      {item.deposit.label === "No Deposit" ? (
-                        <span className="departures-muted">No Deposit</span>
+                      {item.deposit.heldBalance === 0 ? (
+                        <span className="in-house-muted">No Deposit</span>
                       ) : (
-                        <span
-                          className={
-                            "reservations-badge reservations-badge--" +
-                            (item.deposit.heldBalance > 0
-                              ? "warning"
-                              : "success")
-                          }
-                        >
-                          {depositLabel(item)}
+                        <span className="reservations-badge reservations-badge--warning">
+                          {formatRupiah(item.deposit.heldBalance)}
                         </span>
                       )}
                     </td>
                     <td>
                       <Link
                         href={
-                          "/reservations/" + encodeURIComponent(item.id)
+                          "/reservations/" +
+                          encodeURIComponent(item.id)
                         }
-                        className="departures-view-link"
+                        className="in-house-view-button"
                       >
                         View
                       </Link>
                     </td>
                   </tr>
                 ))}
-                {(loading || error || departures.length === 0) && (
+                {(loading || error || guests.length === 0) && (
                   <tr>
-                    <td colSpan={10} className="departures-empty">
+                    <td className="in-house-empty" colSpan={10}>
                       {loading ? <LoadingSkeleton /> : error || "Tidak ada tamu yang cocok dengan filter."}
                     </td>
                   </tr>
@@ -246,9 +226,9 @@ export function DeparturesTodayPage() {
               </tbody>
             </table>
           </div>
-          <div className="departures-table-footer">
-            <span className="departures-audit-dot" />
-            {total} departures today
+          <div className="in-house-table-footer">
+            <span className="in-house-audit-dot" />
+            {total} guests in house
             {total > pageSize && (
               <div>
                 <button type="button" disabled={page === 1} onClick={() => setPage(value => value - 1)}>Previous</button>

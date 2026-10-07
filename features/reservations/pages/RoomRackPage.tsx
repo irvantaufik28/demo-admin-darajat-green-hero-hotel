@@ -1,9 +1,10 @@
 "use client";
+import "../styles/reservations.css";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AdminShell } from "../../../components/layout/AdminShell";
 import { Icon } from "../../../components/ui/Icon";
-import "./room-rack.css";
+import "../components/room-rack.css";
 import {
   RACK_START_DATE,
   RACK_DAYS,

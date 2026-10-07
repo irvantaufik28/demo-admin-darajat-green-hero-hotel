@@ -1,4 +1,5 @@
 "use client";
+import "../styles/rooms.css";
 
 import { LoadingSkeleton } from "../../../components/ui/LoadingSkeleton";
 import { useEffect, useRef, useState, type ChangeEvent } from "react";

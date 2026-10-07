@@ -1,13 +1,14 @@
 "use client";
+import "../styles/reservations.css";
 
 import { LoadingSkeleton } from "../../../components/ui/LoadingSkeleton";
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { AdminShell } from "../../../components/layout/AdminShell";
-import { QuantityControl } from "./QuantityControl";
-import { ReservationField } from "./ReservationField";
-import { SaveReservationConfirmation } from "./SaveReservationConfirmation";
-import { ReservationSuccessTransition } from "./ReservationSuccessTransition";
+import { QuantityControl } from "../components/QuantityControl";
+import { ReservationField } from "../components/ReservationField";
+import { SaveReservationConfirmation } from "../components/SaveReservationConfirmation";
+import { ReservationSuccessTransition } from "../components/ReservationSuccessTransition";
 import {
   calculateNights,
   formatRupiah,

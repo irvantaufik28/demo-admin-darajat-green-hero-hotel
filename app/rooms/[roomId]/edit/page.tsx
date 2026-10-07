@@ -1,4 +1,4 @@
-import { AddRoomTypePage } from "../../../../features/rooms/components/AddRoomTypePage";
+import { AddRoomTypePage } from "../../../../features/rooms/pages/AddRoomTypePage";
 
 export default async function EditRoomTypePage({
   params,

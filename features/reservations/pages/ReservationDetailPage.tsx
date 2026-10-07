@@ -1,13 +1,14 @@
 "use client";
+import "../styles/reservations.css";
 
 import { LoadingSkeleton } from "../../../components/ui/LoadingSkeleton";
 import { Fragment, useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { AdminShell } from "../../../components/layout/AdminShell";
-import { ReservationDetailActions } from "./ReservationDetailActions";
-import { ReservationAuditTrail } from "./ReservationAuditTrail";
-import { ReservationRoomOperations } from "./ReservationRoomOperations";
+import { ReservationDetailActions } from "../components/ReservationDetailActions";
+import { ReservationAuditTrail } from "../components/ReservationAuditTrail";
+import { ReservationRoomOperations } from "../components/ReservationRoomOperations";
 import {
   getReservationDetail,
   getReservationHistory,

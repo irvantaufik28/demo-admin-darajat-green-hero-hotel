@@ -643,7 +643,7 @@ function RoomGroup({
           ].filter(Boolean).join(" ");
           return (
             <div key={iso} className={classes}>
-              {group.dailyRates[i] == null ? "—" : `${Math.round(group.dailyRates[i] / 1000)}k`}
+              {group.dailyRates[i] == null ? "—" : formatRupiah(group.dailyRates[i])}
             </div>
           );
         })}

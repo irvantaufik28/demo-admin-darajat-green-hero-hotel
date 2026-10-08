@@ -1,0 +1,264 @@
+.favorite-rooms-page {
+  display: grid;
+  gap: 24px;
+  max-width: 1440px;
+  padding: 28px 32px 48px;
+}
+
+.favorite-rooms-header,
+.favorite-rooms-panel-heading,
+.favorite-rooms-item,
+.favorite-rooms-catalog-item {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.favorite-rooms-header,
+.favorite-rooms-panel-heading {
+  justify-content: space-between;
+}
+
+.favorite-rooms-eyebrow {
+  color: #789085;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+.favorite-rooms-header h1 {
+  margin: 8px 0;
+  color: #173e30;
+  font-size: 30px;
+}
+
+.favorite-rooms-header p,
+.favorite-rooms-panel-heading p {
+  margin: 0;
+  color: #68766f;
+}
+
+.favorite-rooms-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.favorite-rooms-actions .action-button {
+  border: 0;
+  cursor: pointer;
+}
+
+.favorite-rooms-actions .action-button:disabled,
+.favorite-rooms-secondary:disabled,
+.favorite-rooms-item-actions button:disabled {
+  cursor: not-allowed;
+  opacity: 0.48;
+}
+
+.favorite-rooms-unsaved {
+  color: #ae730a;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.favorite-rooms-secondary,
+.favorite-rooms-item-actions button {
+  min-height: 38px;
+  padding: 7px 13px;
+  border: 1px solid #d6ded9;
+  border-radius: 9px;
+  background: white;
+  color: #254339;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 600;
+}
+
+.favorite-rooms-panel {
+  overflow: hidden;
+  padding: 24px;
+  border: 1px solid #e0e5df;
+  border-radius: 16px;
+  background: #fff;
+}
+
+.favorite-rooms-panel-heading {
+  margin-bottom: 18px;
+}
+
+.favorite-rooms-panel-heading h2 {
+  margin: 0 0 5px;
+  color: #1a342a;
+  font-size: 20px;
+}
+
+.favorite-rooms-panel-heading > strong {
+  color: #1c4f3b;
+}
+
+.favorite-rooms-list {
+  display: grid;
+  gap: 9px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.favorite-rooms-item,
+.favorite-rooms-catalog-item {
+  min-width: 0;
+  padding: 12px;
+  border: 1px solid #e2e8e3;
+  border-radius: 11px;
+  background: #fbfcfa;
+}
+
+.favorite-rooms-order {
+  display: grid;
+  flex: 0 0 30px;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: #e7f1e9;
+  color: #174d35;
+  font-weight: 700;
+}
+
+.favorite-rooms-thumbnail {
+  flex: 0 0 88px;
+  width: 88px;
+  height: 62px;
+  overflow: hidden;
+  border-radius: 8px;
+  background: #e8eee8;
+}
+
+.favorite-rooms-thumbnail img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.favorite-rooms-item-body {
+  display: grid;
+  flex: 1;
+  min-width: 0;
+  gap: 4px;
+}
+
+.favorite-rooms-item-body strong {
+  color: #1c352a;
+}
+
+.favorite-rooms-item-body span {
+  overflow: hidden;
+  color: #6f7972;
+  font-size: 13px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.favorite-rooms-inactive,
+.favorite-rooms-limit {
+  color: #ad4e35;
+  font-weight: 600;
+}
+
+.favorite-rooms-toggle {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: #33473b;
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.favorite-rooms-toggle input {
+  accent-color: #1b6243;
+}
+
+.favorite-rooms-item-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.favorite-rooms-item-actions .favorite-rooms-remove {
+  color: #b54c3b;
+}
+
+.favorite-rooms-search {
+  width: min(100%, 380px);
+  min-height: 42px;
+  margin-bottom: 18px;
+  padding: 9px 12px;
+  border: 1px solid #d3ddd5;
+  border-radius: 9px;
+  background: white;
+  color: #223a2d;
+  font: inherit;
+}
+
+.favorite-rooms-catalog {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 9px;
+}
+
+.favorite-rooms-empty {
+  padding: 22px 4px;
+  color: #717c75;
+}
+
+.favorite-rooms-message {
+  margin: 0;
+  padding: 12px 16px;
+  border-radius: 9px;
+}
+
+.favorite-rooms-message--error {
+  background: #fff0ed;
+  color: #a83528;
+}
+
+.favorite-rooms-message--success {
+  background: #e7f4e9;
+  color: #175538;
+}
+
+@media (max-width: 980px) {
+  .favorite-rooms-header,
+  .favorite-rooms-item {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .favorite-rooms-toggle {
+    margin-left: 46px;
+  }
+
+  .favorite-rooms-catalog {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 600px) {
+  .favorite-rooms-page {
+    padding: 20px 14px 36px;
+  }
+
+  .favorite-rooms-panel {
+    padding: 16px;
+  }
+
+  .favorite-rooms-item-actions,
+  .favorite-rooms-toggle {
+    margin-left: 0;
+  }
+
+  .favorite-rooms-item-actions {
+    width: 100%;
+  }
+}

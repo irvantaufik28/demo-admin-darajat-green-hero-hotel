@@ -97,6 +97,7 @@ const topLevelRoutes: Record<string, string> = {
   "Campaigns & Promotions": "/campaigns",
   "Experiences": "/experiences",
   "Guests": "/guests",
+  "Favorite Rooms": "/web-settings/favorite-rooms",
 };
 
 let openGroupsCache: string[] | null = null;
@@ -125,7 +126,9 @@ export function Sidebar({
   const pathname = usePathname();
   const { t } = useTranslations({ en, id });
   const [hovered, setHovered] = useState(false);
-  const [section, setSection] = useState<"hotelier" | "website">("hotelier");
+  const [section, setSection] = useState<"hotelier" | "website">(
+    pathname.startsWith("/web-settings") ? "website" : "hotelier",
+  );
   const [menuSearch, setMenuSearch] = useState("");
   const currentGroup =
     pathname.startsWith("/payments")
@@ -271,11 +274,11 @@ export function Sidebar({
                     aria-current={
                       pathname === topLevelRoutes[item.label] ? "page" : undefined
                     }
-                    title={item.label}
+                    title={section === "website" ? t("websiteItems." + item.label) : t("items." + item.label)}
                     onClick={onCloseMobile}
                   >
                     <Icon name={item.icon} />
-                    <span className="sidebar-link__label">{t("items." + item.label)}</span>
+                    <span className="sidebar-link__label">{section === "website" ? t("websiteItems." + item.label) : t("items." + item.label)}</span>
                   </Link>
                 ) : (
                   <>

@@ -1,0 +1,31 @@
+{
+  "favoriteRooms": {
+    "context": "Pengaturan Web",
+    "eyebrow": "PENGATURAN WEB / KAMAR FAVORIT",
+    "title": "Kamar Favorit",
+    "description": "Pilih dan urutkan tipe kamar yang ditampilkan pada bagian kamar pilihan di website.",
+    "selectedTitle": "Kamar yang ditampilkan",
+    "selectedDescription": "Urutan di sini mengikuti urutan tampilan pada website. Maksimal 12 tipe kamar.",
+    "availableTitle": "Tambah tipe kamar",
+    "availableDescription": "Hanya tipe kamar aktif yang dapat ditambahkan.",
+    "search": "Cari tipe kamar...",
+    "add": "Tambah",
+    "remove": "Hapus",
+    "moveUp": "Pindah ke atas",
+    "moveDown": "Pindah ke bawah",
+    "active": "Tampilkan di website",
+    "inactiveRoom": "Tipe kamar nonaktif",
+    "emptySelected": "Belum ada kamar favorit. Tambahkan tipe kamar dari daftar di bawah.",
+    "emptyAvailable": "Tidak ada tipe kamar aktif yang dapat ditambahkan.",
+    "limit": "Maksimal 12 kamar favorit.",
+    "unsaved": "Perubahan belum disimpan",
+    "reset": "Batalkan perubahan",
+    "save": "Simpan perubahan",
+    "saving": "Menyimpan...",
+    "saved": "Kamar favorit berhasil disimpan.",
+    "loadError": "Gagal memuat kamar favorit.",
+    "saveError": "Gagal menyimpan kamar favorit.",
+    "priceFrom": "Mulai Rp{price}",
+    "guestCount": "Hingga {count} tamu"
+  }
+}

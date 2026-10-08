@@ -1,0 +1,31 @@
+{
+  "favoriteRooms": {
+    "context": "Web Settings",
+    "eyebrow": "WEB SETTINGS / FAVORITE ROOMS",
+    "title": "Favorite Rooms",
+    "description": "Select and order the room types featured on the website.",
+    "selectedTitle": "Featured room types",
+    "selectedDescription": "The order here matches the website display. Up to 12 room types.",
+    "availableTitle": "Add room types",
+    "availableDescription": "Only active room types can be added.",
+    "search": "Search room types...",
+    "add": "Add",
+    "remove": "Remove",
+    "moveUp": "Move up",
+    "moveDown": "Move down",
+    "active": "Show on website",
+    "inactiveRoom": "Room type inactive",
+    "emptySelected": "No favorite rooms yet. Add a room type from the list below.",
+    "emptyAvailable": "No active room types are available to add.",
+    "limit": "Maximum 12 favorite rooms.",
+    "unsaved": "Unsaved changes",
+    "reset": "Discard changes",
+    "save": "Save changes",
+    "saving": "Saving...",
+    "saved": "Favorite rooms saved successfully.",
+    "loadError": "Could not load favorite rooms.",
+    "saveError": "Could not save favorite rooms.",
+    "priceFrom": "From Rp{price}",
+    "guestCount": "Up to {count} guests"
+  }
+}

@@ -13,6 +13,7 @@
     "edit": "Ubah",
     "enable": "Aktifkan",
     "disable": "Nonaktifkan",
+    "delete": "Hapus",
     "previous": "Sebelumnya",
     "next": "Berikutnya"
   },
@@ -37,7 +38,8 @@
     "cancellationPolicy": "Kebijakan Pembatalan",
     "status": "Status",
     "action": "Aksi",
-    "allRoomTypes": "Semua Tipe Kamar"
+    "allRoomTypes": "Semua Tipe Kamar",
+    "noRoomTypes": "Tidak ditetapkan ke kamar"
   },
   "status": {
     "active": "Aktif",
@@ -56,7 +58,15 @@
     "policiesLoadFailed": "Kebijakan gagal dimuat.",
     "detailLoadFailed": "Detail kebijakan gagal dimuat.",
     "saveFailed": "Kebijakan gagal disimpan.",
-    "statusChangeFailed": "Status kebijakan gagal diubah."
+    "statusChangeFailed": "Status kebijakan gagal diubah.",
+    "deleteFailed": "Kebijakan gagal dihapus."
+  },
+  "deleteDialog": {
+    "title": "Hapus Kebijakan Pembatalan?",
+    "description": "Periksa detail kebijakan sebelum menghapus. Tindakan ini tidak dapat dibatalkan.",
+    "cancel": "Batal",
+    "confirm": "Hapus Kebijakan",
+    "deleting": "Menghapus..."
   },
   "modal": {
     "titleAdd": "Tambah Kebijakan Pembatalan",
@@ -83,6 +93,7 @@
       "sourcePhone": "Telepon",
       "sourceHint": "Pilih satu atau keduanya. Kebijakan berlaku untuk kanal yang dipilih.",
       "selectAll": "Pilih Semua",
+      "roomTypeHint": "Pilih minimal satu tipe kamar. Kebijakan baru akan menggantikan kebijakan aktif untuk tipe kamar yang sama.",
       "applyToAllDates": "Berlaku untuk Semua Tanggal",
       "from": "Dari",
       "to": "Sampai",

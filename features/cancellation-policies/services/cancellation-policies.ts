@@ -72,6 +72,10 @@ export function updatePolicy(id: string, body: PolicyInput) {
   });
 }
 
+export function deletePolicy(id: string) {
+  return apiRequest<void>(`cancellation-policies/${encodeURIComponent(id)}`, { method: "DELETE" });
+}
+
 export function setPolicyStatus(id: string, isActive: boolean) {
   return apiRequest<{ policy: PolicyRecord }>(`cancellation-policies/${encodeURIComponent(id)}/status`, {
     method: "PATCH",

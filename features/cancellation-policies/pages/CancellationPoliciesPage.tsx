@@ -22,6 +22,7 @@ import {
 } from "../constants/cancellation-policies-data";
 import {
   createPolicy,
+  deletePolicy,
   getPolicy,
   listPolicies,
   listPolicyRoomTypes,
@@ -268,7 +269,6 @@ function PolicyModal({
 
   // Room type toggles
   const selectedRoomIds = form.roomTypeIds ?? [];
-  const allSelected = selectedRoomIds.length === 0;
   function toggleRoom(id: string) {
     set("roomTypeIds", selectedRoomIds.includes(id)
       ? selectedRoomIds.filter((roomId) => roomId !== id)
@@ -383,15 +383,6 @@ function PolicyModal({
           <div className="cp-modal-section">
             <div className="cp-modal-section__title">{t("modal.sections.applicableRoomTypes")}</div>
             <div className="cp-room-grid">
-              <label className="cp-room-option cp-room-option--secondary">
-                <input
-                  type="checkbox"
-                  className="cp-checkbox"
-                  checked={allSelected}
-                  onChange={() => set("roomTypeIds", [])}
-                />
-                <span>{t("modal.fields.selectAll")}</span>
-              </label>
               {roomTypeOptions.map((rt) => {
                 const checked = selectedRoomIds.includes(rt.id);
                 return (
@@ -407,6 +398,7 @@ function PolicyModal({
                 );
               })}
             </div>
+            <small className="cp-source-hint">{t("modal.fields.roomTypeHint")}</small>
           </div>
 
           {/* 3. Stay Period */}
@@ -524,26 +516,14 @@ function PolicyModal({
 
         {/* Footer */}
         <div className="cp-modal__footer">
-          {isEdit ? (
-            <button
-              type="button"
-              className="cp-delete-btn"
-              disabled
-              title={t("modal.fields.deletePolicyTitle")}
-            >
-              <Icon name="trash" width={14} height={14} />
-              <span>{t("modal.fields.deletePolicy")}</span>
-            </button>
-          ) : (
-            <span />
-          )}
+          <span />
           <div className="cp-modal__footer-actions">
             {error && <span className="cp-modal-error" role="alert">{error}</span>}
             <button type="button" className="cp-btn-cancel" disabled={saving} onClick={onClose}>{t("modal.actions.cancel")}</button>
             <button
               type="button"
               className="cp-btn-save"
-              disabled={saving || !form.policyTypeId || form.sources.length === 0 || form.rules.length === 0}
+              disabled={saving || !form.policyTypeId || form.sources.length === 0 || !form.roomTypeIds?.length || form.rules.length === 0}
               onClick={() => void onSave(form)}
             >
               {saving ? t("modal.actions.saving") : isEdit ? t("modal.actions.saveChanges") : t("modal.actions.addPolicy")}
@@ -573,6 +553,8 @@ export function CancellationPoliciesPage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [formError, setFormError] = useState("");
+  const [policyToDelete, setPolicyToDelete] = useState<CancellationPolicy | null>(null);
+  const [deleteError, setDeleteError] = useState("");
   const [reload, setReload] = useState(0);
   const limit = 20;
   const [modal, setModal] = useState<ModalState>({
@@ -580,6 +562,15 @@ export function CancellationPoliciesPage() {
     mode: "add",
     policy: blankPolicy(),
   });
+
+  useEffect(() => {
+    if (!policyToDelete) return;
+    function onKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape" && !busyId) setPolicyToDelete(null);
+    }
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [policyToDelete, busyId]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -676,6 +667,22 @@ export function CancellationPoliciesPage() {
       setReload((current) => current + 1);
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : t("messages.statusChangeFailed"));
+    } finally {
+      setBusyId("");
+    }
+  }
+
+  async function confirmDelete() {
+    const policy = policyToDelete;
+    if (!policy) return;
+    setBusyId(policy.id);
+    setDeleteError("");
+    try {
+      await deletePolicy(policy.id);
+      setPolicyToDelete(null);
+      setReload((current) => current + 1);
+    } catch (cause) {
+      setDeleteError(cause instanceof Error ? cause.message : t("messages.deleteFailed"));
     } finally {
       setBusyId("");
     }
@@ -790,7 +797,7 @@ export function CancellationPoliciesPage() {
                       </td>
                       <td className="cp-table__td cp-table__td--room">
                         {policy.roomTypes.length === 0 ? (
-                          <span className="campaign-room-all">{t("table.allRoomTypes")}</span>
+                          <span className="campaign-room-all">{t("table.noRoomTypes")}</span>
                         ) : (
                           formatRoomTypes(policy)
                         )}
@@ -819,6 +826,14 @@ export function CancellationPoliciesPage() {
                             onClick={() => void handleStatus(policy)}
                           >
                             {policy.status === "Active" ? t("actions.disable") : t("actions.enable")}
+                          </button>
+                          <button
+                            type="button"
+                            className="text-action cp-text-action--danger"
+                            disabled={busyId === policy.id}
+                            onClick={() => { setDeleteError(""); setPolicyToDelete(policy); }}
+                          >
+                            {t("actions.delete")}
                           </button>
                         </div>
                       </td>
@@ -875,6 +890,24 @@ export function CancellationPoliciesPage() {
           error={formError}
           t={t}
         />
+      )}
+      {policyToDelete && (
+        <div className="cp-delete-overlay">
+          <section className="cp-delete-dialog" role="dialog" aria-modal="true" aria-labelledby="cp-delete-title" aria-describedby="cp-delete-description">
+            <h2 id="cp-delete-title">{t("deleteDialog.title")}</h2>
+            <p id="cp-delete-description">{t("deleteDialog.description")}</p>
+            <dl className="cp-delete-dialog__details">
+              <div><dt>{t("table.policyName")}</dt><dd>{policyToDelete.name}</dd></div>
+              <div><dt>{t("table.roomType")}</dt><dd>{policyToDelete.roomTypes.length ? policyToDelete.roomTypes.join(", ") : t("table.noRoomTypes")}</dd></div>
+              <div><dt>{t("table.stayPeriod")}</dt><dd>{formatStayPeriod(policyToDelete)}</dd></div>
+            </dl>
+            {deleteError && <p className="cp-delete-dialog__error" role="alert">{deleteError}</p>}
+            <div className="cp-delete-dialog__actions">
+              <button type="button" autoFocus disabled={busyId === policyToDelete.id} onClick={() => setPolicyToDelete(null)}>{t("deleteDialog.cancel")}</button>
+              <button type="button" className="cp-delete-dialog__confirm" disabled={busyId === policyToDelete.id} onClick={() => void confirmDelete()}>{busyId === policyToDelete.id ? t("deleteDialog.deleting") : t("deleteDialog.confirm")}</button>
+            </div>
+          </section>
+        </div>
       )}
     </AdminShell>
   );

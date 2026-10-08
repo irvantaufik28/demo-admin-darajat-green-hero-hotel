@@ -13,6 +13,7 @@
     "edit": "Edit",
     "enable": "Enable",
     "disable": "Disable",
+    "delete": "Delete",
     "previous": "Previous",
     "next": "Next"
   },
@@ -37,7 +38,8 @@
     "cancellationPolicy": "Cancellation Policy",
     "status": "Status",
     "action": "Action",
-    "allRoomTypes": "All Room Types"
+    "allRoomTypes": "All Room Types",
+    "noRoomTypes": "No room types assigned"
   },
   "status": {
     "active": "Active",
@@ -56,7 +58,15 @@
     "policiesLoadFailed": "Failed to load policies.",
     "detailLoadFailed": "Failed to load policy detail.",
     "saveFailed": "Failed to save policy.",
-    "statusChangeFailed": "Failed to change policy status."
+    "statusChangeFailed": "Failed to change policy status.",
+    "deleteFailed": "Failed to delete policy."
+  },
+  "deleteDialog": {
+    "title": "Delete Cancellation Policy?",
+    "description": "Review the policy details before deleting. This action cannot be undone.",
+    "cancel": "Cancel",
+    "confirm": "Delete Policy",
+    "deleting": "Deleting..."
   },
   "modal": {
     "titleAdd": "Add Cancellation Policy",
@@ -83,6 +93,7 @@
       "sourcePhone": "Phone",
       "sourceHint": "Pick one or both. The policy applies to the selected channels.",
       "selectAll": "Select All",
+      "roomTypeHint": "Select at least one room type. A new policy replaces the active policy for the same room type.",
       "applyToAllDates": "Apply to All Dates",
       "from": "From",
       "to": "To",

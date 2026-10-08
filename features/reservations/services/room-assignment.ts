@@ -27,6 +27,7 @@ export type RoomAssignmentOptions = {
     roomTypeName: string;
     roomUnitId: string | null;
   };
+  rooms: { id: string; adults: number; children: number }[];
   options: RoomAssignmentOption[];
 };
 
@@ -54,5 +55,17 @@ export function assignReservationRoom(
   return apiRequest(
     `${assignmentPath(reservationId, reservationRoomId)}/assignment`,
     { method: "PATCH", body: { roomUnitId, expectedVersion } },
+  );
+}
+
+export function assignReservationRoomsByType(
+  reservationId: string,
+  reservationRoomId: string,
+  assignments: { reservationRoomId: string; roomUnitId: string }[],
+  expectedVersion: number,
+) {
+  return apiRequest(
+    `${assignmentPath(reservationId, reservationRoomId)}/assignments`,
+    { method: "PATCH", body: { assignments, expectedVersion } },
   );
 }

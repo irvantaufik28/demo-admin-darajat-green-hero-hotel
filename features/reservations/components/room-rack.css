@@ -900,7 +900,48 @@
   font-size: 13px;
 }
 .rr-assign-room-modal {
-  width: min(100%, 560px);
+  width: min(100%, 680px);
+}
+.rr-assign-room-rows {
+  display: grid;
+  gap: 10px;
+}
+.rr-assign-room-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(220px, 1.4fr);
+  align-items: center;
+  gap: 16px;
+  padding: 12px 14px;
+  border: 1px solid #dce6dd;
+  border-radius: 8px;
+  background: #fff;
+}
+.rr-assign-room-row > span {
+  display: grid;
+  gap: 3px;
+}
+.rr-assign-room-row strong {
+  font-size: 14px;
+}
+.rr-assign-room-row small {
+  color: #68746c;
+  font-size: 12px;
+}
+.rr-assign-room-row select {
+  width: 100%;
+  min-width: 0;
+  min-height: 40px;
+  padding: 8px 10px;
+  border: 1px solid #cbd5ce;
+  border-radius: 7px;
+  background: #fff;
+  color: #173d31;
+}
+@media (max-width: 600px) {
+  .rr-assign-room-row {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
 }
 .rr-assign-room-context {
   display: grid;

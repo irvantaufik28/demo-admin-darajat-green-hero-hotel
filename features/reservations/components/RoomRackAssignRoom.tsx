@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { getCurrentUser } from "../../../lib/auth";
 import {
-  assignReservationRoom,
+  assignReservationRoomsByType,
   getRoomAssignmentOptions,
   type RoomAssignmentOptions,
 } from "../services/room-assignment";
@@ -32,18 +32,20 @@ export function RoomRackAssignRoom({ reservationId, reservationRoomId, onUpdated
   const { t } = useTranslations({ en, id });
   const [open, setOpen] = useState(false);
   const [options, setOptions] = useState<RoomAssignmentOptions | null>(null);
-  const [selectedRoomUnitId, setSelectedRoomUnitId] = useState("");
+  const [selectedRoomUnitIds, setSelectedRoomUnitIds] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const allowed = getCurrentUser()?.permissions.includes("reservations.assign_room") ?? false;
   const availableOptions = options?.options.filter((option) => option.canAssign) ?? [];
+  const unassignedRooms = options?.rooms ?? [];
+  const allSelected = unassignedRooms.length > 0 && unassignedRooms.every((room) => selectedRoomUnitIds[room.id]);
 
   useEffect(() => {
     if (!open) return;
     const controller = new AbortController();
     setOptions(null);
-    setSelectedRoomUnitId("");
+    setSelectedRoomUnitIds({});
     setError("");
     setLoading(true);
     getRoomAssignmentOptions(reservationId, reservationRoomId, controller.signal)
@@ -56,20 +58,23 @@ export function RoomRackAssignRoom({ reservationId, reservationRoomId, onUpdated
   }, [open, reservationId, reservationRoomId]);
 
   async function save() {
-    if (!options || !selectedRoomUnitId || saving) return;
-    const selected = options.options.find((option) => option.id === selectedRoomUnitId);
-    if (!selected?.canAssign) return;
+    if (!options || !allSelected || saving) return;
+    const assignments = unassignedRooms.map((room) => ({
+      reservationRoomId: room.id,
+      roomUnitId: selectedRoomUnitIds[room.id],
+    }));
+    if (new Set(assignments.map((item) => item.roomUnitId)).size !== assignments.length) return;
     setSaving(true);
     setError("");
     try {
-      await assignReservationRoom(
+      await assignReservationRoomsByType(
         reservationId,
         reservationRoomId,
-        selectedRoomUnitId,
+        assignments,
         options.reservation.version,
       );
       setOpen(false);
-      await onUpdated(t("assignRoom.success", { roomNumber: selected.roomNumber }));
+      await onUpdated(t("assignRoom.successBatch", { count: assignments.length }));
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : t("assignRoom.errors.saveFailed"));
     } finally {
@@ -108,33 +113,40 @@ export function RoomRackAssignRoom({ reservationId, reservationRoomId, onUpdated
                     </div>
                     <div>
                       <small>{t("assignRoom.roomType")}</small>
-                      <strong>{options.room.roomTypeName}</strong>
+                      <strong>{options.room.roomTypeName} · {t("assignRoom.roomCount", { count: unassignedRooms.length })}</strong>
                     </div>
                     <div>
                       <small>{t("assignRoom.stayPeriod")}</small>
                       <strong>{dateLabel(options.reservation.checkInDate)} → {dateLabel(options.reservation.checkOutDate)}</strong>
                     </div>
                   </div>
-                  <p className="rr-assign-room-hint">{t("assignRoom.hint")}</p>
-                  <div className="rr-assign-room-options">
-                    {availableOptions.map((option) => (
-                      <label key={option.id} className="rr-assign-room-option">
-                        <input
-                          type="radio"
-                          name="rr-assign-room-unit"
-                          value={option.id}
-                          checked={selectedRoomUnitId === option.id}
-                          disabled={saving}
-                          onChange={() => setSelectedRoomUnitId(option.id)}
-                        />
-                        <span className="rr-assign-room-option__details">
-                          <strong>{t("assignRoom.roomLabel", { roomNumber: option.roomNumber })}</strong>
-                          <small>{[option.floorName, option.bedConfiguration].filter(Boolean).join(" · ") || t("assignRoom.roomUnitFallback")}</small>
+                  <p className="rr-assign-room-hint">{t("assignRoom.hintBatch")}</p>
+                  <div className="rr-assign-room-rows">
+                    {unassignedRooms.map((room, index) => (
+                      <label key={room.id} className="rr-assign-room-row">
+                        <span>
+                          <strong>{t("assignRoom.roomIndex", { index: index + 1 })}</strong>
+                          <small>{t("assignRoom.guestCount", { adults: room.adults, children: room.children })}</small>
                         </span>
-                        <span className="rr-assign-room-option__status">{t("assignRoom.available")}</span>
+                        <select
+                          value={selectedRoomUnitIds[room.id] ?? ""}
+                          disabled={saving}
+                          onChange={(event) => setSelectedRoomUnitIds((current) => ({ ...current, [room.id]: event.target.value }))}
+                        >
+                          <option value="">{t("assignRoom.selectRoomNumber")}</option>
+                          {availableOptions.map((option) => (
+                            <option
+                              key={option.id}
+                              value={option.id}
+                              disabled={Object.entries(selectedRoomUnitIds).some(([roomId, unitId]) => roomId !== room.id && unitId === option.id)}
+                            >
+                              {t("assignRoom.roomLabel", { roomNumber: option.roomNumber })}{option.floorName ? ` · ${option.floorName}` : ""}
+                            </option>
+                          ))}
+                        </select>
                       </label>
                     ))}
-                    {availableOptions.length === 0 && <p className="rr-assign-room-empty">{t("assignRoom.empty")}</p>}
+                    {availableOptions.length < unassignedRooms.length && <p className="rr-assign-room-empty">{t("assignRoom.insufficient", { available: availableOptions.length, required: unassignedRooms.length })}</p>}
                   </div>
                 </>
               )}
@@ -142,7 +154,7 @@ export function RoomRackAssignRoom({ reservationId, reservationRoomId, onUpdated
             </div>
             <div className="api-reservation-modal-footer">
               <button type="button" className="reservation-secondary-button" disabled={saving} onClick={() => setOpen(false)}>{t("common.cancel")}</button>
-              <button type="button" className="action-button" disabled={!options || !selectedRoomUnitId || loading || saving} onClick={() => void save()}>
+              <button type="button" className="action-button" disabled={!options || !allSelected || loading || saving} onClick={() => void save()}>
                 {saving ? t("common.saving") : t("assignRoom.saveAssignment")}
               </button>
             </div>

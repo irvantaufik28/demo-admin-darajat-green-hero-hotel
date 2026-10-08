@@ -14,6 +14,7 @@ export type ExperienceVariant = {
   description: string | null;
   price: number;
   sortOrder: number;
+  imageUrl: string | null;
 };
 
 export type ExperienceRecord = {
@@ -27,6 +28,7 @@ export type ExperienceRecord = {
   price: number;
   maxQuantity: number;
   imageUrl: string | null;
+  coverImageUrl: string | null;
   isActive: boolean;
   variants: ExperienceVariant[];
 };
@@ -39,9 +41,17 @@ export type ExperienceInput = {
   description: string | null;
   maxQuantity: number;
   imageUrl: string | null;
+  coverImageUrl: string | null;
   isActive: boolean;
-  variants: { subName: string; description: string | null; price: number }[];
+  variants: { subName: string; description: string | null; price: number; imageUrl: string | null }[];
 };
+
+export async function uploadExperiencePhoto(file: File): Promise<string> {
+  const body = new FormData();
+  body.set("file", file);
+  const result = await apiRequest<{ file: { url: string } }>("uploads", { method: "POST", body });
+  return result.file.url;
+}
 
 export function listExperiences(query: URLSearchParams, signal?: AbortSignal) {
   return apiRequest<{

@@ -7,11 +7,13 @@ import type {
   ExperienceInput,
   ExperienceRecord,
 } from "../services/experiences";
+import { uploadExperiencePhoto } from "../services/experiences";
+import { ExperiencePhotoField } from "./ExperiencePhotoField";
 import { useTranslations } from "../../../lib/i18n";
 import en from "../locales/en.json";
 import id from "../locales/id.json";
 
-type VariantDraft = { key: string; subName: string; description: string; price: string };
+type VariantDraft = { key: string; subName: string; description: string; price: string; imageUrl: string | null };
 type Draft = Omit<ExperienceInput, "variants"> & { variants: VariantDraft[] };
 
 type Props = {
@@ -42,12 +44,14 @@ function initialDraft(initial: ExperienceRecord | null): Draft {
         description: initial.description,
         maxQuantity: initial.maxQuantity,
         imageUrl: initial.imageUrl,
+        coverImageUrl: initial.coverImageUrl,
         isActive: initial.isActive,
         variants: initial.variants.map((variant) => ({
           key: variant.id,
           subName: variant.subName,
           description: variant.description ?? "",
           price: String(variant.price),
+          imageUrl: variant.imageUrl,
         })),
       }
     : {
@@ -58,8 +62,9 @@ function initialDraft(initial: ExperienceRecord | null): Draft {
         description: "",
         maxQuantity: 1,
         imageUrl: null,
+        coverImageUrl: null,
         isActive: true,
-        variants: [{ key: "first", subName: "", description: "", price: "" }],
+        variants: [{ key: "first", subName: "", description: "", price: "", imageUrl: null }],
       };
 }
 
@@ -67,20 +72,58 @@ export function ExperienceModal({ initial, categories, saving, error, onClose, o
   const { t } = useTranslations({ en, id });
   const [form, setForm] = useState<Draft>(() => initialDraft(initial));
   const [validation, setValidation] = useState("");
+  const [uploadingKeys, setUploadingKeys] = useState<string[]>([]);
+  const busy = saving || uploadingKeys.length > 0;
   const overlayRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    setForm(initialDraft(initial));
-    setValidation("");
-  }, [initial]);
-
-  useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
-      if (event.key === "Escape" && !saving) onClose();
+      if (event.key === "Escape" && !busy) onClose();
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [onClose, saving]);
+  }, [onClose, busy]);
+
+  async function uploadPhoto(key: string, file: File) {
+    setValidation("");
+    if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
+      setValidation(t("modal.validation.invalidPhotoType"));
+      return;
+    }
+    if (file.size > 4_000_000) {
+      setValidation(t("modal.validation.photoTooLarge"));
+      return;
+    }
+    setUploadingKeys((current) => [...current, key]);
+    try {
+      const url = await uploadExperiencePhoto(file);
+      if (key === "banner" || key === "cover") {
+        setForm((current) => ({ ...current, [key === "banner" ? "imageUrl" : "coverImageUrl"]: url }));
+      } else {
+        setForm((current) => ({ ...current, variants: current.variants.map((variant) =>
+          variant.key === key ? { ...variant, imageUrl: url } : variant,
+        ) }));
+      }
+    } catch (cause) {
+      setValidation(cause instanceof Error ? cause.message : t("modal.validation.uploadFailed"));
+    } finally {
+      setUploadingKeys((current) => current.filter((item) => item !== key));
+    }
+  }
+
+  function photoProps(id: string, title: string, recommendation: string, imageUrl: string | null, onRemove: () => void) {
+    return {
+      id: `exp-photo-${id}`, title, recommendation, imageUrl,
+      noPhoto: t("modal.fields.noPhoto"),
+      choosePhoto: t("modal.fields.choosePhoto"),
+      replacePhoto: t("modal.fields.replacePhoto"),
+      removePhoto: t("modal.fields.removePhoto"),
+      uploadingLabel: t("modal.fields.uploadingPhoto"),
+      uploading: uploadingKeys.includes(id), disabled: busy,
+      onSelect: (file: File) => { void uploadPhoto(id, file); },
+      onRemove,
+    };
+  }
 
   function setName(name: string) {
     setForm((current) => ({
@@ -102,6 +145,7 @@ export function ExperienceModal({ initial, categories, saving, error, onClose, o
   }
 
   function submit() {
+    if (busy) return;
     setValidation("");
     if (!form.name.trim() || !form.categoryId || !form.code.trim() || !form.slug.trim()) {
       setValidation(t("modal.validation.requireBasics"));
@@ -128,11 +172,13 @@ export function ExperienceModal({ initial, categories, saving, error, onClose, o
       description: form.description?.trim() || null,
       maxQuantity: form.maxQuantity,
       imageUrl: form.imageUrl?.trim() || null,
+      coverImageUrl: form.coverImageUrl?.trim() || null,
       isActive: form.isActive,
       variants: form.variants.map((variant) => ({
         subName: variant.subName.trim(),
         description: variant.description.trim() || null,
         price: Number(variant.price),
+        imageUrl: variant.imageUrl,
       })),
     });
   }
@@ -144,7 +190,7 @@ export function ExperienceModal({ initial, categories, saving, error, onClose, o
       role="dialog"
       aria-modal="true"
       aria-label={initial ? t("modal.titleEdit") : t("modal.titleAdd")}
-      onClick={(event) => { if (event.target === overlayRef.current && !saving) onClose(); }}
+      onClick={(event) => { if (event.target === overlayRef.current && !busy) onClose(); }}
     >
       <div className="exp-modal exp-modal--variants">
         <div className="exp-modal__header">
@@ -152,7 +198,7 @@ export function ExperienceModal({ initial, categories, saving, error, onClose, o
             <Icon name="experiences" width={18} height={18} className="exp-modal__header-icon" />
             <h3>{initial ? t("modal.titleEdit") : t("modal.titleAdd")}</h3>
           </div>
-          <button type="button" className="exp-modal__close" disabled={saving} onClick={onClose} aria-label={t("modal.closeAria")}>
+          <button type="button" className="exp-modal__close" disabled={busy} onClick={onClose} aria-label={t("modal.closeAria")}>
             <Icon name="close" width={18} height={18} />
           </button>
         </div>
@@ -191,7 +237,7 @@ export function ExperienceModal({ initial, categories, saving, error, onClose, o
               <div><span className="exp-modal-label">{t("modal.fields.packagesAndPrices")} <span className="exp-required">{t("modal.required")}</span></span>
                 <p>{t("modal.fields.packagesHint")}</p></div>
               <button type="button" className="cf-add-blackout" disabled={form.variants.length >= 100}
-                onClick={() => setForm((current) => ({ ...current, variants: [...current.variants, { key: crypto.randomUUID(), subName: "", description: "", price: "" }] }))}>
+                onClick={() => setForm((current) => ({ ...current, variants: [...current.variants, { key: crypto.randomUUID(), subName: "", description: "", price: "", imageUrl: null }] }))}>
                 <Icon name="plus" width={14} height={14} /> {t("modal.fields.addPackage")}
               </button>
             </div>
@@ -201,7 +247,7 @@ export function ExperienceModal({ initial, categories, saving, error, onClose, o
                   <div className="exp-variant-card__heading">
                     <strong>{t("modal.fields.packageHeading", { index: index + 1 })}</strong>
                     <button type="button" className="exp-variant-remove" aria-label={t("modal.fields.removePackageAria", { index: index + 1 })}
-                      disabled={form.variants.length === 1}
+                      disabled={form.variants.length === 1 || busy}
                       onClick={() => setForm((current) => ({ ...current, variants: current.variants.filter((item) => item.key !== variant.key) }))}>
                       <Icon name="trash" width={15} height={15} />
                     </button>
@@ -227,6 +273,15 @@ export function ExperienceModal({ initial, categories, saving, error, onClose, o
                       value={variant.description} onChange={(event) => updateVariant(variant.key, "description", event.target.value)}
                       placeholder={t("modal.fields.descriptionPlaceholder")} />
                   </div>
+                  <ExperiencePhotoField {...photoProps(
+                    variant.key,
+                    t("modal.fields.packagePhoto"),
+                    t("modal.fields.packagePhotoRecommendation"),
+                    variant.imageUrl,
+                    () => setForm((current) => ({ ...current, variants: current.variants.map((item) =>
+                      item.key === variant.key ? { ...item, imageUrl: null } : item,
+                    ) })),
+                  )} />
                 </div>
               ))}
             </div>
@@ -238,11 +293,13 @@ export function ExperienceModal({ initial, categories, saving, error, onClose, o
               <input id="exp-max-quantity" className="exp-modal-input" type="number" min={1} max={32767}
                 value={form.maxQuantity} onChange={(event) => setForm((current) => ({ ...current, maxQuantity: Math.max(1, Number(event.target.value)) }))} />
             </div>
-            <div className="exp-modal-field">
-              <label className="exp-modal-label" htmlFor="exp-image-url">{t("modal.fields.imageUrl")}</label>
-              <input id="exp-image-url" className="exp-modal-input" value={form.imageUrl ?? ""}
-                onChange={(event) => setForm((current) => ({ ...current, imageUrl: event.target.value }))} placeholder={t("modal.fields.imageUrlPlaceholder")} />
-            </div>
+          </div>
+
+          <div className="exp-modal-2col">
+            <ExperiencePhotoField {...photoProps("banner", t("modal.fields.bannerPhoto"), t("modal.fields.bannerPhotoRecommendation"), form.imageUrl,
+              () => setForm((current) => ({ ...current, imageUrl: null })))} />
+            <ExperiencePhotoField {...photoProps("cover", t("modal.fields.coverPhoto"), t("modal.fields.coverPhotoRecommendation"), form.coverImageUrl,
+              () => setForm((current) => ({ ...current, coverImageUrl: null })))} />
           </div>
 
           <div className="exp-modal-2col">
@@ -276,8 +333,8 @@ export function ExperienceModal({ initial, categories, saving, error, onClose, o
 
         <div className="exp-modal__footer">
           {(validation || error) && <span className="exp-modal-error" role="alert">{validation || error}</span>}
-          <button type="button" className="exp-btn-cancel" disabled={saving} onClick={onClose}>{t("modal.actions.cancel")}</button>
-          <button type="button" className="exp-btn-save" disabled={saving} onClick={submit}>
+          <button type="button" className="exp-btn-cancel" disabled={busy} onClick={onClose}>{t("modal.actions.cancel")}</button>
+          <button type="button" className="exp-btn-save" disabled={busy} onClick={submit}>
             {saving ? t("modal.actions.saving") : initial ? t("modal.actions.saveChanges") : t("modal.actions.saveExperience")}
           </button>
         </div>

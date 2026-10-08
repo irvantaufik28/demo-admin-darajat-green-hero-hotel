@@ -84,8 +84,17 @@
       "description": "Description",
       "descriptionPlaceholder": "Fill in the package contents and terms",
       "maxQuantity": "Max Quantity",
-      "imageUrl": "Image URL",
-      "imageUrlPlaceholder": "https://...",
+      "bannerPhoto": "Banner Photo",
+      "bannerPhotoRecommendation": "Recommended 1920 × 720 px · JPG, PNG, WebP · max. 4 MB",
+      "coverPhoto": "Cover Photo",
+      "coverPhotoRecommendation": "Recommended 1200 × 800 px · JPG, PNG, WebP · max. 4 MB",
+      "packagePhoto": "Package Photo",
+      "packagePhotoRecommendation": "Recommended 1000 × 750 px · JPG, PNG, WebP · max. 4 MB",
+      "noPhoto": "No photo",
+      "choosePhoto": "Choose photo",
+      "replacePhoto": "Replace photo",
+      "removePhoto": "Remove photo",
+      "uploadingPhoto": "Uploading photo...",
       "code": "Code",
       "slug": "Slug",
       "status": "Status",
@@ -103,7 +112,10 @@
       "requireBasics": "Fill in the name, category, code, and slug of the experience.",
       "requirePackageNameAndPrice": "Every package must have a name and price.",
       "duplicatePackageName": "Package names within one experience must be unique.",
-      "invalidPrice": "Package prices must be whole non-negative numbers."
+      "invalidPrice": "Package prices must be whole non-negative numbers.",
+      "invalidPhotoType": "Use a JPG, PNG, or WebP photo.",
+      "photoTooLarge": "Photo size must be at most 4 MB.",
+      "uploadFailed": "Photo upload failed."
     }
   },
   "form": {

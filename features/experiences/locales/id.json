@@ -84,8 +84,17 @@
       "description": "Deskripsi",
       "descriptionPlaceholder": "Isi paket dan ketentuannya",
       "maxQuantity": "Jumlah Maksimum",
-      "imageUrl": "URL Gambar",
-      "imageUrlPlaceholder": "https://...",
+      "bannerPhoto": "Foto Banner",
+      "bannerPhotoRecommendation": "Rekomendasi 1920 × 720 px · JPG, PNG, WebP · maks. 4 MB",
+      "coverPhoto": "Foto Cover",
+      "coverPhotoRecommendation": "Rekomendasi 1200 × 800 px · JPG, PNG, WebP · maks. 4 MB",
+      "packagePhoto": "Foto Paket",
+      "packagePhotoRecommendation": "Rekomendasi 1000 × 750 px · JPG, PNG, WebP · maks. 4 MB",
+      "noPhoto": "Belum ada foto",
+      "choosePhoto": "Pilih foto",
+      "replacePhoto": "Ganti foto",
+      "removePhoto": "Hapus foto",
+      "uploadingPhoto": "Mengunggah foto...",
       "code": "Kode",
       "slug": "Slug",
       "status": "Status",
@@ -103,7 +112,10 @@
       "requireBasics": "Isi nama, kategori, kode, dan slug experience.",
       "requirePackageNameAndPrice": "Setiap paket harus memiliki nama dan harga.",
       "duplicatePackageName": "Nama paket dalam satu experience tidak boleh sama.",
-      "invalidPrice": "Harga paket harus berupa angka bulat yang tidak negatif."
+      "invalidPrice": "Harga paket harus berupa angka bulat yang tidak negatif.",
+      "invalidPhotoType": "Gunakan foto JPG, PNG, atau WebP.",
+      "photoTooLarge": "Ukuran foto maksimal 4 MB.",
+      "uploadFailed": "Foto gagal diunggah."
     }
   },
   "form": {

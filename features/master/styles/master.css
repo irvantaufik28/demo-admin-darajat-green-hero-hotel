@@ -89,6 +89,17 @@
 .master-table td strong {
   font-weight: 650;
 }
+.master-table-icon { width: 68px; color: var(--primary); }
+.master-icon-picker { margin: 16px 0 0; padding: 0; border: 0; }
+.master-page .roles-modal { max-height: calc(100dvh - 40px); overflow-y: auto; }
+.master-icon-picker legend { margin-bottom: 8px; font-size: 12px; font-weight: 650; }
+.master-icon-search { width: 100%; margin-bottom: 9px; }
+.master-icon-empty { margin: 8px 0 0 !important; }
+.master-icon-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 7px; max-height: 185px; overflow-y: auto; }
+.master-icon-grid button { min-height: 40px; display: grid; place-items: center; padding: 5px; border: 1px solid var(--border); border-radius: 5px; background: white; color: var(--primary); font: inherit; font-size: 10px; cursor: pointer; }
+.master-icon-grid button:first-child { grid-column: span 2; }
+.master-icon-grid button.is-selected { border-color: var(--primary); background: #e8f0e9; box-shadow: inset 0 0 0 1px var(--primary); }
+.master-icon-grid button:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
 .master-table th:last-child,
 .master-table td:last-child {
   width: 140px;

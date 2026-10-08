@@ -78,6 +78,7 @@
     "table": {
       "no": "No.",
       "name": "Name",
+      "icon": "Icon",
       "action": "Action"
     },
     "inactive": "Inactive",
@@ -100,7 +101,11 @@
       "addTitle": "Add {category}",
       "editTitle": "Edit {category}",
       "description": "Enter the name to display in {category}.",
-      "name": "Name"
+      "name": "Name",
+      "icon": "Icon",
+      "noIcon": "No icon",
+      "searchIcon": "Search icons...",
+      "noIconMatches": "No matching icons."
     }
   }
 }

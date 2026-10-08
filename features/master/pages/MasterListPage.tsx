@@ -7,6 +7,7 @@ import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { AdminShell } from "../../../components/layout/AdminShell";
 import { restoreSession } from "../../../lib/auth";
 import { masterCategories } from "../constants/master-data";
+import { masterIconByKey, masterIcons } from "../constants/master-icons";
 import {
   createMasterItem,
   deleteMasterItem,
@@ -18,14 +19,21 @@ import { useTranslations } from "../../../lib/i18n";
 import en from "../locales/en.json";
 import id from "../locales/id.json";
 
+function MasterItemIcon({ iconKey }: { iconKey: string | null }) {
+  const Icon = iconKey ? masterIconByKey[iconKey] : null;
+  return Icon ? <Icon size={19} aria-label={iconKey ?? undefined} /> : <>—</>;
+}
+
 export function MasterListPage({ categorySlug }: { categorySlug: string }) {
-  const { t } = useTranslations({ en, id });
+  const { t, lang } = useTranslations({ en, id });
   const category = masterCategories.find((item) => item.slug === categorySlug);
   const [items, setItems] = useState<MasterItem[]>([]);
   const [search, setSearch] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [name, setName] = useState("");
+  const [iconKey, setIconKey] = useState<string | null>(null);
+  const [iconSearch, setIconSearch] = useState("");
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const [loadError, setLoadError] = useState("");
@@ -36,6 +44,8 @@ export function MasterListPage({ categorySlug }: { categorySlug: string }) {
   const visible = useMemo(() => items.filter((item) =>
     item.name.toLowerCase().includes(search.trim().toLowerCase())),
   [items, search]);
+  const visibleIcons = masterIcons.filter(({ key, nameId, nameEn }) =>
+    `${key} ${nameId} ${nameEn}`.toLowerCase().includes(iconSearch.trim().toLowerCase()));
 
   useEffect(() => {
     if (!category) return;
@@ -73,6 +83,8 @@ export function MasterListPage({ categorySlug }: { categorySlug: string }) {
   function openAdd() {
     setEditingId(null);
     setName("");
+    setIconKey(null);
+    setIconSearch("");
     setError("");
     setModalOpen(true);
   }
@@ -80,6 +92,8 @@ export function MasterListPage({ categorySlug }: { categorySlug: string }) {
   function openEdit(item: MasterItem) {
     setEditingId(item.id);
     setName(item.name);
+    setIconKey(item.iconKey);
+    setIconSearch("");
     setError("");
     setModalOpen(true);
   }
@@ -100,8 +114,8 @@ export function MasterListPage({ categorySlug }: { categorySlug: string }) {
     setError("");
     try {
       const response = editingId === null
-        ? await createMasterItem(categorySlug, trimmed)
-        : await updateMasterItem(categorySlug, editingId, trimmed);
+        ? await createMasterItem(categorySlug, trimmed, iconKey)
+        : await updateMasterItem(categorySlug, editingId, trimmed, iconKey);
       setItems((current) => {
         const next = editingId === null
           ? [...current, response.item]
@@ -156,10 +170,10 @@ export function MasterListPage({ categorySlug }: { categorySlug: string }) {
           </div>}
           <div className="master-table-scroll">
             <table className="master-table">
-              <thead><tr><th>{t("list.table.no")}</th><th>{t("list.table.name")}</th><th>{t("list.table.action")}</th></tr></thead>
+              <thead><tr><th>{t("list.table.no")}</th><th>{t("list.table.icon")}</th><th>{t("list.table.name")}</th><th>{t("list.table.action")}</th></tr></thead>
               <tbody>
                 {!loading && visible.map((item, index) => <tr key={item.id}>
-                  <td>{index + 1}</td><td><strong>{item.name}</strong>{!item.isActive && <span className="master-inactive">{t("list.inactive")}</span>}</td>
+                  <td>{index + 1}</td><td className="master-table-icon"><MasterItemIcon iconKey={item.iconKey} /></td><td><strong>{item.name}</strong>{!item.isActive && <span className="master-inactive">{t("list.inactive")}</span>}</td>
                   <td><div className="master-row-actions">
                     <button type="button" onClick={() => openEdit(item)}>{t("common.edit")}</button>
                     <button type="button" disabled={deletingId === item.id} onClick={() => void remove(item)}>
@@ -167,7 +181,7 @@ export function MasterListPage({ categorySlug }: { categorySlug: string }) {
                     </button>
                   </div></td>
                 </tr>)}
-                {(loading || visible.length === 0) && <tr><td colSpan={3} className="master-empty">
+                {(loading || visible.length === 0) && <tr><td colSpan={4} className="master-empty">
                   {loading ? <LoadingSkeleton /> : loadError ? t("list.errors.unableToLoad") : t("list.empty")}
                 </td></tr>}
               </tbody>
@@ -187,6 +201,17 @@ export function MasterListPage({ categorySlug }: { categorySlug: string }) {
               <input autoFocus value={name} maxLength={80} disabled={saving}
                 onChange={(event) => { setName(event.target.value); setError(""); }} />
             </label>
+            <fieldset className="master-icon-picker" disabled={saving}>
+              <legend>{t("list.modal.icon")}</legend>
+              <input className="master-icon-search" type="search" aria-label={t("list.modal.searchIcon")}
+                placeholder={t("list.modal.searchIcon")} value={iconSearch}
+                onChange={(event) => setIconSearch(event.target.value)} />
+              <div className="master-icon-grid">
+                <button type="button" className={iconKey === null ? "is-selected" : ""} aria-pressed={iconKey === null} onClick={() => setIconKey(null)}>{t("list.modal.noIcon")}</button>
+                {visibleIcons.map(({ key, nameId, nameEn, Icon }) => <button key={key} type="button" title={lang === "id" ? nameId : nameEn} aria-label={lang === "id" ? nameId : nameEn} aria-pressed={iconKey === key} className={iconKey === key ? "is-selected" : ""} onClick={() => setIconKey(key)}><Icon size={20} /></button>)}
+              </div>
+              {visibleIcons.length === 0 && <p className="master-icon-empty">{t("list.modal.noIconMatches")}</p>}
+            </fieldset>
             {error && <span className="roles-form-error" role="alert">{error}</span>}
             <footer>
               <button type="button" disabled={saving} onClick={() => setModalOpen(false)}>{t("common.cancel")}</button>

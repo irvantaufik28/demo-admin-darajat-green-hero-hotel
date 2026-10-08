@@ -78,6 +78,7 @@
     "table": {
       "no": "No.",
       "name": "Nama",
+      "icon": "Ikon",
       "action": "Aksi"
     },
     "inactive": "Tidak Aktif",
@@ -100,7 +101,11 @@
       "addTitle": "Tambah {category}",
       "editTitle": "Ubah {category}",
       "description": "Masukkan nama yang akan ditampilkan di {category}.",
-      "name": "Nama"
+      "name": "Nama",
+      "icon": "Ikon",
+      "noIcon": "Tanpa ikon",
+      "searchIcon": "Cari ikon...",
+      "noIconMatches": "Ikon tidak ditemukan."
     }
   }
 }

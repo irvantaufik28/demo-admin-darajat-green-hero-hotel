@@ -529,7 +529,8 @@
     "savedTitle": "Reservation saved successfully",
     "bookingId": "Booking ID {bookingId}",
     "bookingIdLabel": "Booking ID ",
-    "viewList": "View reservation list"
+    "viewList": "View reservation list",
+    "backToRoomRack": "Back to reservation calendar"
   },
   "audit": {
     "title": "Audit Trail",
@@ -1228,6 +1229,14 @@
     }
   },
   "roomRack": {
+    "missedArrival": "Missed arrival",
+    "overdueUnassignedTitle": "Past stays with unassigned rooms",
+    "overdueUnassignedDescription": "These confirmed reservations have reached checkout without every room being assigned. Review them separately from today's room inventory.",
+    "reviewReservation": "Review reservation",
+    "overdueUnassignedMore": "Showing the 50 most recent room types. Use Reservations for older records.",
+    "unassignedLabel": "Unassigned",
+    "unassignedCount": "{count} unassigned",
+    "unassignedAria": "{guest}, {count} rooms unassigned, {checkIn} to {checkOut}",
     "eyebrow": "FRONT DESK · TAPE CHART",
     "heading": "Room Rack",
     "description": "Visual 14-day availability grid for arrivals, in-house stays, and blocks.",

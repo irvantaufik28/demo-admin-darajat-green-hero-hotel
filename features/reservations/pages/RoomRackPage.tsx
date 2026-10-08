@@ -260,6 +260,29 @@ export function RoomRackPage() {
     setRefreshKey((value) => value + 1);
   }
 
+  function openOverdueUnassigned(item: NonNullable<RoomRackResponse["overdueUnassigned"]>[number]) {
+    const group = roomTypeGroups.find((candidate) => candidate.id === item.roomTypeId);
+    if (!group) return;
+    const source = item.source === "walk_in" ? "Walk-in" : item.source === "phone" ? "Phone" : item.source === "website" ? "Website" : "OTA";
+    setSelected({
+      res: {
+        id: item.bookingCode,
+        reservationId: item.reservationId,
+        reservationRoomId: item.reservationRoomId,
+        guestName: item.guestName,
+        source,
+        status: "confirmed",
+        reservationStatus: "confirmed",
+        paymentStatus: item.paymentStatus,
+        operationalStatus: { code: "missed_arrival", label: t("roomRack.missedArrival") },
+        checkIn: item.checkInDate,
+        checkOut: item.checkOutDate,
+      },
+      room: null,
+      group,
+    });
+  }
+
   const visibleGroups = roomTypeFilter === "all"
     ? roomTypeGroups
     : roomTypeGroups.filter((group) => group.id === roomTypeFilter);
@@ -493,6 +516,29 @@ export function RoomRackPage() {
 
         {error && <div className="rr-load-error" role="alert">{error} <button type="button" onClick={() => setRefreshKey((value) => value + 1)}>Try again</button></div>}
 
+        {!!rack?.overdueUnassigned?.length && (
+          <section className="rr-overdue-unassigned" aria-labelledby="rr-overdue-unassigned-title">
+            <div className="rr-overdue-unassigned__heading">
+              <h2 id="rr-overdue-unassigned-title">{t("roomRack.overdueUnassignedTitle")}</h2>
+              <p>{t("roomRack.overdueUnassignedDescription")}</p>
+            </div>
+            <div className="rr-overdue-unassigned__list">
+              {rack.overdueUnassigned.map((item) => (
+                <button
+                  key={`${item.reservationId}:${item.roomTypeId}`}
+                  type="button"
+                  onClick={() => openOverdueUnassigned(item)}
+                >
+                  <strong>{item.bookingCode} · {item.guestName}</strong>
+                  <span>{item.roomTypeName} · {t("roomRack.unassignedCount", { count: item.unassignedRooms })} · {item.checkInDate} → {item.checkOutDate}</span>
+                  <b>{t("roomRack.reviewReservation")}</b>
+                </button>
+              ))}
+            </div>
+            {rack.overdueUnassignedHasMore && <p className="rr-overdue-unassigned__more">{t("roomRack.overdueUnassignedMore")}</p>}
+          </section>
+        )}
+
         {/* Body: chart + detail */}
         <div className={selected ? "room-rack__body" : "room-rack__body room-rack__body--full"}>
           <div className="rr-chart" aria-busy={loading}>
@@ -525,6 +571,7 @@ export function RoomRackPage() {
                 {visibleGroups.map((group) => (
                   <RoomGroup
                     key={group.id ?? group.name}
+                    t={t}
                     group={group}
                     window={window}
                     todayISO={todayISO}
@@ -565,7 +612,15 @@ export function RoomRackPage() {
 
         {/* Drag-to-create booking form */}
         {booking && (
-          <NewBookingForm draft={booking} onClose={() => setBooking(null)} />
+          <NewBookingForm
+            draft={booking}
+            onClose={() => setBooking(null)}
+            onComplete={() => {
+              setBooking(null);
+              setPending(null);
+              setRefreshKey((value) => value + 1);
+            }}
+          />
         )}
         {cleaningRoom && (
           <RoomRackCleaningModal
@@ -584,6 +639,7 @@ export function RoomRackPage() {
 }
 
 function RoomGroup({
+  t,
   group,
   window,
   todayISO,
@@ -598,6 +654,7 @@ function RoomGroup({
   onPendingClick,
   onCleaningClick,
 }: {
+  t: Translate;
   group: RoomTypeGroup;
   window: Date[];
   todayISO: string;
@@ -613,6 +670,13 @@ function RoomGroup({
   onCleaningClick: (room: RoomUnit) => void;
 }) {
   const [collapsed, setCollapsed] = useState(false);
+  const unassignedByBooking = new Map<string, Reservation[]>();
+  for (const reservation of group.unassignedReservations.filter((item) => matchesReservation(item))) {
+    const key = reservation.reservationId ?? reservation.id;
+    const rooms = unassignedByBooking.get(key) ?? [];
+    rooms.push(reservation);
+    unassignedByBooking.set(key, rooms);
+  }
 
   return (
     <>
@@ -802,53 +866,49 @@ function RoomGroup({
         </div>
         );
       })}
-      {group.unassignedReservations.some((res) => matchesReservation(res)) && (
-        <div
-          className={`rr-room-row${collapsed ? " rr-room-row--collapsed" : ""}`}
-          style={{ display: "contents" }}
-          aria-hidden={collapsed}
-          inert={collapsed}
-        >
-          <div className="rr-room-cell rr-room-cell--unassigned">
-            <div className="rr-room-cell__top">
-              <span className="rr-room-cell__num">Unassigned</span>
-              <span className="rr-room-cell__unassigned-count">
-                {group.unassignedReservations.filter((res) => matchesReservation(res)).length}
-              </span>
+      {[...unassignedByBooking].map(([bookingKey, rooms]) => {
+        const reservation = rooms[0];
+        const geometry = barGeometry(reservation, window);
+        if (!geometry) return null;
+        return (
+          <div
+            key={bookingKey}
+            className={`rr-room-row${collapsed ? " rr-room-row--collapsed" : ""}`}
+            style={{ display: "contents" }}
+            aria-hidden={collapsed}
+            inert={collapsed}
+          >
+            <div className="rr-room-cell rr-room-cell--unassigned">
+              <div className="rr-room-cell__top">
+                <span className="rr-room-cell__num">{t("roomRack.unassignedLabel")}</span>
+                <span className="rr-room-cell__unassigned-count">{rooms.length}</span>
+              </div>
+              <span className="rr-room-cell__floor">{reservation.id}</span>
             </div>
-            <span className="rr-room-cell__floor">Room number pending</span>
+            <div className="rr-lane rr-lane--unassigned">
+              {window.map((date) => (
+                <div
+                  key={toISODate(date)}
+                  className={`rr-day-cell${isWeekend(date) ? " rr-day-cell--weekend" : ""}${toISODate(date) === todayISO ? " rr-day-cell--today" : ""}`}
+                />
+              ))}
+              <button
+                type="button"
+                className={`rr-bar rr-bar--${reservation.status} rr-bar--unassigned${rooms.some((room) => selectedId === (room.reservationRoomId ?? room.id)) ? " rr-bar--selected" : ""}`}
+                style={{
+                  left: `calc(${geometry.startIdx} * var(--rr-day-col) + 3px)`,
+                  width: `calc(${geometry.span} * var(--rr-day-col) - 6px)`,
+                }}
+                onClick={() => onSelect(reservation, null)}
+                aria-label={t("roomRack.unassignedAria", { guest: reservation.guestName, count: rooms.length, checkIn: reservation.checkIn, checkOut: reservation.checkOut })}
+              >
+                <span className="rr-bar__name">{reservation.guestName}</span>
+                <span className="rr-bar__meta">{sourceShort[reservation.source] ?? reservation.source} · {t("roomRack.unassignedCount", { count: rooms.length })}</span>
+              </button>
+            </div>
           </div>
-          <div className="rr-lane rr-lane--unassigned">
-            {window.map((date) => (
-              <div
-                key={toISODate(date)}
-                className={`rr-day-cell${isWeekend(date) ? " rr-day-cell--weekend" : ""}${toISODate(date) === todayISO ? " rr-day-cell--today" : ""}`}
-              />
-            ))}
-            {group.unassignedReservations.filter((res) => matchesReservation(res)).map((res) => {
-              const geometry = barGeometry(res, window);
-              if (!geometry) return null;
-
-              return (
-                <button
-                  key={res.reservationRoomId ?? res.id}
-                  type="button"
-                  className={`rr-bar rr-bar--${res.status} rr-bar--unassigned${selectedId === (res.reservationRoomId ?? res.id) ? " rr-bar--selected" : ""}`}
-                  style={{
-                    left: `calc(${geometry.startIdx} * var(--rr-day-col) + 3px)`,
-                    width: `calc(${geometry.span} * var(--rr-day-col) - 6px)`,
-                  }}
-                  onClick={() => onSelect(res, null)}
-                  aria-label={`${res.guestName}, ${res.checkIn} to ${res.checkOut}, room not assigned`}
-                >
-                  <span className="rr-bar__name">{res.guestName}</span>
-                  <span className="rr-bar__meta">{sourceShort[res.source] ?? res.source} · Not Assigned</span>
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      )}
+        );
+      })}
     </>
   );
 }
@@ -856,9 +916,11 @@ function RoomGroup({
 function NewBookingForm({
   draft,
   onClose,
+  onComplete,
 }: {
   draft: NewBookingDraft;
   onClose: () => void;
+  onComplete: () => void;
 }) {
   const [adults, setAdults] = useState(2);
   const [children, setChildren] = useState(0);
@@ -1071,7 +1133,7 @@ function NewBookingForm({
             <h2>New Reservation</h2>
             <span className="rr-drawer__sub">Room Rack · Drag-to-Book</span>
           </div>
-          <button type="button" className="rr-detail__close" onClick={onClose} disabled={saving || Boolean(confirmation)} aria-label="Close">×</button>
+          <button type="button" className="rr-detail__close" onClick={onClose} disabled={saving || Boolean(confirmation) || Boolean(saved)} aria-label="Close">×</button>
         </div>
 
         {/* Scrollable body: form + summary */}
@@ -1454,7 +1516,7 @@ function NewBookingForm({
           busy={saving}
         />
       )}
-      {saved && <ReservationSuccessTransition bookingId={saved.bookingId} checkedIn={saved.checkedIn} />}
+      {saved && <ReservationSuccessTransition bookingId={saved.bookingId} checkedIn={saved.checkedIn} onContinue={onComplete} />}
     </div>
   );
 }

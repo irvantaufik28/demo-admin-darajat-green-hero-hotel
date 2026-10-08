@@ -65,6 +65,20 @@ export type RoomRackResponse = {
   days: number;
   dates: string[];
   serverDate: string;
+  overdueUnassigned: {
+    reservationId: string;
+    reservationRoomId: string;
+    bookingCode: string;
+    guestName: string;
+    roomTypeId: string;
+    roomTypeName: string;
+    source: "website" | "phone" | "walk_in" | "ota";
+    paymentStatus: RackBooking["paymentStatus"];
+    checkInDate: string;
+    checkOutDate: string;
+    unassignedRooms: number;
+  }[];
+  overdueUnassignedHasMore: boolean;
   groups: RackGroup[];
 };
 

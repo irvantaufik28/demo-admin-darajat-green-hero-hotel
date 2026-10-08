@@ -529,7 +529,8 @@
     "savedTitle": "Reservasi berhasil disimpan",
     "bookingId": "Booking ID {bookingId}",
     "bookingIdLabel": "Booking ID ",
-    "viewList": "Lihat daftar reservasi"
+    "viewList": "Lihat daftar reservasi",
+    "backToRoomRack": "Kembali ke kalender reservasi"
   },
   "audit": {
     "title": "Jejak Audit",
@@ -1228,6 +1229,14 @@
     }
   },
   "roomRack": {
+    "missedArrival": "Kedatangan terlewat",
+    "overdueUnassignedTitle": "Masa inap lewat dengan kamar belum ditetapkan",
+    "overdueUnassignedDescription": "Reservasi terkonfirmasi ini sudah mencapai tanggal checkout, tetapi masih ada kamar yang belum ditetapkan. Tinjau terpisah dari stok kamar hari ini.",
+    "reviewReservation": "Tinjau reservasi",
+    "overdueUnassignedMore": "Menampilkan 50 tipe kamar terbaru. Buka Reservations untuk data yang lebih lama.",
+    "unassignedLabel": "Belum ditetapkan",
+    "unassignedCount": "{count} belum ditetapkan",
+    "unassignedAria": "{guest}, {count} kamar belum ditetapkan, {checkIn} sampai {checkOut}",
     "eyebrow": "FRONT DESK · TAPE CHART",
     "heading": "Papan Kamar",
     "description": "Grid ketersediaan 14 hari untuk kedatangan, tamu menginap, dan blok kamar.",

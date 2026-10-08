@@ -549,6 +549,67 @@
   font-size: 10px;
   font-weight: 700;
 }
+.rr-overdue-unassigned {
+  margin: 0 0 18px;
+  padding: 16px;
+  border: 1px solid #d97706;
+  border-left: 5px solid #d97706;
+  border-radius: 10px;
+  background: #fffbeb;
+}
+.rr-overdue-unassigned__heading h2 {
+  margin: 0 0 4px;
+  color: #78350f;
+  font-size: 16px;
+}
+.rr-overdue-unassigned__heading p,
+.rr-overdue-unassigned__more {
+  margin: 0 0 12px;
+  color: #92400e;
+  font-size: 12px;
+}
+.rr-overdue-unassigned__list {
+  display: grid;
+  gap: 8px;
+  max-height: 250px;
+  overflow-y: auto;
+}
+.rr-overdue-unassigned__list button {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.5fr) auto;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #fcd34d;
+  border-radius: 7px;
+  background: #fff;
+  color: #292524;
+  text-align: left;
+  cursor: pointer;
+}
+.rr-overdue-unassigned__list button:hover,
+.rr-overdue-unassigned__list button:focus-visible {
+  border-color: #b45309;
+  outline-color: #b45309;
+}
+.rr-overdue-unassigned__list span {
+  color: #57534e;
+  font-size: 12px;
+}
+.rr-overdue-unassigned__list b {
+  color: #92400e;
+  font-size: 12px;
+}
+.rr-overdue-unassigned__more {
+  margin: 10px 0 0;
+}
+@media (max-width: 900px) {
+  .rr-overdue-unassigned__list button {
+    grid-template-columns: 1fr;
+    gap: 4px;
+  }
+}
 /* The lane that holds date cells + overlay bars */
 .rr-lane {
   position: relative;

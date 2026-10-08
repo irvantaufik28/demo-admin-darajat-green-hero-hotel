@@ -9,9 +9,11 @@ import id from "../locales/id.json";
 export function ReservationSuccessTransition({
   bookingId,
   checkedIn,
+  onContinue,
 }: {
   bookingId: string;
   checkedIn: boolean;
+  onContinue?: () => void;
 }) {
   const { t } = useTranslations({ en, id });
   const router = useRouter();
@@ -45,9 +47,9 @@ export function ReservationSuccessTransition({
         <button
           type="button"
           className="action-button"
-          onClick={() => router.push("/reservations")}
+          onClick={() => onContinue ? onContinue() : router.push("/reservations")}
         >
-          {t("successTransition.viewList")}
+          {t(onContinue ? "successTransition.backToRoomRack" : "successTransition.viewList")}
         </button>
       </section>
     </div>

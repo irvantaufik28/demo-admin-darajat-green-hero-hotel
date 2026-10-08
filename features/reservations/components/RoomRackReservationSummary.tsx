@@ -100,7 +100,7 @@ export function RoomRackReservationSummary({
       ? "Ready to Check-in"
       : "Upcoming");
   const operationalTone =
-    operationalStatus.startsWith("Overdue")
+    reservation.operationalStatus?.code === "missed_arrival" || operationalStatus.startsWith("Overdue")
       ? "danger"
       : operationalStatus === "Due Out" || operationalStatus === "Checked In"
         ? "info"

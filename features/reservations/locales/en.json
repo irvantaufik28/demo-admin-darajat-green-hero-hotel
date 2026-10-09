@@ -46,6 +46,7 @@
     "confirmed": "Confirmed",
     "checkedIn": "Checked-in",
     "checkedOut": "Checked-out",
+    "noShow": "No Show",
     "cancelled": "Cancelled",
     "expired": "Expired",
     "draft": "Draft",
@@ -322,6 +323,7 @@
       "checkIn": "Check-in Guest",
       "checkOut": "Check Out Guest",
       "cancel": "Cancel Reservation",
+      "noShow": "Mark No Show",
       "extend": "Extend Stay"
     },
     "confirmAndCheckIn": "Confirm & Check-in",
@@ -387,6 +389,7 @@
       "outstandingReasonLabel": "Reason for checking out with a remaining balance",
       "outstandingAcknowledge": "I confirm the remaining balance stays recorded in Payments.",
       "cancelReasonLabel": "Cancellation reason",
+      "noShowReasonLabel": "No-show reason",
       "confirmCheckIn": "Confirm Check-in"
     },
     "errors": {
@@ -407,6 +410,7 @@
       "checkoutReasonRequired": "Check the confirmation and write a reason for checking out with a remaining balance.",
       "refundReferenceRequired": "Enter a refund reference for each refunded deposit.",
       "cancelReasonRequired": "The cancellation reason is required.",
+      "noShowReasonRequired": "The no-show reason is required.",
       "extensionNotReady": "Select a date and wait for the extension details to be available.",
       "extensionPaymentInvalid": "Select a payment method and a valid amount.",
       "extensionDateRequired": "Extension is not available.",
@@ -571,6 +575,7 @@
       "reservation.created": "Reservation created",
       "reservation.confirmed": "Reservation confirmed",
       "reservation.cancelled": "Reservation cancelled",
+      "reservation.no_show": "Reservation marked as no-show",
       "reservation.stay_extended": "Stay extended",
       "reservation.room_changed": "Room changed",
       "reservation.extra_bed_changed": "Extra bed changed",
@@ -950,9 +955,16 @@
     "saveAssignment": "Save Assignment",
     "success": "Room {roomNumber} assigned successfully. The Room Rack has been updated.",
     "successBatch": "{count} rooms assigned successfully. The Room Rack has been updated.",
+    "unassignButton": "Unassign Room",
+    "unassignTitle": "Unassign Room",
+    "unassignConfirmation": "Unassign Room {roomNumber} from this reservation? The room will become available again.",
+    "unassignConfirm": "Unassign Room",
+    "unassignReason": "Room assignment removed from the reservation calendar",
+    "unassignSuccess": "Room {roomNumber} was unassigned. The Room Rack has been updated.",
     "errors": {
       "optionsLoadError": "Failed to load room options.",
-      "saveFailed": "The room assignment could not be saved."
+      "saveFailed": "The room assignment could not be saved.",
+      "unassignFailed": "The room assignment could not be removed."
     }
   },
   "form": {
@@ -1244,6 +1256,8 @@
     "tryAgain": "Try again",
     "emptyState": "No room types found.",
     "roomNowAvailable": "Room {room} is now Available.",
+    "showControls": "Show Controls",
+    "hideControls": "Hide Controls",
     "metrics": {
       "available": "Available Rooms",
       "ready": "Ready to Check-in",

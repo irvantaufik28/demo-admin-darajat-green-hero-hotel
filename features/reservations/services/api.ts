@@ -5,16 +5,12 @@ export type ReservationStatus =
   | "confirmed"
   | "checked_in"
   | "checked_out"
+  | "no_show"
   | "cancelled"
   | "expired";
 
 export type PaymentStatus =
-  | "unpaid"
-  | "partial"
-  | "paid"
-  | "failed"
-  | "expired"
-  | "refunded";
+  "unpaid" | "partial" | "paid" | "failed" | "expired" | "refunded";
 
 export type ReservationListItem = {
   id: string;
@@ -45,7 +41,9 @@ export type ReservationListResponse = {
 };
 
 export function getReservations(query: URLSearchParams, signal?: AbortSignal) {
-  return apiRequest<ReservationListResponse>(`reservations?${query}`, { signal });
+  return apiRequest<ReservationListResponse>(`reservations?${query}`, {
+    signal,
+  });
 }
 
 export type ArrivalTodayItem = {
@@ -72,7 +70,10 @@ export type ArrivalsTodayResponse = {
 };
 
 export function getArrivalsToday(query: URLSearchParams, signal?: AbortSignal) {
-  return apiRequest<ArrivalsTodayResponse>(`reservations/arrivals-today?${query}`, { signal });
+  return apiRequest<ArrivalsTodayResponse>(
+    `reservations/arrivals-today?${query}`,
+    { signal },
+  );
 }
 
 export type DepartureTodayItem = {
@@ -96,15 +97,26 @@ export type DepartureTodayItem = {
 
 export type DeparturesTodayResponse = {
   date: string;
-  summary: { total: number; dueOut: number; overdue: number; checkedOut: number };
+  summary: {
+    total: number;
+    dueOut: number;
+    overdue: number;
+    checkedOut: number;
+  };
   items: DepartureTodayItem[];
   page: number;
   limit: number;
   total: number;
 };
 
-export function getDeparturesToday(query: URLSearchParams, signal?: AbortSignal) {
-  return apiRequest<DeparturesTodayResponse>(`reservations/departures-today?${query}`, { signal });
+export function getDeparturesToday(
+  query: URLSearchParams,
+  signal?: AbortSignal,
+) {
+  return apiRequest<DeparturesTodayResponse>(
+    `reservations/departures-today?${query}`,
+    { signal },
+  );
 }
 
 export type InHouseItem = {
@@ -122,7 +134,13 @@ export type InHouseItem = {
 
 export type InHouseResponse = {
   date: string;
-  summary: { guestsInHouse: number; roomsOccupied: number; inHouse: number; dueOut: number; overdue: number };
+  summary: {
+    guestsInHouse: number;
+    roomsOccupied: number;
+    inHouse: number;
+    dueOut: number;
+    overdue: number;
+  };
   items: InHouseItem[];
   page: number;
   limit: number;
@@ -130,7 +148,9 @@ export type InHouseResponse = {
 };
 
 export function getInHouse(query: URLSearchParams, signal?: AbortSignal) {
-  return apiRequest<InHouseResponse>(`reservations/in-house?${query}`, { signal });
+  return apiRequest<InHouseResponse>(`reservations/in-house?${query}`, {
+    signal,
+  });
 }
 
 export type ApiReservationDetail = {
@@ -152,6 +172,9 @@ export type ApiReservationDetail = {
     confirmedAt: string | null;
     checkedInAt: string | null;
     checkedOutAt: string | null;
+    noShowAt: string | null;
+    noShowReason: string | null;
+    noShowChargeAmount: number | null;
   };
   guest: {
     fullName: string;
@@ -259,7 +282,11 @@ export type RoomUnitOption = {
   roomTypeId: string;
 };
 
-export type PaymentMethodOption = { id: string; name: string; isActive: boolean };
+export type PaymentMethodOption = {
+  id: string;
+  name: string;
+  isActive: boolean;
+};
 
 export type ReservationHistoryItem = {
   id: string;
@@ -276,7 +303,10 @@ export type ReservationHistoryItem = {
 };
 
 export function getReservationDetail(id: string, signal?: AbortSignal) {
-  return apiRequest<ApiReservationDetail>(`reservations/${encodeURIComponent(id)}`, { signal });
+  return apiRequest<ApiReservationDetail>(
+    `reservations/${encodeURIComponent(id)}`,
+    { signal },
+  );
 }
 
 export async function getReservationHistory(id: string, signal?: AbortSignal) {
@@ -288,18 +318,29 @@ export async function getReservationHistory(id: string, signal?: AbortSignal) {
 }
 
 export async function getAvailableRoomUnits(roomTypeId: string) {
-  const query = new URLSearchParams({ roomTypeId, operationalStatus: "available", isActive: "true", limit: "100" });
-  const result = await apiRequest<{ items: RoomUnitOption[] }>(`room-numbers?${query}`);
+  const query = new URLSearchParams({
+    roomTypeId,
+    operationalStatus: "available",
+    isActive: "true",
+    limit: "100",
+  });
+  const result = await apiRequest<{ items: RoomUnitOption[] }>(
+    `room-numbers?${query}`,
+  );
   return result.items;
 }
 
 export async function getPaymentMethods() {
-  const result = await apiRequest<{ items: PaymentMethodOption[] }>("master/payment-methods");
+  const result = await apiRequest<{ items: PaymentMethodOption[] }>(
+    "master/payment-methods",
+  );
   return result.items.filter((item) => item.isActive);
 }
 
 export function confirmReservation(id: string) {
-  return apiRequest(`reservations/${encodeURIComponent(id)}/confirm`, { method: "POST" });
+  return apiRequest(`reservations/${encodeURIComponent(id)}/confirm`, {
+    method: "POST",
+  });
 }
 
 export function checkInReservation(
@@ -311,7 +352,10 @@ export function checkInReservation(
     earlyCheckIn?: EarlyCheckInInput;
   },
 ) {
-  return apiRequest(`reservations/${encodeURIComponent(id)}/check-in`, { method: "POST", body: input });
+  return apiRequest(`reservations/${encodeURIComponent(id)}/check-in`, {
+    method: "POST",
+    body: input,
+  });
 }
 
 export type EarlyCheckInInput = {
@@ -352,7 +396,10 @@ export function checkOutReservation(
     }[];
   },
 ) {
-  return apiRequest(`reservations/${encodeURIComponent(id)}/check-out`, { method: "POST", body: input });
+  return apiRequest(`reservations/${encodeURIComponent(id)}/check-out`, {
+    method: "POST",
+    body: input,
+  });
 }
 
 export type ExtendStayQuote = {
@@ -366,11 +413,25 @@ export type ExtendStayQuote = {
     roomTypeName: string;
     roomNumber: string | null;
     roomAmount: number;
-    extraBeds: { quantity: number; unitPricePerNight: number; amount: number } | null;
-    breakfasts: { description: string; quantityPerNight: number; unitAmount: number }[];
+    extraBeds: {
+      quantity: number;
+      unitPricePerNight: number;
+      amount: number;
+    } | null;
+    breakfasts: {
+      description: string;
+      quantityPerNight: number;
+      unitAmount: number;
+    }[];
     breakfastAmount: number;
     total: number;
-    nights: { stayDate: string; basePrice: number; discountAmount: number; finalPrice: number; campaignSnapshot: { name: string } | null }[];
+    nights: {
+      stayDate: string;
+      basePrice: number;
+      discountAmount: number;
+      finalPrice: number;
+      campaignSnapshot: { name: string } | null;
+    }[];
   }[];
   discountTotal: number;
   extensionTotal: number;
@@ -380,15 +441,23 @@ export type ExtendStayQuote = {
 
 export function getExtendStayQuote(id: string, newCheckOutDate: string) {
   const query = new URLSearchParams({ newCheckOutDate });
-  return apiRequest<ExtendStayQuote>(`reservations/${encodeURIComponent(id)}/extend-stay/quote?${query}`);
+  return apiRequest<ExtendStayQuote>(
+    `reservations/${encodeURIComponent(id)}/extend-stay/quote?${query}`,
+  );
 }
 
-export function extendReservationStay(id: string, input: {
-  newCheckOutDate: string;
-  expectedVersion: number;
-  payment?: { methodId: string; amount: number };
-}) {
-  return apiRequest(`reservations/${encodeURIComponent(id)}/extend-stay`, { method: "POST", body: input });
+export function extendReservationStay(
+  id: string,
+  input: {
+    newCheckOutDate: string;
+    expectedVersion: number;
+    payment?: { methodId: string; amount: number };
+  },
+) {
+  return apiRequest(`reservations/${encodeURIComponent(id)}/extend-stay`, {
+    method: "POST",
+    body: input,
+  });
 }
 
 export type ChangeRoomOption = {
@@ -419,7 +488,12 @@ export type ChangeRoomQuote = {
   extraBedDifference: number;
   totalDifference: number;
   version: number;
-  newNights: { stayDate: string; finalPrice: number; discountAmount: number; campaignSnapshot: { name: string } | null }[];
+  newNights: {
+    stayDate: string;
+    finalPrice: number;
+    discountAmount: number;
+    campaignSnapshot: { name: string } | null;
+  }[];
 };
 
 export type ExtraBedQuote = {
@@ -443,25 +517,51 @@ function roomOperationPath(id: string, roomId: string) {
 }
 
 export function getChangeRoomOptions(id: string, roomId: string) {
-  return apiRequest<{ options: ChangeRoomOption[]; effectiveDate: string; checkOutDate: string }>(`${roomOperationPath(id, roomId)}/change-options`);
+  return apiRequest<{
+    options: ChangeRoomOption[];
+    effectiveDate: string;
+    checkOutDate: string;
+  }>(`${roomOperationPath(id, roomId)}/change-options`);
 }
 
-export function getChangeRoomQuote(id: string, roomId: string, targetRoomUnitId: string) {
+export function getChangeRoomQuote(
+  id: string,
+  roomId: string,
+  targetRoomUnitId: string,
+) {
   const query = new URLSearchParams({ targetRoomUnitId });
-  return apiRequest<ChangeRoomQuote>(`${roomOperationPath(id, roomId)}/change-room/quote?${query}`);
+  return apiRequest<ChangeRoomQuote>(
+    `${roomOperationPath(id, roomId)}/change-room/quote?${query}`,
+  );
 }
 
-export function changeReservationRoom(id: string, roomId: string, input: { targetRoomUnitId: string; expectedVersion: number }) {
-  return apiRequest(`${roomOperationPath(id, roomId)}/change-room`, { method: "POST", body: input });
+export function changeReservationRoom(
+  id: string,
+  roomId: string,
+  input: { targetRoomUnitId: string; expectedVersion: number },
+) {
+  return apiRequest(`${roomOperationPath(id, roomId)}/change-room`, {
+    method: "POST",
+    body: input,
+  });
 }
 
 export function getExtraBedQuote(id: string, roomId: string, quantity: number) {
   const query = new URLSearchParams({ quantity: String(quantity) });
-  return apiRequest<ExtraBedQuote>(`${roomOperationPath(id, roomId)}/extra-beds/quote?${query}`);
+  return apiRequest<ExtraBedQuote>(
+    `${roomOperationPath(id, roomId)}/extra-beds/quote?${query}`,
+  );
 }
 
-export function changeReservationExtraBeds(id: string, roomId: string, input: { quantity: number; expectedVersion: number }) {
-  return apiRequest(`${roomOperationPath(id, roomId)}/extra-beds`, { method: "POST", body: input });
+export function changeReservationExtraBeds(
+  id: string,
+  roomId: string,
+  input: { quantity: number; expectedVersion: number },
+) {
+  return apiRequest(`${roomOperationPath(id, roomId)}/extra-beds`, {
+    method: "POST",
+    body: input,
+  });
 }
 
 export type ReservationExperienceOption = {
@@ -479,11 +579,22 @@ export type ReservationExperienceOption = {
   }[];
 };
 
-export type ExperienceBillItem = { variantId: string; quantity: number; serviceDate?: string };
+export type ExperienceBillItem = {
+  variantId: string;
+  quantity: number;
+  serviceDate?: string;
+};
 
 export type ExperienceBillQuote = {
   version: number;
-  lines: { variantId: string; name: string; quantity: number; unitPrice: number; amount: number; serviceDate: string | null }[];
+  lines: {
+    variantId: string;
+    name: string;
+    quantity: number;
+    unitPrice: number;
+    amount: number;
+    serviceDate: string | null;
+  }[];
   addedTotal: number;
   bookingTotalBefore: number;
   bookingTotalAfter: number;
@@ -492,19 +603,38 @@ export type ExperienceBillQuote = {
 };
 
 export async function getReservationExperienceOptions() {
-  const result = await apiRequest<{ items: ReservationExperienceOption[] }>("experiences?isActive=true&limit=100");
-  return result.items.filter((item) => item.isActive && item.variants.length > 0);
+  const result = await apiRequest<{ items: ReservationExperienceOption[] }>(
+    "experiences?isActive=true&limit=100",
+  );
+  return result.items.filter(
+    (item) => item.isActive && item.variants.length > 0,
+  );
 }
 
-export function quoteReservationExperienceBill(id: string, items: ExperienceBillItem[]) {
-  return apiRequest<ExperienceBillQuote>(`reservations/${encodeURIComponent(id)}/experience-bill/quote`, {
-    method: "POST", body: { items },
-  });
+export function quoteReservationExperienceBill(
+  id: string,
+  items: ExperienceBillItem[],
+) {
+  return apiRequest<ExperienceBillQuote>(
+    `reservations/${encodeURIComponent(id)}/experience-bill/quote`,
+    {
+      method: "POST",
+      body: { items },
+    },
+  );
 }
 
-export function saveReservationExperienceBill(id: string, input: { expectedVersion: number; expectedAddedTotal: number; items: ExperienceBillItem[] }) {
+export function saveReservationExperienceBill(
+  id: string,
+  input: {
+    expectedVersion: number;
+    expectedAddedTotal: number;
+    items: ExperienceBillItem[];
+  },
+) {
   return apiRequest(`reservations/${encodeURIComponent(id)}/experience-bill`, {
-    method: "POST", body: input,
+    method: "POST",
+    body: input,
   });
 }
 
@@ -530,7 +660,12 @@ export function getCheckOutContext(checkOutDate: string) {
 
 export function recordReservationPayment(
   id: string,
-  input: { idempotencyKey: string; methodId: string; amount: number; notes?: string },
+  input: {
+    idempotencyKey: string;
+    methodId: string;
+    amount: number;
+    notes?: string;
+  },
 ) {
   return apiRequest(`reservations/${encodeURIComponent(id)}/payments`, {
     method: "POST",
@@ -540,6 +675,13 @@ export function recordReservationPayment(
 
 export function cancelReservation(id: string, reason: string) {
   return apiRequest(`reservations/${encodeURIComponent(id)}/cancel`, {
+    method: "POST",
+    body: { reason },
+  });
+}
+
+export function markReservationNoShow(id: string, reason: string) {
+  return apiRequest(`reservations/${encodeURIComponent(id)}/no-show`, {
     method: "POST",
     body: { reason },
   });

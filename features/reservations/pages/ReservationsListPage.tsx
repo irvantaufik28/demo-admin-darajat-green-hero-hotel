@@ -35,7 +35,10 @@ type ListRow = {
 };
 
 function displayStatus(value: string) {
-  return value.split("_").map((part) => part[0].toUpperCase() + part.slice(1)).join("-");
+  return value
+    .split("_")
+    .map((part) => part[0].toUpperCase() + part.slice(1))
+    .join("-");
 }
 
 function toListRow(item: ReservationListItem): ListRow {
@@ -61,7 +64,9 @@ function toListRow(item: ReservationListItem): ListRow {
 function sourceLabel(reservation: ListRow) {
   return reservation.source === "Ota" && reservation.channel
     ? "OTA · " + reservation.channel
-    : reservation.source === "Ota" ? "OTA" : reservation.source;
+    : reservation.source === "Ota"
+      ? "OTA"
+      : reservation.source;
 }
 
 function statusClass(value: string) {
@@ -131,31 +136,63 @@ export function ReservationsListPage() {
 
   useEffect(() => {
     const controller = new AbortController();
-    const timer = window.setTimeout(async () => {
-      setLoading(true);
-      setError("");
-      try {
-        if (!(await restoreSession())) return;
-        const query = new URLSearchParams({ page: String(page), limit: String(pageSize) });
-        if (search.trim()) query.set("search", search.trim());
-        if (sourceFilter !== "all") query.set("source", sourceFilter === "walk-in" ? "walk_in" : sourceFilter);
-        if (statusFilter !== "all") query.set("reservationStatus", statusFilter.replace("-", "_"));
-        if (paymentFilter !== "all") query.set("paymentStatus", paymentFilter);
-        if (stayFilter === "custom" && customDate) query.set("stayDate", customDate);
-        if (sortDirection !== "default") query.set("sort", `booking_code_${sortDirection}`);
-        const result = await getReservations(query, controller.signal);
-        if (!controller.signal.aborted) {
-          setReservations(result.items.map(toListRow));
-          setTotal(result.total);
+    const timer = window.setTimeout(
+      async () => {
+        setLoading(true);
+        setError("");
+        try {
+          if (!(await restoreSession())) return;
+          const query = new URLSearchParams({
+            page: String(page),
+            limit: String(pageSize),
+          });
+          if (search.trim()) query.set("search", search.trim());
+          if (sourceFilter !== "all")
+            query.set(
+              "source",
+              sourceFilter === "walk-in" ? "walk_in" : sourceFilter,
+            );
+          if (statusFilter !== "all")
+            query.set("reservationStatus", statusFilter.replace("-", "_"));
+          if (paymentFilter !== "all")
+            query.set("paymentStatus", paymentFilter);
+          if (stayFilter === "custom" && customDate)
+            query.set("stayDate", customDate);
+          if (sortDirection !== "default")
+            query.set("sort", `booking_code_${sortDirection}`);
+          const result = await getReservations(query, controller.signal);
+          if (!controller.signal.aborted) {
+            setReservations(result.items.map(toListRow));
+            setTotal(result.total);
+          }
+        } catch (cause) {
+          if (!controller.signal.aborted)
+            setError(
+              cause instanceof Error
+                ? cause.message
+                : t("list.messages.loadError"),
+            );
+        } finally {
+          if (!controller.signal.aborted) setLoading(false);
         }
-      } catch (cause) {
-        if (!controller.signal.aborted) setError(cause instanceof Error ? cause.message : t("list.messages.loadError"));
-      } finally {
-        if (!controller.signal.aborted) setLoading(false);
-      }
-    }, search ? 300 : 0);
-    return () => { window.clearTimeout(timer); controller.abort(); };
-  }, [page, search, stayFilter, customDate, sourceFilter, statusFilter, paymentFilter, sortDirection, operationalRefresh]);
+      },
+      search ? 300 : 0,
+    );
+    return () => {
+      window.clearTimeout(timer);
+      controller.abort();
+    };
+  }, [
+    page,
+    search,
+    stayFilter,
+    customDate,
+    sourceFilter,
+    statusFilter,
+    paymentFilter,
+    sortDirection,
+    operationalRefresh,
+  ]);
 
   const filtered = reservations;
   const pageCount = Math.max(1, Math.ceil(total / pageSize));
@@ -297,15 +334,18 @@ export function ReservationsListPage() {
               }}
             >
               <option value="all">{t("list.filters.statusAll")}</option>
-              {([
-                ["Pending", "status.pending"],
-                ["Confirmed", "status.confirmed"],
-                ["Checked-in", "status.checkedIn"],
-                ["Checked-out", "status.checkedOut"],
-                ["Cancelled", "status.cancelled"],
-                ["Expired", "status.expired"],
-                ["Draft", "status.draft"],
-              ] as const).map(([value, key]) => (
+              {(
+                [
+                  ["Pending", "status.pending"],
+                  ["Confirmed", "status.confirmed"],
+                  ["Checked-in", "status.checkedIn"],
+                  ["Checked-out", "status.checkedOut"],
+                  ["No_show", "status.noShow"],
+                  ["Cancelled", "status.cancelled"],
+                  ["Expired", "status.expired"],
+                  ["Draft", "status.draft"],
+                ] as const
+              ).map(([value, key]) => (
                 <option key={value} value={value.toLowerCase()}>
                   {t(key)}
                 </option>
@@ -320,13 +360,15 @@ export function ReservationsListPage() {
               }}
             >
               <option value="all">{t("list.filters.paymentAll")}</option>
-              {([
-                ["Unpaid", "status.unpaid"],
-                ["Partial", "status.partial"],
-                ["Paid", "status.paid"],
-                ["Refunded", "status.refunded"],
-                ["Failed", "status.failed"],
-              ] as const).map(([value, key]) => (
+              {(
+                [
+                  ["Unpaid", "status.unpaid"],
+                  ["Partial", "status.partial"],
+                  ["Paid", "status.paid"],
+                  ["Refunded", "status.refunded"],
+                  ["Failed", "status.failed"],
+                ] as const
+              ).map(([value, key]) => (
                 <option key={value} value={value.toLowerCase()}>
                   {t(key)}
                 </option>
@@ -347,7 +389,11 @@ export function ReservationsListPage() {
             </button>
           </div>
         </div>
-        {error && <div className="reservation-detail-missing" role="alert">{error}</div>}
+        {error && (
+          <div className="reservation-detail-missing" role="alert">
+            {error}
+          </div>
+        )}
         <div className="reservations-table-shell" aria-busy={loading}>
           <div className="reservations-table-scroll">
             <table className="reservations-table">
@@ -377,104 +423,111 @@ export function ReservationsListPage() {
                 </tr>
               </thead>
               <tbody>
-                {!loading && visible.map((item, index) => {
-                  const nights = calculateNights(item.checkIn, item.checkOut);
-                  return (
-                    <tr key={item.id}>
-                      <td className="reservations-no">{(currentPage - 1) * pageSize + index + 1}</td>
-                      <td className="reservations-booking">{item.bookingId}</td>
-                      <td>
-                        <span className="reservations-guest">
-                          <strong>{item.guestName}</strong>
-                          <small>{item.whatsapp}</small>
-                        </span>
-                      </td>
-                      <td>
-                        <span className="reservations-source">
-                          {sourceLabel(item)}
-                        </span>
-                      </td>
-                      <td>
-                        <span className="reservations-stay">
-                          <strong>
-                            {formatStayDate(item.checkIn)} →{" "}
-                            {formatStayDate(item.checkOut)}
-                          </strong>
-                          <small>
-                            {nights} {nights === 1 ? t("common.night") : t("common.nights")}
-                          </small>
-                        </span>
-                      </td>
-                      <td>{item.room}</td>
-                      <td>
-                        <span
-                          className={
-                            "reservations-badge reservations-badge--" +
-                            statusClass(item.paymentStatus)
-                          }
-                        >
-                          {item.paymentStatus}
-                        </span>
-                      </td>
-                      <td>
-                        <span
-                          className={
-                            "reservations-badge reservations-badge--" +
-                            statusClass(item.status)
-                          }
-                        >
-                          {item.status}
-                        </span>
-                      </td>
-                      <td>
-                        <span
-                          title={item.operationalDescription}
-                          className={
-                            "reservations-badge reservations-badge--" +
-                            statusClass(item.operationalStatus ?? "")
-                          }
-                        >
-                          {item.operationalStatus ?? t("common.emptyDash")}
-                        </span>
-                      </td>
-                      <td>
-                        <div className="reservations-row-actions">
-                          <Link
-                            className="reservations-view-link"
-                            href={
-                              "/reservations/" +
-                              encodeURIComponent(item.id)
+                {!loading &&
+                  visible.map((item, index) => {
+                    const nights = calculateNights(item.checkIn, item.checkOut);
+                    return (
+                      <tr key={item.id}>
+                        <td className="reservations-no">
+                          {(currentPage - 1) * pageSize + index + 1}
+                        </td>
+                        <td className="reservations-booking">
+                          {item.bookingId}
+                        </td>
+                        <td>
+                          <span className="reservations-guest">
+                            <strong>{item.guestName}</strong>
+                            <small>{item.whatsapp}</small>
+                          </span>
+                        </td>
+                        <td>
+                          <span className="reservations-source">
+                            {sourceLabel(item)}
+                          </span>
+                        </td>
+                        <td>
+                          <span className="reservations-stay">
+                            <strong>
+                              {formatStayDate(item.checkIn)} →{" "}
+                              {formatStayDate(item.checkOut)}
+                            </strong>
+                            <small>
+                              {nights}{" "}
+                              {nights === 1
+                                ? t("common.night")
+                                : t("common.nights")}
+                            </small>
+                          </span>
+                        </td>
+                        <td>{item.room}</td>
+                        <td>
+                          <span
+                            className={
+                              "reservations-badge reservations-badge--" +
+                              statusClass(item.paymentStatus)
                             }
                           >
-                            {t("common.view")}
-                          </Link>
-                          <div className="reservations-menu-anchor">
-                            <button
-                              type="button"
-                              aria-label={t("list.table.optionsAriaLabel", { bookingId: item.bookingId })}
-                              aria-expanded={openMenu === item.id}
-                              onClick={(event) => {
-                                const rect =
-                                  event.currentTarget.getBoundingClientRect();
-                                setMenuPosition({
-                                  top: rect.bottom + 4,
-                                  right: window.innerWidth - rect.right,
-                                });
-                                setOpenMenu((current) =>
-                                  current === item.id
-                                    ? null
-                                    : item.id,
-                                );
-                              }}
+                            {item.paymentStatus}
+                          </span>
+                        </td>
+                        <td>
+                          <span
+                            className={
+                              "reservations-badge reservations-badge--" +
+                              statusClass(item.status)
+                            }
+                          >
+                            {item.status}
+                          </span>
+                        </td>
+                        <td>
+                          <span
+                            title={item.operationalDescription}
+                            className={
+                              "reservations-badge reservations-badge--" +
+                              statusClass(item.operationalStatus ?? "")
+                            }
+                          >
+                            {item.operationalStatus ?? t("common.emptyDash")}
+                          </span>
+                        </td>
+                        <td>
+                          <div className="reservations-row-actions">
+                            <Link
+                              className="reservations-view-link"
+                              href={
+                                "/reservations/" + encodeURIComponent(item.id)
+                              }
                             >
-                              ⋮
-                            </button>
+                              {t("common.view")}
+                            </Link>
+                            <div className="reservations-menu-anchor">
+                              <button
+                                type="button"
+                                aria-label={t("list.table.optionsAriaLabel", {
+                                  bookingId: item.bookingId,
+                                })}
+                                aria-expanded={openMenu === item.id}
+                                onClick={(event) => {
+                                  const rect =
+                                    event.currentTarget.getBoundingClientRect();
+                                  setMenuPosition({
+                                    top: rect.bottom + 4,
+                                    right: window.innerWidth - rect.right,
+                                  });
+                                  setOpenMenu((current) =>
+                                    current === item.id ? null : item.id,
+                                  );
+                                }}
+                              >
+                                ⋮
+                              </button>
+                            </div>
                           </div>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
+                        </td>
+                      </tr>
+                    );
+                  })}
                 {(loading || visible.length === 0) && (
                   <tr>
                     <td colSpan={10} className="reservations-empty">

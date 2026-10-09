@@ -5,16 +5,12 @@ export type DashboardReservationStatus =
   | "confirmed"
   | "checked_in"
   | "checked_out"
+  | "no_show"
   | "cancelled"
   | "expired";
 
 export type DashboardPaymentStatus =
-  | "unpaid"
-  | "partial"
-  | "paid"
-  | "failed"
-  | "expired"
-  | "refunded";
+  "unpaid" | "partial" | "paid" | "failed" | "expired" | "refunded";
 
 type DashboardReservation = {
   reservationId: string;

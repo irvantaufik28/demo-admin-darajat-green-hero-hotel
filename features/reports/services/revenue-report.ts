@@ -9,6 +9,7 @@ export type RevenueReportStatus =
   | "confirmed"
   | "checked_in"
   | "checked_out"
+  | "no_show"
   | "cancelled"
   | "expired";
 
@@ -74,7 +75,9 @@ export type RevenueReportResponse = {
 export type FilterOption = { id: string; name: string };
 
 export function getRevenueReport(query: URLSearchParams, signal?: AbortSignal) {
-  return apiRequest<RevenueReportResponse>(`reports/revenue?${query}`, { signal });
+  return apiRequest<RevenueReportResponse>(`reports/revenue?${query}`, {
+    signal,
+  });
 }
 
 // Dropdown options for the room type and payment method filters, sourced from master data.
@@ -90,9 +93,17 @@ export async function getRevenueFilterOptions(
   ]);
   const remainingRoomPages = await Promise.all(
     Array.from(
-      { length: Math.max(0, Math.ceil(firstRoomPage.total / firstRoomPage.limit) - 1) },
+      {
+        length: Math.max(
+          0,
+          Math.ceil(firstRoomPage.total / firstRoomPage.limit) - 1,
+        ),
+      },
       (_, index) =>
-        getRoomTypes(new URLSearchParams({ page: String(index + 2), limit: "100" }), signal),
+        getRoomTypes(
+          new URLSearchParams({ page: String(index + 2), limit: "100" }),
+          signal,
+        ),
     ),
   );
   const roomTypes = [firstRoomPage, ...remainingRoomPages]

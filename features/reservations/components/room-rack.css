@@ -65,6 +65,21 @@
   font-size: 13px;
   color: var(--rr-text-secondary);
 }
+.room-rack--mini {
+  gap: 8px;
+  padding-top: 10px;
+  padding-bottom: 10px;
+}
+.room-rack--mini .room-rack__heading > div {
+  display: none;
+}
+.room-rack--mini .rr-chart__scroll {
+  height: calc(100vh - 132px);
+  max-height: calc(100vh - 132px);
+}
+.room-rack--mini .rr-detail-panel {
+  max-height: calc(100vh - 132px);
+}
 
 /* Metrics bar */
 .room-rack__metrics {
@@ -375,6 +390,33 @@
   text-align: left;
   padding-left: 14px;
   border-right: 1px solid var(--rr-border-strong);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.rr-head-cell__room-label {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+}
+.rr-controls-toggle {
+  flex: none;
+  max-width: 96px;
+  padding: 4px 7px;
+  border: 1px solid var(--rr-primary);
+  border-radius: 6px;
+  background: var(--rr-surface);
+  color: var(--rr-primary);
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 1.2;
+  cursor: pointer;
+}
+.rr-controls-toggle:hover,
+.rr-controls-toggle[aria-pressed="true"] {
+  background: var(--rr-primary);
+  color: #fff;
 }
 .rr-head-cell__eyebrow {
   display: block;

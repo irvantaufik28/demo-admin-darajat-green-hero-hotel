@@ -9,6 +9,7 @@ const statusKeys: Record<string, string> = {
   confirmed: "status.confirmed",
   checked_in: "status.checkedIn",
   checked_out: "status.checkedOut",
+  no_show: "status.noShow",
   cancelled: "status.cancelled",
   expired: "status.expired",
   unpaid: "status.unpaid",
@@ -64,84 +65,186 @@ function eventDetails(event: ReservationHistoryItem, t: Translate): string[] {
   const lines: string[] = [];
   switch (event.eventType) {
     case "reservation.created":
-      if (text(details.bookingCode)) lines.push(t("audit.lines.booking", { code: text(details.bookingCode)! }));
-      if (text(details.source)) lines.push(t("audit.lines.source", { source: String(details.source).replaceAll("_", " ") }));
-      if (text(details.roomCount)) lines.push(t("audit.lines.roomCount", { count: text(details.roomCount)! }));
-      if (amount(details.bookingTotal)) lines.push(t("audit.lines.total", { amount: amount(details.bookingTotal)! }));
+      if (text(details.bookingCode))
+        lines.push(
+          t("audit.lines.booking", { code: text(details.bookingCode)! }),
+        );
+      if (text(details.source))
+        lines.push(
+          t("audit.lines.source", {
+            source: String(details.source).replaceAll("_", " "),
+          }),
+        );
+      if (text(details.roomCount))
+        lines.push(
+          t("audit.lines.roomCount", { count: text(details.roomCount)! }),
+        );
+      if (amount(details.bookingTotal))
+        lines.push(
+          t("audit.lines.total", { amount: amount(details.bookingTotal)! }),
+        );
       break;
     case "payment.recorded":
     case "payment.refunded":
     case "payment.refund_pending":
     case "deposit.held":
-      if (amount(details.amount)) lines.push(t("audit.lines.amount", { amount: amount(details.amount)! }));
-      if (text(details.reference)) lines.push(t("audit.lines.reference", { reference: text(details.reference)! }));
+      if (amount(details.amount))
+        lines.push(
+          t("audit.lines.amount", { amount: amount(details.amount)! }),
+        );
+      if (text(details.reference))
+        lines.push(
+          t("audit.lines.reference", { reference: text(details.reference)! }),
+        );
       break;
     case "reservation.stay_extended":
       if (date(details.oldCheckOutDate) && date(details.newCheckOutDate)) {
-        lines.push(t("audit.lines.checkOutRange", { from: date(details.oldCheckOutDate)!, to: date(details.newCheckOutDate)! }));
+        lines.push(
+          t("audit.lines.checkOutRange", {
+            from: date(details.oldCheckOutDate)!,
+            to: date(details.newCheckOutDate)!,
+          }),
+        );
       }
-      if (amount(details.extensionTotal)) lines.push(t("audit.lines.extension", { amount: amount(details.extensionTotal)! }));
+      if (amount(details.extensionTotal))
+        lines.push(
+          t("audit.lines.extension", {
+            amount: amount(details.extensionTotal)!,
+          }),
+        );
       break;
     case "reservation.room_changed":
       lines.push(
         `${text(details.oldRoomTypeName) ?? "Room"} ${text(details.oldRoomNumber) ?? ""} → ${text(details.targetRoomTypeName) ?? "Room"} ${text(details.targetRoomNumber) ?? ""}`.trim(),
       );
-      if (amount(details.totalDifference)) lines.push(t("audit.lines.priceDifference", { amount: amount(details.totalDifference)! }));
+      if (amount(details.totalDifference))
+        lines.push(
+          t("audit.lines.priceDifference", {
+            amount: amount(details.totalDifference)!,
+          }),
+        );
       break;
     case "reservation.extra_bed_changed":
       if (text(details.previousQuantity) && text(details.quantity)) {
-        lines.push(t("audit.lines.extraBedChange", { from: text(details.previousQuantity)!, to: text(details.quantity)! }));
+        lines.push(
+          t("audit.lines.extraBedChange", {
+            from: text(details.previousQuantity)!,
+            to: text(details.quantity)!,
+          }),
+        );
       }
-      if (amount(details.difference)) lines.push(t("audit.lines.priceDifference", { amount: amount(details.difference)! }));
+      if (amount(details.difference))
+        lines.push(
+          t("audit.lines.priceDifference", {
+            amount: amount(details.difference)!,
+          }),
+        );
       break;
     case "reservation.experience_bill_saved":
       if (Array.isArray(details.lines)) {
         const names = details.lines
-          .map((line) => line && typeof line === "object" && "name" in line ? text(line.name) : null)
+          .map((line) =>
+            line && typeof line === "object" && "name" in line
+              ? text(line.name)
+              : null,
+          )
           .filter(Boolean);
         if (names.length) lines.push(names.join(", "));
       }
-      if (amount(details.addedTotal)) lines.push(t("audit.lines.amount", { amount: amount(details.addedTotal)! }));
+      if (amount(details.addedTotal))
+        lines.push(
+          t("audit.lines.amount", { amount: amount(details.addedTotal)! }),
+        );
       break;
     case "guest.checked_in":
-      if (roomNumbers(details.rooms)) lines.push(t("audit.lines.room", { rooms: roomNumbers(details.rooms)! }));
-      if (amount(details.remainingBalance)) lines.push(t("audit.lines.remaining", { amount: amount(details.remainingBalance)! }));
+      if (roomNumbers(details.rooms))
+        lines.push(
+          t("audit.lines.room", { rooms: roomNumbers(details.rooms)! }),
+        );
+      if (amount(details.remainingBalance))
+        lines.push(
+          t("audit.lines.remaining", {
+            amount: amount(details.remainingBalance)!,
+          }),
+        );
       break;
     case "guest.checked_out":
-      if (amount(details.remainingBalance)) lines.push(t("audit.lines.remaining", { amount: amount(details.remainingBalance)! }));
+      if (amount(details.remainingBalance))
+        lines.push(
+          t("audit.lines.remaining", {
+            amount: amount(details.remainingBalance)!,
+          }),
+        );
       break;
     case "reservation.cancelled":
+    case "reservation.no_show":
     case "payment.no_refund":
     case "payment.refund_failed":
-      if (text(details.reason)) lines.push(t("audit.lines.reason", { reason: text(details.reason)! }));
+      if (text(details.reason))
+        lines.push(t("audit.lines.reason", { reason: text(details.reason)! }));
+      if (amount(details.noShowCharge))
+        lines.push(
+          t("audit.lines.charge", { amount: amount(details.noShowCharge)! }),
+        );
       break;
     case "reservation.early_check_in_charged":
     case "reservation.late_checkout_charged":
-      if (amount(details.amount)) lines.push(t("audit.lines.charge", { amount: amount(details.amount)! }));
+      if (amount(details.amount))
+        lines.push(
+          t("audit.lines.charge", { amount: amount(details.amount)! }),
+        );
       break;
   }
 
-  if (event.reservationStatusBefore && event.reservationStatusAfter &&
-      event.reservationStatusBefore !== event.reservationStatusAfter) {
-    lines.push(t("audit.lines.reservationTransition", { from: statusLabel(t, event.reservationStatusBefore), to: statusLabel(t, event.reservationStatusAfter) }));
+  if (
+    event.reservationStatusBefore &&
+    event.reservationStatusAfter &&
+    event.reservationStatusBefore !== event.reservationStatusAfter
+  ) {
+    lines.push(
+      t("audit.lines.reservationTransition", {
+        from: statusLabel(t, event.reservationStatusBefore),
+        to: statusLabel(t, event.reservationStatusAfter),
+      }),
+    );
   }
-  if (event.paymentStatusBefore && event.paymentStatusAfter &&
-      event.paymentStatusBefore !== event.paymentStatusAfter) {
-    lines.push(t("audit.lines.paymentTransition", { from: statusLabel(t, event.paymentStatusBefore), to: statusLabel(t, event.paymentStatusAfter) }));
+  if (
+    event.paymentStatusBefore &&
+    event.paymentStatusAfter &&
+    event.paymentStatusBefore !== event.paymentStatusAfter
+  ) {
+    lines.push(
+      t("audit.lines.paymentTransition", {
+        from: statusLabel(t, event.paymentStatusBefore),
+        to: statusLabel(t, event.paymentStatusAfter),
+      }),
+    );
   }
   return lines;
 }
 
-export function ReservationAuditTrail({ history }: { history: ReservationHistoryItem[] }) {
+export function ReservationAuditTrail({
+  history,
+}: {
+  history: ReservationHistoryItem[];
+}) {
   const { t } = useTranslations({ en, id });
   return (
     <section className="reservation-audit">
-      <div className="reservation-detail-section-title"><h2>{t("audit.title")}</h2></div>
+      <div className="reservation-detail-section-title">
+        <h2>{t("audit.title")}</h2>
+      </div>
       <div className="reservation-audit-scroll">
         <table className="reservation-audit-table">
-          <thead><tr>
-            <th>{t("audit.headers.timestamp")}</th><th>{t("audit.headers.event")}</th><th>{t("audit.headers.domain")}</th><th>{t("audit.headers.performedBy")}</th><th>{t("audit.headers.details")}</th>
-          </tr></thead>
+          <thead>
+            <tr>
+              <th>{t("audit.headers.timestamp")}</th>
+              <th>{t("audit.headers.event")}</th>
+              <th>{t("audit.headers.domain")}</th>
+              <th>{t("audit.headers.performedBy")}</th>
+              <th>{t("audit.headers.details")}</th>
+            </tr>
+          </thead>
           <tbody>
             {history.map((event) => {
               const occurredAt = new Date(event.occurredAt);
@@ -150,20 +253,69 @@ export function ReservationAuditTrail({ history }: { history: ReservationHistory
               return (
                 <tr key={event.id}>
                   <td>
-                    <strong>{new Intl.DateTimeFormat("id-ID", { day: "numeric", month: "short", year: "numeric", timeZone: "Asia/Jakarta" }).format(occurredAt)}</strong>
-                    <span>{new Intl.DateTimeFormat("id-ID", { hour: "2-digit", minute: "2-digit", hour12: false, timeZone: "Asia/Jakarta" }).format(occurredAt)}{t("audit.timeSuffix")}</span>
+                    <strong>
+                      {new Intl.DateTimeFormat("id-ID", {
+                        day: "numeric",
+                        month: "short",
+                        year: "numeric",
+                        timeZone: "Asia/Jakarta",
+                      }).format(occurredAt)}
+                    </strong>
+                    <span>
+                      {new Intl.DateTimeFormat("id-ID", {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                        hour12: false,
+                        timeZone: "Asia/Jakarta",
+                      }).format(occurredAt)}
+                      {t("audit.timeSuffix")}
+                    </span>
                   </td>
-                  <td><span className={`reservation-audit-event reservation-audit-event--${domain}`}>{t("audit.events." + event.eventType) !== "audit.events." + event.eventType ? t("audit.events." + event.eventType) : event.eventType.replaceAll("_", " ").replaceAll(".", " · ")}</span></td>
-                  <td className="reservation-audit-domain">{domain.charAt(0).toUpperCase() + domain.slice(1)}</td>
                   <td>
-                    <strong>{event.actor?.name ?? (event.actorType === "gateway" ? t("audit.actor.gateway") : t("audit.actor.system"))}</strong>
-                    {!event.actor && <span>{event.actorType === "gateway" ? t("audit.actor.automatedPayment") : t("audit.actor.automatedEvent")}</span>}
+                    <span
+                      className={`reservation-audit-event reservation-audit-event--${domain}`}
+                    >
+                      {t("audit.events." + event.eventType) !==
+                      "audit.events." + event.eventType
+                        ? t("audit.events." + event.eventType)
+                        : event.eventType
+                            .replaceAll("_", " ")
+                            .replaceAll(".", " · ")}
+                    </span>
                   </td>
-                  <td className="reservation-audit-details">{details.length ? details.join(" · ") : t("common.emptyDash")}</td>
+                  <td className="reservation-audit-domain">
+                    {domain.charAt(0).toUpperCase() + domain.slice(1)}
+                  </td>
+                  <td>
+                    <strong>
+                      {event.actor?.name ??
+                        (event.actorType === "gateway"
+                          ? t("audit.actor.gateway")
+                          : t("audit.actor.system"))}
+                    </strong>
+                    {!event.actor && (
+                      <span>
+                        {event.actorType === "gateway"
+                          ? t("audit.actor.automatedPayment")
+                          : t("audit.actor.automatedEvent")}
+                      </span>
+                    )}
+                  </td>
+                  <td className="reservation-audit-details">
+                    {details.length
+                      ? details.join(" · ")
+                      : t("common.emptyDash")}
+                  </td>
                 </tr>
               );
             })}
-            {history.length === 0 && <tr><td colSpan={5} className="reservation-audit-empty">{t("audit.empty")}</td></tr>}
+            {history.length === 0 && (
+              <tr>
+                <td colSpan={5} className="reservation-audit-empty">
+                  {t("audit.empty")}
+                </td>
+              </tr>
+            )}
           </tbody>
         </table>
       </div>

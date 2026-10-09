@@ -26,6 +26,7 @@
     "confirmed": "Confirmed",
     "checked_in": "Checked-in",
     "checked_out": "Checked-out",
+    "no_show": "No-show",
     "cancelled": "Cancelled",
     "expired": "Expired"
   },
@@ -187,6 +188,7 @@
       "confirmed": "Confirmed",
       "checkedIn": "Checked-in",
       "checkedOut": "Checked-out",
+      "noShow": "No-show",
       "cancelled": "Cancelled",
       "roomNights": "Room Nights"
     },
@@ -195,7 +197,7 @@
       "bookingValue": "Booking Value",
       "paid": "Paid",
       "outstanding": "Outstanding",
-      "note": "Financial figures include active reservations within the filter. Deposit excluded."
+      "note": "Financial figures include active reservations and no-show charges within the filter. Deposit excluded."
     },
     "filters": {
       "searchPlaceholder": "Search booking ID, guest, or WhatsApp",

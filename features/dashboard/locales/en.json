@@ -65,6 +65,7 @@
     "confirmed": "Confirmed",
     "checked_in": "Checked-in",
     "checked_out": "Checked-out",
+    "no_show": "No-show",
     "cancelled": "Cancelled",
     "expired": "Expired",
     "unpaid": "Unpaid",

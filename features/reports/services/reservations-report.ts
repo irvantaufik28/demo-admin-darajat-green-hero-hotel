@@ -3,13 +3,15 @@ import { getRoomTypes } from "../../rooms/services/room-types";
 
 export type ReservationReportSource = "website" | "phone" | "walk_in" | "ota";
 export type ReservationReportDateBy = "booking" | "check_in" | "check_out";
-export type ReservationReportSort = "newest" | "booking_code_asc" | "booking_code_desc";
+export type ReservationReportSort =
+  "newest" | "booking_code_asc" | "booking_code_desc";
 
 export type ReservationReportStatus =
   | "pending"
   | "confirmed"
   | "checked_in"
   | "checked_out"
+  | "no_show"
   | "cancelled"
   | "expired";
 
@@ -40,6 +42,7 @@ export type ReservationReportSummary = {
   confirmed: number;
   checkedIn: number;
   checkedOut: number;
+  noShow: number;
   cancelled: number;
   expired: number;
   roomNights: number;
@@ -62,8 +65,14 @@ export type ReservationReportResponse = {
 
 export type FilterOption = { id: string; name: string };
 
-export function getReservationsReport(query: URLSearchParams, signal?: AbortSignal) {
-  return apiRequest<ReservationReportResponse>(`reports/reservations?${query}`, { signal });
+export function getReservationsReport(
+  query: URLSearchParams,
+  signal?: AbortSignal,
+) {
+  return apiRequest<ReservationReportResponse>(
+    `reports/reservations?${query}`,
+    { signal },
+  );
 }
 
 // Dropdown options for the room type and OTA channel filters, sourced from master data.
@@ -79,9 +88,17 @@ export async function getReportFilterOptions(
   ]);
   const remainingRoomPages = await Promise.all(
     Array.from(
-      { length: Math.max(0, Math.ceil(firstRoomPage.total / firstRoomPage.limit) - 1) },
+      {
+        length: Math.max(
+          0,
+          Math.ceil(firstRoomPage.total / firstRoomPage.limit) - 1,
+        ),
+      },
       (_, index) =>
-        getRoomTypes(new URLSearchParams({ page: String(index + 2), limit: "100" }), signal),
+        getRoomTypes(
+          new URLSearchParams({ page: String(index + 2), limit: "100" }),
+          signal,
+        ),
     ),
   );
   const roomTypes = [firstRoomPage, ...remainingRoomPages]

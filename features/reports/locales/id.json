@@ -26,6 +26,7 @@
     "confirmed": "Terkonfirmasi",
     "checked_in": "Check-in",
     "checked_out": "Check-out",
+    "no_show": "Tidak Datang",
     "cancelled": "Dibatalkan",
     "expired": "Kedaluwarsa"
   },
@@ -187,6 +188,7 @@
       "confirmed": "Terkonfirmasi",
       "checkedIn": "Check-in",
       "checkedOut": "Check-out",
+      "noShow": "Tidak Datang",
       "cancelled": "Dibatalkan",
       "roomNights": "Room Night"
     },
@@ -195,7 +197,7 @@
       "bookingValue": "Nilai Pemesanan",
       "paid": "Dibayar",
       "outstanding": "Sisa Tagihan",
-      "note": "Nilai keuangan mencakup reservasi aktif dalam filter. Deposit tidak termasuk."
+      "note": "Nilai keuangan mencakup reservasi aktif dan penalti no-show dalam filter. Deposit tidak termasuk."
     },
     "filters": {
       "searchPlaceholder": "Cari ID pemesanan, tamu, atau WhatsApp",

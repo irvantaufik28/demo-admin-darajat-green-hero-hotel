@@ -46,6 +46,7 @@
     "confirmed": "Dikonfirmasi",
     "checkedIn": "Check-in",
     "checkedOut": "Check-out",
+    "noShow": "No Show",
     "cancelled": "Dibatalkan",
     "expired": "Kedaluwarsa",
     "draft": "Draf",
@@ -322,6 +323,7 @@
       "checkIn": "Check-in Tamu",
       "checkOut": "Check Out Tamu",
       "cancel": "Batalkan Reservasi",
+      "noShow": "Tandai No Show",
       "extend": "Perpanjang Menginap"
     },
     "confirmAndCheckIn": "Konfirmasi & Check-in",
@@ -387,6 +389,7 @@
       "outstandingReasonLabel": "Alasan checkout dengan sisa tagihan",
       "outstandingAcknowledge": "Saya mengonfirmasi sisa tagihan tetap tercatat di Payments.",
       "cancelReasonLabel": "Alasan pembatalan",
+      "noShowReasonLabel": "Alasan no-show",
       "confirmCheckIn": "Konfirmasi Check-in"
     },
     "errors": {
@@ -407,6 +410,7 @@
       "checkoutReasonRequired": "Centang konfirmasi dan tulis alasan checkout dengan sisa tagihan.",
       "refundReferenceRequired": "Isi referensi refund untuk setiap deposit yang dikembalikan.",
       "cancelReasonRequired": "Alasan pembatalan wajib diisi.",
+      "noShowReasonRequired": "Alasan no-show wajib diisi.",
       "extensionNotReady": "Pilih tanggal dan tunggu rincian perpanjangan tersedia.",
       "extensionPaymentInvalid": "Pilih metode pembayaran dan jumlah yang valid.",
       "extensionDateRequired": "Perpanjangan tidak tersedia.",
@@ -571,6 +575,7 @@
       "reservation.created": "Reservasi dibuat",
       "reservation.confirmed": "Reservasi dikonfirmasi",
       "reservation.cancelled": "Reservasi dibatalkan",
+      "reservation.no_show": "Reservasi ditandai no-show",
       "reservation.stay_extended": "Masa inap diperpanjang",
       "reservation.room_changed": "Kamar diganti",
       "reservation.extra_bed_changed": "Extra bed diubah",
@@ -950,9 +955,16 @@
     "saveAssignment": "Simpan Penetapan",
     "success": "Kamar {roomNumber} berhasil ditetapkan. Room Rack diperbarui.",
     "successBatch": "{count} kamar berhasil ditetapkan. Room Rack diperbarui.",
+    "unassignButton": "Lepas Kamar",
+    "unassignTitle": "Lepas Penetapan Kamar",
+    "unassignConfirmation": "Lepaskan Kamar {roomNumber} dari reservasi ini? Kamar akan kembali tersedia.",
+    "unassignConfirm": "Lepas Kamar",
+    "unassignReason": "Penetapan kamar dilepas melalui kalender reservasi",
+    "unassignSuccess": "Kamar {roomNumber} berhasil dilepas. Room Rack diperbarui.",
     "errors": {
       "optionsLoadError": "Pilihan kamar gagal dimuat.",
-      "saveFailed": "Penetapan kamar gagal disimpan."
+      "saveFailed": "Penetapan kamar gagal disimpan.",
+      "unassignFailed": "Penetapan kamar gagal dilepas."
     }
   },
   "form": {
@@ -1244,6 +1256,8 @@
     "tryAgain": "Coba lagi",
     "emptyState": "Tidak ada tipe kamar ditemukan.",
     "roomNowAvailable": "Kamar {room} sekarang Available.",
+    "showControls": "Tampilkan Kontrol",
+    "hideControls": "Sembunyikan Kontrol",
     "metrics": {
       "available": "Kamar Tersedia",
       "ready": "Siap Check-in",

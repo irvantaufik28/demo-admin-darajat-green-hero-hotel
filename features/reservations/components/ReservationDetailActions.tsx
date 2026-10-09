@@ -12,6 +12,7 @@ import {
   getCheckOutContext,
   getPaymentMethods,
   getExtendStayQuote,
+  markReservationNoShow,
   extendReservationStay,
   recordReservationPayment,
   type ApiReservationDetail,
@@ -34,7 +35,14 @@ import { useTranslations } from "../../../lib/i18n";
 import en from "../locales/en.json";
 import idLocale from "../locales/id.json";
 
-type Action = "confirm" | "payment" | "check_in" | "check_out" | "cancel" | "extend";
+type Action =
+  | "confirm"
+  | "payment"
+  | "check_in"
+  | "check_out"
+  | "no_show"
+  | "cancel"
+  | "extend";
 type DepositMode = "defer" | "refund" | "deduct_balance" | "deduct_damage";
 
 const actionLabelKeys: Record<Action, string> = {
@@ -42,6 +50,7 @@ const actionLabelKeys: Record<Action, string> = {
   payment: "detailActions.labels.payment",
   check_in: "detailActions.labels.checkIn",
   check_out: "detailActions.labels.checkOut",
+  no_show: "detailActions.labels.noShow",
   cancel: "detailActions.labels.cancel",
   extend: "detailActions.labels.extend",
 };
@@ -51,6 +60,7 @@ const actionPermissions: Record<Action, string> = {
   payment: "payments.record",
   check_in: "reservations.check_in",
   check_out: "reservations.check_out",
+  no_show: "reservations.cancel",
   cancel: "reservations.cancel",
   extend: "reservations.extend_stay",
 };
@@ -84,11 +94,23 @@ export function ReservationDetailActions({
   const [paymentNotes, setPaymentNotes] = useState("");
   const [paymentKey, setPaymentKey] = useState("");
   const [acknowledged, setAcknowledged] = useState(false);
-  const [checkInContext, setCheckInContext] = useState<CheckInContext | null>(null);
-  const [earlyCheckIn, setEarlyCheckIn] = useState<EarlyCheckInInput>({ acknowledged: false, chargeAmount: 0, paymentTiming: "later" });
-  const [checkOutContext, setCheckOutContext] = useState<CheckOutContext | null>(null);
-  const [earlyDepartureAcknowledged, setEarlyDepartureAcknowledged] = useState(false);
-  const [lateCheckOut, setLateCheckOut] = useState<LateCheckOutInput>({ acknowledged: false, chargeAmount: 0, paymentTiming: "later" });
+  const [checkInContext, setCheckInContext] = useState<CheckInContext | null>(
+    null,
+  );
+  const [earlyCheckIn, setEarlyCheckIn] = useState<EarlyCheckInInput>({
+    acknowledged: false,
+    chargeAmount: 0,
+    paymentTiming: "later",
+  });
+  const [checkOutContext, setCheckOutContext] =
+    useState<CheckOutContext | null>(null);
+  const [earlyDepartureAcknowledged, setEarlyDepartureAcknowledged] =
+    useState(false);
+  const [lateCheckOut, setLateCheckOut] = useState<LateCheckOutInput>({
+    acknowledged: false,
+    chargeAmount: 0,
+    paymentTiming: "later",
+  });
   const [reason, setReason] = useState("");
   const [depositModes, setDepositModes] = useState<Record<string, DepositMode>>(
     {},
@@ -101,13 +123,21 @@ export function ReservationDetailActions({
   const [depositMethodId, setDepositMethodId] = useState("");
   const [depositNote, setDepositNote] = useState("");
   const [newCheckOutDate, setNewCheckOutDate] = useState("");
-  const [extensionQuote, setExtensionQuote] = useState<ExtendStayQuote | null>(null);
+  const [extensionQuote, setExtensionQuote] = useState<ExtendStayQuote | null>(
+    null,
+  );
   const [extensionLoading, setExtensionLoading] = useState(false);
-  const [extensionPaymentTiming, setExtensionPaymentTiming] = useState<"later" | "now">("later");
+  const [extensionPaymentTiming, setExtensionPaymentTiming] = useState<
+    "later" | "now"
+  >("later");
   const [extensionPaymentAmount, setExtensionPaymentAmount] = useState(0);
 
   useEffect(() => {
-    if (action !== "extend" || !newCheckOutDate || newCheckOutDate <= detail.reservation.checkOutDate) {
+    if (
+      action !== "extend" ||
+      !newCheckOutDate ||
+      newCheckOutDate <= detail.reservation.checkOutDate
+    ) {
       return;
     }
     let active = true;
@@ -123,12 +153,26 @@ export function ReservationDetailActions({
         .catch((cause) => {
           if (!active) return;
           setExtensionQuote(null);
-          setError(cause instanceof Error ? cause.message : t("detailActions.errors.extensionDateRequired"));
+          setError(
+            cause instanceof Error
+              ? cause.message
+              : t("detailActions.errors.extensionDateRequired"),
+          );
         })
-        .finally(() => { if (active) setExtensionLoading(false); });
+        .finally(() => {
+          if (active) setExtensionLoading(false);
+        });
     }, 250);
-    return () => { active = false; clearTimeout(timer); };
-  }, [action, newCheckOutDate, detail.reservation.id, detail.reservation.checkOutDate]);
+    return () => {
+      active = false;
+      clearTimeout(timer);
+    };
+  }, [
+    action,
+    newCheckOutDate,
+    detail.reservation.id,
+    detail.reservation.checkOutDate,
+  ]);
 
   const presentation = reservationDetailPresentation(detail);
   const userPermissions = getCurrentUser()?.permissions ?? [];
@@ -143,30 +187,43 @@ export function ReservationDetailActions({
   const isInHouse = detail.reservation.reservationStatus === "checked_in";
   const isPending = detail.reservation.reservationStatus === "pending";
   const hasBalance = detail.summary.remainingBalance > 0;
-  const checkoutProjectedBalance = detail.summary.remainingBalance +
-    (checkOutContext?.kind === "late_checkout" && lateCheckOut.paymentTiming === "later"
+  const checkoutProjectedBalance =
+    detail.summary.remainingBalance +
+    (checkOutContext?.kind === "late_checkout" &&
+    lateCheckOut.paymentTiming === "later"
       ? lateCheckOut.chargeAmount
       : 0);
   const checkoutDepositDeduction = activeDeposits.reduce(
-    (sum, deposit) => sum + (depositModes[deposit.id] === "deduct_balance"
-      ? deposit.amountHeld - deposit.amountRefunded - deposit.amountDeducted
-      : 0),
+    (sum, deposit) =>
+      sum +
+      (depositModes[deposit.id] === "deduct_balance"
+        ? deposit.amountHeld - deposit.amountRefunded - deposit.amountDeducted
+        : 0),
     0,
   );
-  const checkoutRemainingAfterDeductions = Math.max(0, checkoutProjectedBalance - checkoutDepositDeduction);
-  const checkInActionDisabled = !checkInContext ||
+  const checkoutRemainingAfterDeductions = Math.max(
+    0,
+    checkoutProjectedBalance - checkoutDepositDeduction,
+  );
+  const checkInActionDisabled =
+    !checkInContext ||
     (hasBalance && !acknowledged) ||
-    (checkInContext.required && (
-      !earlyCheckIn.acknowledged ||
-      (earlyCheckIn.chargeAmount > 0 && earlyCheckIn.paymentTiming === "now" && !earlyCheckIn.paymentMethodId)
-    ));
-  const checkOutActionDisabled = !checkOutContext ||
-    (checkOutContext.kind === "early_departure" && !earlyDepartureAcknowledged) ||
-    (checkOutContext.kind === "late_checkout" && (
-      !lateCheckOut.acknowledged ||
-      (lateCheckOut.chargeAmount > 0 && lateCheckOut.paymentTiming === "now" && !lateCheckOut.paymentMethodId)
-    )) ||
-    (checkoutRemainingAfterDeductions > 0 && (!canOverrideCheckout || !acknowledged || !reason.trim()));
+    (checkInContext.required &&
+      (!earlyCheckIn.acknowledged ||
+        (earlyCheckIn.chargeAmount > 0 &&
+          earlyCheckIn.paymentTiming === "now" &&
+          !earlyCheckIn.paymentMethodId)));
+  const checkOutActionDisabled =
+    !checkOutContext ||
+    (checkOutContext.kind === "early_departure" &&
+      !earlyDepartureAcknowledged) ||
+    (checkOutContext.kind === "late_checkout" &&
+      (!lateCheckOut.acknowledged ||
+        (lateCheckOut.chargeAmount > 0 &&
+          lateCheckOut.paymentTiming === "now" &&
+          !lateCheckOut.paymentMethodId))) ||
+    (checkoutRemainingAfterDeductions > 0 &&
+      (!canOverrideCheckout || !acknowledged || !reason.trim()));
 
   async function openAction(next: Action) {
     setAction(next);
@@ -183,7 +240,11 @@ export function ReservationDetailActions({
         setMethods(items);
         setMethodId(items[0]?.id ?? "");
       } catch (cause) {
-        setError(cause instanceof Error ? cause.message : t("detailActions.errors.methodsLoadError"));
+        setError(
+          cause instanceof Error
+            ? cause.message
+            : t("detailActions.errors.methodsLoadError"),
+        );
       }
     }
     if (next === "payment") {
@@ -204,7 +265,11 @@ export function ReservationDetailActions({
     }
     if (next === "check_in") {
       setCheckInContext(null);
-      setEarlyCheckIn({ acknowledged: false, chargeAmount: 0, paymentTiming: "later" });
+      setEarlyCheckIn({
+        acknowledged: false,
+        chargeAmount: 0,
+        paymentTiming: "later",
+      });
       setRequireDeposit(detail.deposits.length === 0);
       setDepositAmount(300000);
       setDepositNote("");
@@ -243,14 +308,20 @@ export function ReservationDetailActions({
         setDepositMethodId(paymentMethods[0]?.id ?? "");
       } catch (cause) {
         setError(
-          cause instanceof Error ? cause.message : t("detailActions.errors.roomsLoadError"),
+          cause instanceof Error
+            ? cause.message
+            : t("detailActions.errors.roomsLoadError"),
         );
       }
     }
     if (next === "check_out") {
       setCheckOutContext(null);
       setEarlyDepartureAcknowledged(false);
-      setLateCheckOut({ acknowledged: false, chargeAmount: 0, paymentTiming: "later" });
+      setLateCheckOut({
+        acknowledged: false,
+        chargeAmount: 0,
+        paymentTiming: "later",
+      });
       setDepositModes(
         Object.fromEntries(
           activeDeposits.map((deposit) => [deposit.id, "defer"]),
@@ -265,7 +336,11 @@ export function ReservationDetailActions({
         setCheckOutContext(context);
         setMethods(paymentMethods);
       } catch (cause) {
-        setError(cause instanceof Error ? cause.message : t("detailActions.errors.checkoutRulesLoadError"));
+        setError(
+          cause instanceof Error
+            ? cause.message
+            : t("detailActions.errors.checkoutRulesLoadError"),
+        );
       }
     }
   }
@@ -280,9 +355,7 @@ export function ReservationDetailActions({
       action === "payment" &&
       (!methodId || paymentAmount < 1 || paymentAmount > balance)
     ) {
-      setError(
-        t("detailActions.errors.paymentInvalid"),
-      );
+      setError(t("detailActions.errors.paymentInvalid"));
       return;
     }
     if (action === "check_in") {
@@ -298,11 +371,19 @@ export function ReservationDetailActions({
         setError(t("detailActions.errors.balanceConfirmRequired"));
         return;
       }
-      if (!checkInContext || (checkInContext.required && !earlyCheckIn.acknowledged)) {
+      if (
+        !checkInContext ||
+        (checkInContext.required && !earlyCheckIn.acknowledged)
+      ) {
         setError(t("detailActions.errors.earlyCheckInRequired"));
         return;
       }
-      if (checkInContext.required && earlyCheckIn.chargeAmount > 0 && earlyCheckIn.paymentTiming === "now" && !earlyCheckIn.paymentMethodId) {
+      if (
+        checkInContext.required &&
+        earlyCheckIn.chargeAmount > 0 &&
+        earlyCheckIn.paymentTiming === "now" &&
+        !earlyCheckIn.paymentMethodId
+      ) {
         setError(t("detailActions.errors.earlyCheckInMethodRequired"));
         return;
       }
@@ -316,32 +397,36 @@ export function ReservationDetailActions({
         setError(t("detailActions.errors.checkoutRulesNotLoaded"));
         return;
       }
-      if (checkOutContext.kind === "early_departure" && !earlyDepartureAcknowledged) {
+      if (
+        checkOutContext.kind === "early_departure" &&
+        !earlyDepartureAcknowledged
+      ) {
         setError(t("detailActions.errors.earlyDepartureRequired"));
         return;
       }
-      if (checkOutContext.kind === "late_checkout" && !lateCheckOut.acknowledged) {
+      if (
+        checkOutContext.kind === "late_checkout" &&
+        !lateCheckOut.acknowledged
+      ) {
         setError(t("detailActions.errors.lateCheckoutRequired"));
         return;
       }
-      if (checkOutContext.kind === "late_checkout" && lateCheckOut.chargeAmount > 0 && lateCheckOut.paymentTiming === "now" && !lateCheckOut.paymentMethodId) {
+      if (
+        checkOutContext.kind === "late_checkout" &&
+        lateCheckOut.chargeAmount > 0 &&
+        lateCheckOut.paymentTiming === "now" &&
+        !lateCheckOut.paymentMethodId
+      ) {
         setError(t("detailActions.errors.lateCheckoutMethodRequired"));
         return;
       }
       const willRemainOutstanding = checkoutRemainingAfterDeductions > 0;
       if (willRemainOutstanding && !canOverrideCheckout) {
-        setError(
-          t("detailActions.errors.checkoutOverrideRequired"),
-        );
+        setError(t("detailActions.errors.checkoutOverrideRequired"));
         return;
       }
-      if (
-        willRemainOutstanding &&
-        (!acknowledged || !reason.trim())
-      ) {
-        setError(
-          t("detailActions.errors.checkoutReasonRequired"),
-        );
+      if (willRemainOutstanding && (!acknowledged || !reason.trim())) {
+        setError(t("detailActions.errors.checkoutReasonRequired"));
         return;
       }
       if (
@@ -351,22 +436,34 @@ export function ReservationDetailActions({
             !depositReferences[deposit.id]?.trim(),
         )
       ) {
-        setError(
-          t("detailActions.errors.refundReferenceRequired"),
-        );
+        setError(t("detailActions.errors.refundReferenceRequired"));
         return;
       }
     }
-    if (action === "cancel" && !reason.trim()) {
-      setError(t("detailActions.errors.cancelReasonRequired"));
+    if ((action === "cancel" || action === "no_show") && !reason.trim()) {
+      setError(
+        t(
+          action === "no_show"
+            ? "detailActions.errors.noShowReasonRequired"
+            : "detailActions.errors.cancelReasonRequired",
+        ),
+      );
       return;
     }
     if (action === "extend") {
-      if (!extensionQuote || extensionQuote.newCheckOutDate !== newCheckOutDate) {
+      if (
+        !extensionQuote ||
+        extensionQuote.newCheckOutDate !== newCheckOutDate
+      ) {
         setError(t("detailActions.errors.extensionNotReady"));
         return;
       }
-      if (extensionPaymentTiming === "now" && (!methodId || extensionPaymentAmount < 1 || extensionPaymentAmount > extensionQuote.projectedBalance)) {
+      if (
+        extensionPaymentTiming === "now" &&
+        (!methodId ||
+          extensionPaymentAmount < 1 ||
+          extensionPaymentAmount > extensionQuote.projectedBalance)
+      ) {
         setError(t("detailActions.errors.extensionPaymentInvalid"));
         return;
       }
@@ -406,9 +503,14 @@ export function ReservationDetailActions({
         let balanceAfterDeductions = checkoutProjectedBalance;
         await checkOutReservation(id, {
           acknowledgeOutstanding: checkoutRemainingAfterDeductions > 0,
-          outstandingReason: checkoutRemainingAfterDeductions > 0 ? reason.trim() : undefined,
-          ...(checkOutContext?.kind === "early_departure" ? { acknowledgeEarlyDeparture: earlyDepartureAcknowledged } : {}),
-          ...(checkOutContext?.kind === "late_checkout" ? { lateCheckOut } : {}),
+          outstandingReason:
+            checkoutRemainingAfterDeductions > 0 ? reason.trim() : undefined,
+          ...(checkOutContext?.kind === "early_departure"
+            ? { acknowledgeEarlyDeparture: earlyDepartureAcknowledged }
+            : {}),
+          ...(checkOutContext?.kind === "late_checkout"
+            ? { lateCheckOut }
+            : {}),
           deposits: activeDeposits.map((deposit) => {
             const mode = depositModes[deposit.id] ?? "defer";
             const amount =
@@ -445,20 +547,27 @@ export function ReservationDetailActions({
         });
       }
       if (action === "cancel") await cancelReservation(id, reason);
+      if (action === "no_show") await markReservationNoShow(id, reason);
       if (action === "extend") {
         await extendReservationStay(id, {
           newCheckOutDate,
           expectedVersion: extensionQuote!.version,
-          ...(extensionPaymentTiming === "now" ? { payment: { methodId, amount: extensionPaymentAmount } } : {}),
+          ...(extensionPaymentTiming === "now"
+            ? { payment: { methodId, amount: extensionPaymentAmount } }
+            : {}),
         });
       }
-      const message = t("detailActions.errors.actionSuccess", { action: t(actionLabelKeys[action]) });
+      const message = t("detailActions.errors.actionSuccess", {
+        action: t(actionLabelKeys[action]),
+      });
       setAction(null);
       await onUpdated(message);
     } catch (cause) {
       if (action === "check_out") {
         try {
-          setCheckOutContext(await getCheckOutContext(detail.reservation.checkOutDate));
+          setCheckOutContext(
+            await getCheckOutContext(detail.reservation.checkOutDate),
+          );
         } catch {
           // Keep the current modal state and show the original checkout error.
         }
@@ -493,7 +602,7 @@ export function ReservationDetailActions({
                 key={item}
                 type="button"
                 className={
-                  item === "cancel"
+                  item === "cancel" || item === "no_show"
                     ? "reservation-secondary-button"
                     : "action-button"
                 }
@@ -515,7 +624,10 @@ export function ReservationDetailActions({
             >
               {t("detailActions.extendStay")}
             </button>
-            <ReservationExperienceBillActions detail={detail} onUpdated={onUpdated} />
+            <ReservationExperienceBillActions
+              detail={detail}
+              onUpdated={onUpdated}
+            />
           </>
         )}
         {detail.reservation.reservationStatus === "checked_in" &&
@@ -572,7 +684,10 @@ export function ReservationDetailActions({
                     </div>
                     <small>
                       {hasBalance
-                        ? t("detailActions.modal.paidRemaining", { paid: rupiah(detail.summary.paidAmount), remaining: rupiah(detail.summary.remainingBalance) })
+                        ? t("detailActions.modal.paidRemaining", {
+                            paid: rupiah(detail.summary.paidAmount),
+                            remaining: rupiah(detail.summary.remainingBalance),
+                          })
                         : `${detail.rooms.map((room) => room.roomTypeNameSnapshot).join(", ")} · ${formatStayDate(detail.reservation.checkInDate)} → ${formatStayDate(detail.reservation.checkOutDate)} (${detail.summary.nights} ${detail.summary.nights === 1 ? t("common.nightLower") : t("common.nightsLower")})`}
                     </small>
                   </div>
@@ -584,14 +699,18 @@ export function ReservationDetailActions({
 
                 {action === "confirm" && (
                   <p>
-                    {t("detailActions.modal.confirmQuestion", { status: detail.reservation.paymentStatus })}
+                    {t("detailActions.modal.confirmQuestion", {
+                      status: detail.reservation.paymentStatus,
+                    })}
                   </p>
                 )}
 
                 {action === "payment" && (
                   <>
                     <p>
-                      {t("detailActions.modal.paymentRemaining", { amount: rupiah(balanceValue(detail)) })}
+                      {t("detailActions.modal.paymentRemaining", {
+                        amount: rupiah(balanceValue(detail)),
+                      })}
                     </p>
                     <label>
                       {t("detailActions.modal.paymentAmountLabel")}
@@ -633,57 +752,170 @@ export function ReservationDetailActions({
 
                 {action === "extend" && (
                   <>
-                    <p>{t("detailActions.modal.extendRoomsNote", { count: detail.rooms.length })}</p>
+                    <p>
+                      {t("detailActions.modal.extendRoomsNote", {
+                        count: detail.rooms.length,
+                      })}
+                    </p>
                     <div className="api-extension-date-field">
-                      <span>{t("detailActions.modal.extensionPeriodLabel")}</span>
+                      <span>
+                        {t("detailActions.modal.extensionPeriodLabel")}
+                      </span>
                       <DateRangePicker
-                        label={t("detailActions.modal.extensionPeriodPickerLabel")}
+                        label={t(
+                          "detailActions.modal.extensionPeriodPickerLabel",
+                        )}
                         start={detail.reservation.checkOutDate}
                         end={newCheckOutDate}
                         minDate={detail.reservation.checkOutDate}
                         minNights={1}
                         fixedStart
-                        onChange={(_, end) => { setNewCheckOutDate(end); setExtensionQuote(null); setError(""); }}
+                        onChange={(_, end) => {
+                          setNewCheckOutDate(end);
+                          setExtensionQuote(null);
+                          setError("");
+                        }}
                       />
                     </div>
-                    {extensionLoading && <p>{t("detailActions.modal.calculating")}</p>}
+                    {extensionLoading && (
+                      <p>{t("detailActions.modal.calculating")}</p>
+                    )}
                     {extensionQuote && (
                       <div className="api-extension-quote">
-                        <strong>{t("detailActions.modal.extraNights", { nights: extensionQuote.nights })}</strong>
+                        <strong>
+                          {t("detailActions.modal.extraNights", {
+                            nights: extensionQuote.nights,
+                          })}
+                        </strong>
                         {extensionQuote.rooms.map((room) => (
-                          <div key={room.reservationRoomId} className="api-extension-room">
-                            <strong>{room.roomTypeName} · {room.roomNumber ?? t("common.emptyDash")}</strong>
-                            <span>{t("detailActions.modal.roomRate", { amount: rupiah(room.roomAmount) })}</span>
+                          <div
+                            key={room.reservationRoomId}
+                            className="api-extension-room"
+                          >
+                            <strong>
+                              {room.roomTypeName} ·{" "}
+                              {room.roomNumber ?? t("common.emptyDash")}
+                            </strong>
+                            <span>
+                              {t("detailActions.modal.roomRate", {
+                                amount: rupiah(room.roomAmount),
+                              })}
+                            </span>
                             {room.nights.map((night) => (
-                              <small key={night.stayDate}>{t("detailActions.modal.nightLine", { date: formatStayDate(night.stayDate), price: rupiah(night.finalPrice) })}{night.discountAmount > 0 ? t("detailActions.modal.nightDiscount", { amount: rupiah(night.discountAmount), campaign: night.campaignSnapshot ? t("detailActions.modal.campaignSuffix", { name: night.campaignSnapshot.name }) : "" }) : ""}</small>
+                              <small key={night.stayDate}>
+                                {t("detailActions.modal.nightLine", {
+                                  date: formatStayDate(night.stayDate),
+                                  price: rupiah(night.finalPrice),
+                                })}
+                                {night.discountAmount > 0
+                                  ? t("detailActions.modal.nightDiscount", {
+                                      amount: rupiah(night.discountAmount),
+                                      campaign: night.campaignSnapshot
+                                        ? t(
+                                            "detailActions.modal.campaignSuffix",
+                                            {
+                                              name: night.campaignSnapshot.name,
+                                            },
+                                          )
+                                        : "",
+                                    })
+                                  : ""}
+                              </small>
                             ))}
-                            {room.extraBeds && <span>{t("detailActions.modal.extraBedLine", { quantity: room.extraBeds.quantity, nights: extensionQuote.nights, amount: rupiah(room.extraBeds.amount) })}</span>}
-                            {room.breakfastAmount > 0 && <span>{t("detailActions.modal.breakfastLine", { amount: rupiah(room.breakfastAmount) })}</span>}
-                            <strong>{t("detailActions.modal.subtotal", { amount: rupiah(room.total) })}</strong>
+                            {room.extraBeds && (
+                              <span>
+                                {t("detailActions.modal.extraBedLine", {
+                                  quantity: room.extraBeds.quantity,
+                                  nights: extensionQuote.nights,
+                                  amount: rupiah(room.extraBeds.amount),
+                                })}
+                              </span>
+                            )}
+                            {room.breakfastAmount > 0 && (
+                              <span>
+                                {t("detailActions.modal.breakfastLine", {
+                                  amount: rupiah(room.breakfastAmount),
+                                })}
+                              </span>
+                            )}
+                            <strong>
+                              {t("detailActions.modal.subtotal", {
+                                amount: rupiah(room.total),
+                              })}
+                            </strong>
                           </div>
                         ))}
-                        <p>{t("detailActions.modal.additionalNightDiscount", { amount: rupiah(extensionQuote.discountTotal) })}</p>
-                        <p>{t("detailActions.modal.extensionCharge", { amount: rupiah(extensionQuote.extensionTotal) })}</p>
-                        {extensionQuote.existingBalance > 0 && <p className="api-extension-warning">{t("detailActions.modal.existingBalance", { amount: rupiah(extensionQuote.existingBalance) })}</p>}
-                        <p>{t("detailActions.modal.projectedBalance", { amount: rupiah(extensionQuote.projectedBalance) })}</p>
+                        <p>
+                          {t("detailActions.modal.additionalNightDiscount", {
+                            amount: rupiah(extensionQuote.discountTotal),
+                          })}
+                        </p>
+                        <p>
+                          {t("detailActions.modal.extensionCharge", {
+                            amount: rupiah(extensionQuote.extensionTotal),
+                          })}
+                        </p>
+                        {extensionQuote.existingBalance > 0 && (
+                          <p className="api-extension-warning">
+                            {t("detailActions.modal.existingBalance", {
+                              amount: rupiah(extensionQuote.existingBalance),
+                            })}
+                          </p>
+                        )}
+                        <p>
+                          {t("detailActions.modal.projectedBalance", {
+                            amount: rupiah(extensionQuote.projectedBalance),
+                          })}
+                        </p>
                       </div>
                     )}
                     <label>
                       {t("detailActions.modal.paymentTimingLabel")}
-                      <select value={extensionPaymentTiming} onChange={(event) => setExtensionPaymentTiming(event.target.value as "later" | "now")}>
-                        <option value="later">{t("detailActions.modal.paymentTimingLater")}</option>
-                        <option value="now">{t("detailActions.modal.paymentTimingNow")}</option>
+                      <select
+                        value={extensionPaymentTiming}
+                        onChange={(event) =>
+                          setExtensionPaymentTiming(
+                            event.target.value as "later" | "now",
+                          )
+                        }
+                      >
+                        <option value="later">
+                          {t("detailActions.modal.paymentTimingLater")}
+                        </option>
+                        <option value="now">
+                          {t("detailActions.modal.paymentTimingNow")}
+                        </option>
                       </select>
                     </label>
                     {extensionPaymentTiming === "now" && extensionQuote && (
                       <>
-                        <label>{t("detailActions.modal.paymentAmountLabel")}
-                          <input type="number" min={1} max={extensionQuote.projectedBalance} value={extensionPaymentAmount}
-                            onChange={(event) => setExtensionPaymentAmount(Number(event.target.value))} />
+                        <label>
+                          {t("detailActions.modal.paymentAmountLabel")}
+                          <input
+                            type="number"
+                            min={1}
+                            max={extensionQuote.projectedBalance}
+                            value={extensionPaymentAmount}
+                            onChange={(event) =>
+                              setExtensionPaymentAmount(
+                                Number(event.target.value),
+                              )
+                            }
+                          />
                         </label>
-                        <label>{t("detailActions.modal.paymentMethodLabel")}
-                          <select value={methodId} onChange={(event) => setMethodId(event.target.value)}>
-                            {methods.map((method) => <option key={method.id} value={method.id}>{method.name}</option>)}
+                        <label>
+                          {t("detailActions.modal.paymentMethodLabel")}
+                          <select
+                            value={methodId}
+                            onChange={(event) =>
+                              setMethodId(event.target.value)
+                            }
+                          >
+                            {methods.map((method) => (
+                              <option key={method.id} value={method.id}>
+                                {method.name}
+                              </option>
+                            ))}
                           </select>
                         </label>
                       </>
@@ -709,10 +941,10 @@ export function ReservationDetailActions({
                             : [];
                         return (
                           <label key={room.id}>
-                            {t("detailActions.modal.assignRoom", { roomType: room.roomTypeNameSnapshot })}
-                            {detail.rooms.length > 1
-                              ? ` #${index + 1}`
-                              : ""}{" "}
+                            {t("detailActions.modal.assignRoom", {
+                              roomType: room.roomTypeNameSnapshot,
+                            })}
+                            {detail.rooms.length > 1 ? ` #${index + 1}` : ""}{" "}
                             <span>*</span>
                             <select
                               value={roomSelections[room.id] ?? ""}
@@ -723,7 +955,9 @@ export function ReservationDetailActions({
                                 }))
                               }
                             >
-                              <option value="">{t("detailActions.modal.selectRoom")}</option>
+                              <option value="">
+                                {t("detailActions.modal.selectRoom")}
+                              </option>
                               {[...assigned, ...choices].map((unit) => (
                                 <option
                                   key={unit.id}
@@ -734,7 +968,9 @@ export function ReservationDetailActions({
                                       roomSelections[other.id] === unit.id,
                                   )}
                                 >
-                                  {t("detailActions.modal.roomAvailable", { roomNumber: unit.roomNumber })}
+                                  {t("detailActions.modal.roomAvailable", {
+                                    roomNumber: unit.roomNumber,
+                                  })}
                                 </option>
                               ))}
                             </select>
@@ -756,7 +992,10 @@ export function ReservationDetailActions({
                             setRequireDeposit(event.target.checked)
                           }
                         />
-                        {t("detailActions.modal.requireDeposit")} <span>{t("detailActions.modal.securityGuarantee")}</span>
+                        {t("detailActions.modal.requireDeposit")}{" "}
+                        <span>
+                          {t("detailActions.modal.securityGuarantee")}
+                        </span>
                       </label>
                       {requireDeposit && (
                         <div className="reservation-operation-deposit-fields">
@@ -796,14 +1035,21 @@ export function ReservationDetailActions({
                               onChange={(event) =>
                                 setDepositNote(event.target.value)
                               }
-                              placeholder={t("detailActions.modal.depositNotePlaceholder")}
+                              placeholder={t(
+                                "detailActions.modal.depositNotePlaceholder",
+                              )}
                             />
                           </label>
                         </div>
                       )}
                     </div>
                     {checkInContext?.required && (
-                      <EarlyCheckInFields context={checkInContext} value={earlyCheckIn} onChange={setEarlyCheckIn} methods={methods} />
+                      <EarlyCheckInFields
+                        context={checkInContext}
+                        value={earlyCheckIn}
+                        onChange={setEarlyCheckIn}
+                        methods={methods}
+                      />
                     )}
                     {hasBalance && (
                       <label className="partial-check-in-confirmation">
@@ -815,7 +1061,9 @@ export function ReservationDetailActions({
                           }
                         />
                         <span>
-                          {t("detailActions.modal.balanceAcknowledgement", { amount: rupiah(detail.summary.remainingBalance) })}
+                          {t("detailActions.modal.balanceAcknowledgement", {
+                            amount: rupiah(detail.summary.remainingBalance),
+                          })}
                         </span>
                       </label>
                     )}
@@ -828,7 +1076,9 @@ export function ReservationDetailActions({
                       <CheckOutTimingFields
                         context={checkOutContext}
                         earlyDepartureAcknowledged={earlyDepartureAcknowledged}
-                        onEarlyDepartureAcknowledgedChange={setEarlyDepartureAcknowledged}
+                        onEarlyDepartureAcknowledgedChange={
+                          setEarlyDepartureAcknowledged
+                        }
                         lateCheckOut={lateCheckOut}
                         onLateCheckOutChange={setLateCheckOut}
                         methods={methods}
@@ -844,7 +1094,11 @@ export function ReservationDetailActions({
                           className="api-reservation-deposit"
                           key={deposit.id}
                         >
-                          <strong>{t("detailActions.modal.depositLabel", { amount: rupiah(amount) })}</strong>
+                          <strong>
+                            {t("detailActions.modal.depositLabel", {
+                              amount: rupiah(amount),
+                            })}
+                          </strong>
                           <label>
                             {t("detailActions.modal.depositHandling")}
                             <select
@@ -861,11 +1115,15 @@ export function ReservationDetailActions({
                                 {t("detailActions.modal.depositDefer")}
                               </option>
                               {canRefund && (
-                                <option value="refund">{t("detailActions.modal.depositRefundFull")}</option>
+                                <option value="refund">
+                                  {t("detailActions.modal.depositRefundFull")}
+                                </option>
                               )}
                               {checkoutProjectedBalance > 0 && (
                                 <option value="deduct_balance">
-                                  {t("detailActions.modal.depositDeductBalance")}
+                                  {t(
+                                    "detailActions.modal.depositDeductBalance",
+                                  )}
                                 </option>
                               )}
                               <option value="deduct_damage">
@@ -892,7 +1150,11 @@ export function ReservationDetailActions({
                     })}
                     {checkoutRemainingAfterDeductions > 0 && (
                       <>
-                        <p>{t("detailActions.modal.remainingAfterCheckout", { amount: rupiah(checkoutRemainingAfterDeductions) })}</p>
+                        <p>
+                          {t("detailActions.modal.remainingAfterCheckout", {
+                            amount: rupiah(checkoutRemainingAfterDeductions),
+                          })}
+                        </p>
                         <label>
                           {t("detailActions.modal.outstandingReasonLabel")}
                           <textarea
@@ -916,9 +1178,13 @@ export function ReservationDetailActions({
                   </>
                 )}
 
-                {action === "cancel" && (
+                {(action === "cancel" || action === "no_show") && (
                   <label>
-                    {t("detailActions.modal.cancelReasonLabel")}
+                    {t(
+                      action === "no_show"
+                        ? "detailActions.modal.noShowReasonLabel"
+                        : "detailActions.modal.cancelReasonLabel",
+                    )}
                     <textarea
                       value={reason}
                       onChange={(event) => setReason(event.target.value)}
@@ -961,8 +1227,11 @@ export function ReservationDetailActions({
                   disabled={
                     busy ||
                     (action === "check_in" && checkInActionDisabled) ||
-                    (action === "check_out" && checkOutActionDisabled)
-                    || (action === "extend" && (extensionLoading || !extensionQuote || extensionQuote.newCheckOutDate !== newCheckOutDate))
+                    (action === "check_out" && checkOutActionDisabled) ||
+                    (action === "extend" &&
+                      (extensionLoading ||
+                        !extensionQuote ||
+                        extensionQuote.newCheckOutDate !== newCheckOutDate))
                   }
                   onClick={() => void submit()}
                 >

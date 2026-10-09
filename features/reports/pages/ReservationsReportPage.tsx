@@ -38,26 +38,34 @@ const emptySummary: ReservationReportSummary = {
   confirmed: 0,
   checkedIn: 0,
   checkedOut: 0,
+  noShow: 0,
   cancelled: 0,
   expired: 0,
   roomNights: 0,
 };
-const emptyFinancial: ReservationReportFinancial = { bookingValue: 0, paid: 0, outstanding: 0 };
+const emptyFinancial: ReservationReportFinancial = {
+  bookingValue: 0,
+  paid: 0,
+  outstanding: 0,
+};
 
-const statusFilterOptions: { label: string; value: ReservationReportStatus }[] = [
-  { label: "Pending", value: "pending" },
-  { label: "Confirmed", value: "confirmed" },
-  { label: "Checked-in", value: "checked_in" },
-  { label: "Checked-out", value: "checked_out" },
-  { label: "Cancelled", value: "cancelled" },
-  { label: "Expired", value: "expired" },
-];
-const sourceFilterOptions: { label: string; value: ReservationReportSource }[] = [
-  { label: "Website", value: "website" },
-  { label: "Phone", value: "phone" },
-  { label: "Walk-in", value: "walk_in" },
-  { label: "OTA", value: "ota" },
-];
+const statusFilterOptions: { label: string; value: ReservationReportStatus }[] =
+  [
+    { label: "Pending", value: "pending" },
+    { label: "Confirmed", value: "confirmed" },
+    { label: "Checked-in", value: "checked_in" },
+    { label: "Checked-out", value: "checked_out" },
+    { label: "No-show", value: "no_show" },
+    { label: "Cancelled", value: "cancelled" },
+    { label: "Expired", value: "expired" },
+  ];
+const sourceFilterOptions: { label: string; value: ReservationReportSource }[] =
+  [
+    { label: "Website", value: "website" },
+    { label: "Phone", value: "phone" },
+    { label: "Walk-in", value: "walk_in" },
+    { label: "OTA", value: "ota" },
+  ];
 
 function statusLabel(value: ReservationReportStatus) {
   return value
@@ -66,8 +74,14 @@ function statusLabel(value: ReservationReportStatus) {
     .join("-");
 }
 
-function sourceLabel(item: ReservationReportItem, t: ReturnType<typeof useTranslations>["t"]) {
-  if (item.source === "ota") return item.otaChannel ? `${t("source.ota")} · ${item.otaChannel.name}` : t("source.ota");
+function sourceLabel(
+  item: ReservationReportItem,
+  t: ReturnType<typeof useTranslations>["t"],
+) {
+  if (item.source === "ota")
+    return item.otaChannel
+      ? `${t("source.ota")} · ${item.otaChannel.name}`
+      : t("source.ota");
   return t(`source.${item.source}`);
 }
 
@@ -77,7 +91,8 @@ function roomLabel(item: ReservationReportItem) {
 
 function badgeTone(status: ReservationReportStatus) {
   if (status === "confirmed" || status === "checked_in") return "success";
-  if (status === "cancelled" || status === "expired") return "danger";
+  if (status === "no_show" || status === "cancelled" || status === "expired")
+    return "danger";
   if (status === "pending") return "warning";
   return "neutral";
 }
@@ -123,8 +138,10 @@ export function ReservationsReportPage() {
   const [page, setPage] = useState(1);
 
   const [items, setItems] = useState<ReservationReportItem[]>([]);
-  const [summary, setSummary] = useState<ReservationReportSummary>(emptySummary);
-  const [financial, setFinancial] = useState<ReservationReportFinancial>(emptyFinancial);
+  const [summary, setSummary] =
+    useState<ReservationReportSummary>(emptySummary);
+  const [financial, setFinancial] =
+    useState<ReservationReportFinancial>(emptyFinancial);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -153,33 +170,47 @@ export function ReservationsReportPage() {
 
   useEffect(() => {
     const controller = new AbortController();
-    const timer = window.setTimeout(async () => {
-      setLoading(true);
-      setError("");
-      try {
-        if (!(await restoreSession())) return;
-        const query = buildQuery({ search, dateBy, from, to, status, source, room, ota });
-        query.set("page", String(page));
-        query.set("limit", String(pageSize));
-        const result = await getReservationsReport(query, controller.signal);
-        if (!controller.signal.aborted) {
-          setItems(result.items);
-          setSummary(result.summary);
-          setFinancial(result.financial);
-          setTotal(result.total);
+    const timer = window.setTimeout(
+      async () => {
+        setLoading(true);
+        setError("");
+        try {
+          if (!(await restoreSession())) return;
+          const query = buildQuery({
+            search,
+            dateBy,
+            from,
+            to,
+            status,
+            source,
+            room,
+            ota,
+          });
+          query.set("page", String(page));
+          query.set("limit", String(pageSize));
+          const result = await getReservationsReport(query, controller.signal);
+          if (!controller.signal.aborted) {
+            setItems(result.items);
+            setSummary(result.summary);
+            setFinancial(result.financial);
+            setTotal(result.total);
+          }
+        } catch (cause) {
+          if (!controller.signal.aborted) {
+            setError(
+              cause instanceof Error ? cause.message : t("common.loadFailed"),
+            );
+            setItems([]);
+            setTotal(0);
+            setSummary(emptySummary);
+            setFinancial(emptyFinancial);
+          }
+        } finally {
+          if (!controller.signal.aborted) setLoading(false);
         }
-      } catch (cause) {
-        if (!controller.signal.aborted) {
-          setError(cause instanceof Error ? cause.message : t("common.loadFailed"));
-          setItems([]);
-          setTotal(0);
-          setSummary(emptySummary);
-          setFinancial(emptyFinancial);
-        }
-      } finally {
-        if (!controller.signal.aborted) setLoading(false);
-      }
-    }, search ? 300 : 0);
+      },
+      search ? 300 : 0,
+    );
     return () => {
       window.clearTimeout(timer);
       controller.abort();
@@ -207,7 +238,16 @@ export function ReservationsReportPage() {
     setExporting(true);
     try {
       if (!(await restoreSession())) return;
-      const query = buildQuery({ search, dateBy, from, to, status, source, room, ota });
+      const query = buildQuery({
+        search,
+        dateBy,
+        from,
+        to,
+        status,
+        source,
+        room,
+        ota,
+      });
       query.set("page", "1");
       query.set("limit", "1000");
       const result = await getReservationsReport(query);
@@ -245,7 +285,9 @@ export function ReservationsReportPage() {
         item.paid,
         item.outstanding,
       ]);
-      const csv = [header, ...body].map((cells) => cells.map(csvCell).join(",")).join("\r\n");
+      const csv = [header, ...body]
+        .map((cells) => cells.map(csvCell).join(","))
+        .join("\r\n");
       const link = document.createElement("a");
       link.href = URL.createObjectURL(
         new Blob(["\uFEFF", csv], { type: "text/csv;charset=utf-8" }),
@@ -254,7 +296,9 @@ export function ReservationsReportPage() {
       link.click();
       URL.revokeObjectURL(link.href);
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : t("common.exportFailed"));
+      setError(
+        cause instanceof Error ? cause.message : t("common.exportFailed"),
+      );
     } finally {
       exportRef.current = false;
       setExporting(false);
@@ -266,19 +310,21 @@ export function ReservationsReportPage() {
     [t("reservations.summary.confirmed"), summary.confirmed],
     [t("reservations.summary.checkedIn"), summary.checkedIn],
     [t("reservations.summary.checkedOut"), summary.checkedOut],
+    [t("reservations.summary.noShow"), summary.noShow],
     [t("reservations.summary.cancelled"), summary.cancelled],
     [t("reservations.summary.roomNights"), summary.roomNights],
   ];
 
   return (
-    <AdminShell title={t("shell.title")} context={t("shell.reservationsContext")}>
+    <AdminShell
+      title={t("shell.title")}
+      context={t("shell.reservationsContext")}
+    >
       <div className="report-reservations-page">
         <div className="report-reservations-heading">
           <div>
             <h1>{t("reservations.title")}</h1>
-            <p>
-              {t("reservations.description")}
-            </p>
+            <p>{t("reservations.description")}</p>
           </div>
           <span>{t("reservations.reservationCount", { total })}</span>
         </div>
@@ -333,9 +379,15 @@ export function ReservationsReportPage() {
                   setPage(1);
                 }}
               >
-                <option value="booking">{t("reservations.dateBy.booking")}</option>
-                <option value="check_in">{t("reservations.dateBy.checkIn")}</option>
-                <option value="check_out">{t("reservations.dateBy.checkOut")}</option>
+                <option value="booking">
+                  {t("reservations.dateBy.booking")}
+                </option>
+                <option value="check_in">
+                  {t("reservations.dateBy.checkIn")}
+                </option>
+                <option value="check_out">
+                  {t("reservations.dateBy.checkOut")}
+                </option>
               </select>
             </label>
             <div className="report-reservations-dates">
@@ -416,7 +468,11 @@ export function ReservationsReportPage() {
                 setPage(1);
               }}
             >
-              <option value="">{source !== "ota" ? t("reservations.filters.allOtaInactive") : t("reservations.filters.allOta")}</option>
+              <option value="">
+                {source !== "ota"
+                  ? t("reservations.filters.allOtaInactive")
+                  : t("reservations.filters.allOta")}
+              </option>
               {otaOptions.map((option) => (
                 <option key={option.id} value={option.id}>
                   {option.name}
@@ -472,7 +528,9 @@ export function ReservationsReportPage() {
                   items.map((item) => (
                     <tr key={item.id}>
                       <td>
-                        <Link href={`/reservations/${encodeURIComponent(item.id)}`}>
+                        <Link
+                          href={`/reservations/${encodeURIComponent(item.id)}`}
+                        >
                           {item.bookingCode}
                         </Link>
                       </td>
@@ -495,7 +553,13 @@ export function ReservationsReportPage() {
                       <td>{money(item.bookingTotal)}</td>
                       <td>{money(item.discount)}</td>
                       <td>{money(item.paid)}</td>
-                      <td className={item.outstanding ? "report-reservations-outstanding" : ""}>
+                      <td
+                        className={
+                          item.outstanding
+                            ? "report-reservations-outstanding"
+                            : ""
+                        }
+                      >
                         {money(item.outstanding)}
                       </td>
                     </tr>
@@ -503,11 +567,7 @@ export function ReservationsReportPage() {
                 {(loading || items.length === 0) && (
                   <tr>
                     <td colSpan={15} className="report-reservations-empty">
-                      {loading ? (
-                        <LoadingSkeleton />
-                      ) : (
-                        t("reservations.empty")
-                      )}
+                      {loading ? <LoadingSkeleton /> : t("reservations.empty")}
                     </td>
                   </tr>
                 )}
@@ -531,7 +591,10 @@ export function ReservationsReportPage() {
                 {t("reservations.pagination.prev")}
               </button>
               <span>
-                {t("reservations.pagination.pageOf", { page: currentPage, total: pageCount })}
+                {t("reservations.pagination.pageOf", {
+                  page: currentPage,
+                  total: pageCount,
+                })}
               </span>
               <button
                 type="button"
@@ -543,9 +606,7 @@ export function ReservationsReportPage() {
             </div>
           </div>
         </div>
-        <p className="report-reservations-note">
-          {t("reservations.note")}
-        </p>
+        <p className="report-reservations-note">{t("reservations.note")}</p>
       </div>
     </AdminShell>
   );

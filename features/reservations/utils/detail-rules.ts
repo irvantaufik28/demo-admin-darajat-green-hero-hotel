@@ -1,6 +1,7 @@
 import type { ApiReservationDetail } from "../services/api";
 
-type DetailAction = "confirm" | "payment" | "check_in" | "check_out" | "cancel";
+type DetailAction =
+  "confirm" | "payment" | "check_in" | "check_out" | "no_show" | "cancel";
 
 export type DetailPresentation = {
   title: string;
@@ -9,11 +10,16 @@ export type DetailPresentation = {
   actions: DetailAction[];
 };
 
-export function reservationDetailPresentation(detail: ApiReservationDetail): DetailPresentation {
+export function reservationDetailPresentation(
+  detail: ApiReservationDetail,
+): DetailPresentation {
   const { reservation, summary } = detail;
   const { reservationStatus, paymentStatus, source } = reservation;
   const hasBalance = summary.remainingBalance > 0;
-  const canConfirmPayment = paymentStatus === "unpaid" || paymentStatus === "partial" || paymentStatus === "paid";
+  const canConfirmPayment =
+    paymentStatus === "unpaid" ||
+    paymentStatus === "partial" ||
+    paymentStatus === "paid";
 
   if (reservationStatus === "pending") {
     return {
@@ -26,7 +32,9 @@ export function reservationDetailPresentation(detail: ApiReservationDetail): Det
             : "Reservasi menunggu pembayaran atau konfirmasi petugas.",
       tone: "warning",
       actions: [
-        ...((source === "phone" || source === "walk_in") && canConfirmPayment ? (["confirm"] as const) : []),
+        ...((source === "phone" || source === "walk_in") && canConfirmPayment
+          ? (["confirm"] as const)
+          : []),
         ...(hasBalance ? (["payment"] as const) : []),
         "cancel",
       ],
@@ -35,7 +43,9 @@ export function reservationDetailPresentation(detail: ApiReservationDetail): Det
 
   if (reservationStatus === "confirmed") {
     return {
-      title: hasBalance ? "Check-in confirmation required" : "Ready to Check-in",
+      title: hasBalance
+        ? "Check-in confirmation required"
+        : "Ready to Check-in",
       description: hasBalance
         ? `Sisa tagihan harus dikonfirmasi petugas sebelum check-in. Nomor kamar ditetapkan saat check-in.`
         : "Reservasi sudah dikonfirmasi. Tetapkan nomor kamar untuk check-in.",
@@ -43,6 +53,7 @@ export function reservationDetailPresentation(detail: ApiReservationDetail): Det
       actions: [
         ...(canConfirmPayment ? (["check_in"] as const) : []),
         ...(hasBalance ? (["payment"] as const) : []),
+        "no_show",
         "cancel",
       ],
     };
@@ -50,7 +61,9 @@ export function reservationDetailPresentation(detail: ApiReservationDetail): Det
 
   if (reservationStatus === "checked_in") {
     return {
-      title: hasBalance ? "Guest In House · Outstanding Balance" : "Guest In House",
+      title: hasBalance
+        ? "Guest In House · Outstanding Balance"
+        : "Guest In House",
       description: hasBalance
         ? "Tamu masih memiliki tagihan. Checkout dengan sisa tagihan memerlukan alasan dan izin khusus."
         : "Tamu sedang menginap. Periksa tagihan dan deposit sebelum checkout.",
@@ -79,6 +92,18 @@ export function reservationDetailPresentation(detail: ApiReservationDetail): Det
           : detail.summary.paidAmount > 0
             ? "Reservasi dibatalkan setelah pembayaran. Periksa proses settlement atau refund."
             : "Reservasi dibatalkan sebelum pembayaran.",
+      tone: "danger",
+      actions: [],
+    };
+  }
+
+  if (reservationStatus === "no_show") {
+    return {
+      title: "No Show",
+      description:
+        reservation.noShowChargeAmount !== null
+          ? `Tamu tidak datang. Penalty no-show tercatat sebesar Rp${new Intl.NumberFormat("id-ID").format(reservation.noShowChargeAmount)}.`
+          : "Tamu tidak datang. Penalty memerlukan pemeriksaan manual.",
       tone: "danger",
       actions: [],
     };

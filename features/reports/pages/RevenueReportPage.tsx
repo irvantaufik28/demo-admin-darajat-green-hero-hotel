@@ -56,11 +56,15 @@ const paymentStatusOptions = [
   { label: "Expired", value: "expired" },
   { label: "Refunded", value: "refunded" },
 ];
-const reservationStatusOptions: { label: string; value: RevenueReportStatus }[] = [
+const reservationStatusOptions: {
+  label: string;
+  value: RevenueReportStatus;
+}[] = [
   { label: "Pending", value: "pending" },
   { label: "Confirmed", value: "confirmed" },
   { label: "Checked-in", value: "checked_in" },
   { label: "Checked-out", value: "checked_out" },
+  { label: "No-show", value: "no_show" },
   { label: "Cancelled", value: "cancelled" },
   { label: "Expired", value: "expired" },
 ];
@@ -88,7 +92,8 @@ function buildQuery(filters: {
   if (filters.to) query.set("to", filters.to);
   if (filters.source) query.set("source", filters.source);
   if (filters.paymentStatus) query.set("paymentStatus", filters.paymentStatus);
-  if (filters.reservationStatus) query.set("reservationStatus", filters.reservationStatus);
+  if (filters.reservationStatus)
+    query.set("reservationStatus", filters.reservationStatus);
   if (filters.method) query.set("methodId", filters.method);
   if (filters.room) query.set("roomType", filters.room);
   return query;
@@ -139,9 +144,13 @@ function exportCsv(items: RevenueReportItem[]) {
     row.outstanding,
     row.netCollected,
   ]);
-  const csv = [header, ...body].map((cells) => cells.map(csvCell).join(",")).join("\r\n");
+  const csv = [header, ...body]
+    .map((cells) => cells.map(csvCell).join(","))
+    .join("\r\n");
   const link = document.createElement("a");
-  link.href = URL.createObjectURL(new Blob(["\uFEFF", csv], { type: "text/csv;charset=utf-8" }));
+  link.href = URL.createObjectURL(
+    new Blob(["\uFEFF", csv], { type: "text/csv;charset=utf-8" }),
+  );
   link.download = "revenue-report.csv";
   link.click();
   URL.revokeObjectURL(link.href);
@@ -215,7 +224,9 @@ export function RevenueReportPage() {
         }
       } catch (cause) {
         if (!controller.signal.aborted) {
-          setError(cause instanceof Error ? cause.message : t("common.loadFailed"));
+          setError(
+            cause instanceof Error ? cause.message : t("common.loadFailed"),
+          );
           setTotals(emptyTotals);
           setBySource([]);
           setByMethod([]);
@@ -226,7 +237,16 @@ export function RevenueReportPage() {
       }
     })();
     return () => controller.abort();
-  }, [dateBy, from, to, source, paymentStatus, reservationStatus, method, room]);
+  }, [
+    dateBy,
+    from,
+    to,
+    source,
+    paymentStatus,
+    reservationStatus,
+    method,
+    room,
+  ]);
 
   function reset() {
     setDateBy("booking");
@@ -248,43 +268,62 @@ export function RevenueReportPage() {
         <header className="revenue-report-heading">
           <div>
             <h1>{t("revenue.title")}</h1>
-            <p>
-              {t("revenue.description")}
-            </p>
+            <p>{t("revenue.description")}</p>
           </div>
-          <span>{t("revenue.reservationCount", { total: totals.reservations })}</span>
+          <span>
+            {t("revenue.reservationCount", { total: totals.reservations })}
+          </span>
         </header>
 
-        <section className="revenue-report-kpis" aria-label={t("revenue.kpis.ariaLabel")}>
+        <section
+          className="revenue-report-kpis"
+          aria-label={t("revenue.kpis.ariaLabel")}
+        >
           {(
             [
               [t("revenue.kpis.grossBookingValue"), totals.gross, "gross"],
               [t("revenue.kpis.discount"), totals.discount, "discount"],
               [t("revenue.kpis.netBookingValue"), totals.net, "net"],
-              [t("revenue.kpis.netCollected"), totals.netCollected, "collected"],
+              [
+                t("revenue.kpis.netCollected"),
+                totals.netCollected,
+                "collected",
+              ],
               [t("revenue.kpis.paid"), totals.paid, "paid"],
               [t("revenue.kpis.refunded"), totals.refunded, "refunded"],
-              [t("revenue.kpis.outstanding"), totals.outstanding, "outstanding"],
+              [
+                t("revenue.kpis.outstanding"),
+                totals.outstanding,
+                "outstanding",
+              ],
             ] as [string, number, string][]
           ).map(([label, value, tone]) => (
-            <div className={`revenue-report-kpi revenue-report-kpi--${tone}`} key={tone}>
+            <div
+              className={`revenue-report-kpi revenue-report-kpi--${tone}`}
+              key={tone}
+            >
               <span>{label}</span>
               <strong>{money(value)}</strong>
             </div>
           ))}
         </section>
-        <p className="revenue-report-disclaimer">
-          {t("revenue.disclaimer")}
-        </p>
+        <p className="revenue-report-disclaimer">{t("revenue.disclaimer")}</p>
 
-        <section className="revenue-report-filters" aria-label={t("revenue.filters.ariaLabel")}>
+        <section
+          className="revenue-report-filters"
+          aria-label={t("revenue.filters.ariaLabel")}
+        >
           <div className="revenue-report-filter-row">
-            <span className="revenue-report-currency">{t("revenue.filters.currency")}</span>
+            <span className="revenue-report-currency">
+              {t("revenue.filters.currency")}
+            </span>
             <label>
               {t("revenue.filters.dateBy")}
               <select
                 value={dateBy}
-                onChange={(event) => setDateBy(event.target.value as RevenueReportDateBy)}
+                onChange={(event) =>
+                  setDateBy(event.target.value as RevenueReportDateBy)
+                }
               >
                 <option value="payment">{t("revenue.dateBy.payment")}</option>
                 <option value="booking">{t("revenue.dateBy.booking")}</option>
@@ -391,7 +430,9 @@ export function RevenueReportPage() {
         <section className="revenue-report-panel" aria-busy={loading}>
           <header>
             <h2>{t("revenue.bySource.title")}</h2>
-            <span>{t("revenue.bySource.activeChannels", { count: activeChannels })}</span>
+            <span>
+              {t("revenue.bySource.activeChannels", { count: activeChannels })}
+            </span>
           </header>
           <div className="revenue-report-table-scroll">
             <table className="revenue-report-table">
@@ -416,7 +457,11 @@ export function RevenueReportPage() {
                     <td>{money(row.gross)}</td>
                     <td>{money(row.paid)}</td>
                     <td>{money(row.refunded)}</td>
-                    <td className={row.outstanding ? "revenue-report-outstanding" : ""}>
+                    <td
+                      className={
+                        row.outstanding ? "revenue-report-outstanding" : ""
+                      }
+                    >
                       {money(row.outstanding)}
                     </td>
                     <td>{money(row.netCollected)}</td>
@@ -439,7 +484,9 @@ export function RevenueReportPage() {
         <section className="revenue-report-panel" aria-busy={loading}>
           <header>
             <h2>{t("revenue.byMethod.title")}</h2>
-            <span>{t("revenue.byMethod.paymentTypes", { count: paymentTypes })}</span>
+            <span>
+              {t("revenue.byMethod.paymentTypes", { count: paymentTypes })}
+            </span>
           </header>
           <div className="revenue-report-table-scroll">
             <table className="revenue-report-table revenue-report-table--method">
@@ -456,7 +503,9 @@ export function RevenueReportPage() {
                 {byMethod.length === 0 && (
                   <tr>
                     <td colSpan={5} className="revenue-report-empty">
-                      {loading ? t("common.loading") : t("revenue.byMethod.empty")}
+                      {loading
+                        ? t("common.loading")
+                        : t("revenue.byMethod.empty")}
                     </td>
                   </tr>
                 )}
@@ -482,9 +531,7 @@ export function RevenueReportPage() {
             </table>
           </div>
         </section>
-        <p className="revenue-report-note">
-          {t("revenue.note")}
-        </p>
+        <p className="revenue-report-note">{t("revenue.note")}</p>
       </div>
     </AdminShell>
   );

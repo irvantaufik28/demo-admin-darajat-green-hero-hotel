@@ -840,7 +840,7 @@
 }
 .cf-range-popover {
   position: fixed;
-  z-index: 100;
+  z-index: 160;
   width: min(320px, calc(100vw - 24px));
   padding: 12px;
   border: 1px solid var(--border);

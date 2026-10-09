@@ -12,7 +12,10 @@ import { RoomRackReservationSummary } from "../components/RoomRackReservationSum
 import { RoomRackCleaningModal } from "../components/RoomRackCleaningModal";
 import { SaveReservationConfirmation } from "../components/SaveReservationConfirmation";
 import { ReservationSuccessTransition } from "../components/ReservationSuccessTransition";
-import { getReservationDetail, type ApiReservationDetail } from "../services/api";
+import {
+  getReservationDetail,
+  type ApiReservationDetail,
+} from "../services/api";
 import {
   RACK_DAYS,
   buildDateWindow,
@@ -29,7 +32,10 @@ import {
   type RoomUnit,
 } from "../constants/room-rack-data";
 import { formatStayDate } from "../constants/walk-in-data";
-import { listPolicies, type PolicyRecord } from "../../cancellation-policies/services/cancellation-policies";
+import {
+  listPolicies,
+  type PolicyRecord,
+} from "../../cancellation-policies/services/cancellation-policies";
 import {
   createReservation,
   getCreateCheckInContext,
@@ -44,7 +50,12 @@ import {
   type ReservationSource,
 } from "../services/create";
 import type { CheckInContext, EarlyCheckInInput } from "../services/api";
-import { getRoomRack, summarizeRoomRack, toRoomRackGroups, type RoomRackResponse } from "../services/room-rack";
+import {
+  getRoomRack,
+  summarizeRoomRack,
+  toRoomRackGroups,
+  type RoomRackResponse,
+} from "../services/room-rack";
 import { todayJakarta } from "../utils/stay-dates";
 import { useTranslations, type Translate } from "../../../lib/i18n";
 import en from "../locales/en.json";
@@ -68,7 +79,9 @@ function barGeometry(res: Reservation, window: Date[]): BarGeom | null {
   const windowStart = window[0];
   const windowEnd = window[window.length - 1];
   const [ciY, ciM, ciD] = res.checkIn.split("-").map(Number);
-  const [coY, coM, coD] = (res.displayCheckOut ?? res.checkOut).split("-").map(Number);
+  const [coY, coM, coD] = (res.displayCheckOut ?? res.checkOut)
+    .split("-")
+    .map(Number);
   const checkIn = new Date(ciY, ciM - 1, ciD);
   const checkOut = new Date(coY, coM - 1, coD);
   if (checkOut <= checkIn) return null;
@@ -82,8 +95,12 @@ function barGeometry(res: Reservation, window: Date[]): BarGeom | null {
   const visibleStart = checkIn < windowStart ? windowStart : checkIn;
   const visibleEnd = lastNight > windowEnd ? windowEnd : lastNight;
 
-  const startIdx = window.findIndex((d) => toISODate(d) === toISODate(visibleStart));
-  const endIdx = window.findIndex((d) => toISODate(d) === toISODate(visibleEnd));
+  const startIdx = window.findIndex(
+    (d) => toISODate(d) === toISODate(visibleStart),
+  );
+  const endIdx = window.findIndex(
+    (d) => toISODate(d) === toISODate(visibleEnd),
+  );
   if (startIdx === -1 || endIdx === -1) return null;
 
   return { startIdx, span: endIdx - startIdx + 1 };
@@ -104,7 +121,11 @@ function formatHuman(iso: string): string {
   return `${formatDayLabel(date)}, ${formatDateNumber(date)} ${formatMonthLabel(date)} ${date.getFullYear()}`;
 }
 
-type Selected = { res: Reservation; room: RoomUnit | null; group: RoomTypeGroup };
+type Selected = {
+  res: Reservation;
+  room: RoomUnit | null;
+  group: RoomTypeGroup;
+};
 
 type DragState = {
   roomNumber: string;
@@ -126,12 +147,18 @@ type NewBookingDraft = {
 };
 
 /** Check whether a given day index overlaps any existing reservation in the room. */
-function isDayOccupied(room: RoomUnit, dayIdx: number, window: Date[]): boolean {
+function isDayOccupied(
+  room: RoomUnit,
+  dayIdx: number,
+  window: Date[],
+): boolean {
   const dayISO = toISODate(window[dayIdx]);
   return room.reservations.some((res) => {
     if (res.reservationStatus === "checked_out") return false;
     const ci = res.checkIn;
-    const [coY, coM, coD] = (res.displayCheckOut ?? res.checkOut).split("-").map(Number);
+    const [coY, coM, coD] = (res.displayCheckOut ?? res.checkOut)
+      .split("-")
+      .map(Number);
     const lastNight = new Date(coY, coM - 1, coD);
     lastNight.setDate(lastNight.getDate() - 1);
     const lastNightISO = toISODate(lastNight);
@@ -148,10 +175,13 @@ function isHeldForUnassigned(
   if (isDayOccupied(room, dayIdx, window)) return false;
 
   const stayDate = toISODate(window[dayIdx]);
-  const inventoryDay = group.inventory?.find((day) => day.stayDate === stayDate);
+  const inventoryDay = group.inventory?.find(
+    (day) => day.stayDate === stayDate,
+  );
   if (inventoryDay) return inventoryDay.heldForUnassigned;
   const unassignedCount = group.unassignedReservations.filter(
-    (reservation) => reservation.checkIn <= stayDate && stayDate < reservation.checkOut,
+    (reservation) =>
+      reservation.checkIn <= stayDate && stayDate < reservation.checkOut,
   ).length;
   if (unassignedCount === 0) return false;
 
@@ -161,7 +191,13 @@ function isHeldForUnassigned(
   return freeRoomCount <= unassignedCount;
 }
 
-function isDayBookable(group: RoomTypeGroup, room: RoomUnit, dayIdx: number, window: Date[], todayISO: string): boolean {
+function isDayBookable(
+  group: RoomTypeGroup,
+  room: RoomUnit,
+  dayIdx: number,
+  window: Date[],
+  todayISO: string,
+): boolean {
   const stayDate = toISODate(window[dayIdx]);
   if (stayDate < todayISO) return false;
   const inventory = group.inventory?.find((day) => day.stayDate === stayDate);
@@ -169,10 +205,19 @@ function isDayBookable(group: RoomTypeGroup, room: RoomUnit, dayIdx: number, win
     room.isActive === false ||
     room.status === "maintenance" ||
     room.status === "out_of_service" ||
-    (stayDate <= todayISO && room.status !== "vacant" && room.status !== "reserved") ||
-    (inventory && (!inventory.isConfigured || inventory.stopSell || (inventory.availableRooms ?? 0) < 1))
-  ) return false;
-  return !isDayOccupied(room, dayIdx, window) && !isHeldForUnassigned(group, room, dayIdx, window);
+    (stayDate <= todayISO &&
+      room.status !== "vacant" &&
+      room.status !== "reserved") ||
+    (inventory &&
+      (!inventory.isConfigured ||
+        inventory.stopSell ||
+        (inventory.availableRooms ?? 0) < 1))
+  )
+    return false;
+  return (
+    !isDayOccupied(room, dayIdx, window) &&
+    !isHeldForUnassigned(group, room, dayIdx, window)
+  );
 }
 
 function shiftDate(iso: string, days: number): string {
@@ -195,10 +240,20 @@ export function RoomRackPage() {
   const [roomTypeFilter, setRoomTypeFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
   const [sourceFilter, setSourceFilter] = useState("all");
-  const window = useMemo(() => startDate ? buildDateWindow(startDate, RACK_DAYS) : [], [startDate]);
+  const [miniView, setMiniView] = useState(true);
+  const window = useMemo(
+    () => (startDate ? buildDateWindow(startDate, RACK_DAYS) : []),
+    [startDate],
+  );
   const todayISO = rack?.serverDate ?? startDate ?? "";
-  const roomTypeGroups = useMemo(() => rack ? toRoomRackGroups(rack) : [], [rack]);
-  const roomRackSummary = useMemo(() => rack ? summarizeRoomRack(rack) : null, [rack]);
+  const roomTypeGroups = useMemo(
+    () => (rack ? toRoomRackGroups(rack) : []),
+    [rack],
+  );
+  const roomRackSummary = useMemo(
+    () => (rack ? summarizeRoomRack(rack) : null),
+    [rack],
+  );
 
   useEffect(() => setStartDate(todayJakarta()), []);
   useEffect(() => {
@@ -216,7 +271,10 @@ export function RoomRackPage() {
         const result = await getRoomRack(startDate!, controller.signal);
         if (!controller.signal.aborted) setRack(result);
       } catch (cause) {
-        if (!controller.signal.aborted) setError(cause instanceof Error ? cause.message : t("roomRack.loadError"));
+        if (!controller.signal.aborted)
+          setError(
+            cause instanceof Error ? cause.message : t("roomRack.loadError"),
+          );
       } finally {
         if (!controller.signal.aborted) setLoading(false);
       }
@@ -230,7 +288,11 @@ export function RoomRackPage() {
   const [drag, setDrag] = useState<DragState | null>(null);
   const [pending, setPending] = useState<NewBookingDraft | null>(null);
   const [booking, setBooking] = useState<NewBookingDraft | null>(null);
-  const [cleaningRoom, setCleaningRoom] = useState<{ id: string; number: string; groupName: string } | null>(null);
+  const [cleaningRoom, setCleaningRoom] = useState<{
+    id: string;
+    number: string;
+    groupName: string;
+  } | null>(null);
   const isDragging = useRef(false);
 
   useEffect(() => {
@@ -246,11 +308,18 @@ export function RoomRackPage() {
     setDetailError("");
     setDetailLoading(true);
     getReservationDetail(reservationId, controller.signal)
-      .then((response) => { if (!controller.signal.aborted) setDetail(response); })
-      .catch((cause) => {
-        if (!controller.signal.aborted) setDetailError(cause instanceof Error ? cause.message : t("detail.loadError"));
+      .then((response) => {
+        if (!controller.signal.aborted) setDetail(response);
       })
-      .finally(() => { if (!controller.signal.aborted) setDetailLoading(false); });
+      .catch((cause) => {
+        if (!controller.signal.aborted)
+          setDetailError(
+            cause instanceof Error ? cause.message : t("detail.loadError"),
+          );
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setDetailLoading(false);
+      });
     return () => controller.abort();
   }, [selected?.res.reservationId]);
 
@@ -260,10 +329,21 @@ export function RoomRackPage() {
     setRefreshKey((value) => value + 1);
   }
 
-  function openOverdueUnassigned(item: NonNullable<RoomRackResponse["overdueUnassigned"]>[number]) {
-    const group = roomTypeGroups.find((candidate) => candidate.id === item.roomTypeId);
+  function openOverdueUnassigned(
+    item: NonNullable<RoomRackResponse["overdueUnassigned"]>[number],
+  ) {
+    const group = roomTypeGroups.find(
+      (candidate) => candidate.id === item.roomTypeId,
+    );
     if (!group) return;
-    const source = item.source === "walk_in" ? "Walk-in" : item.source === "phone" ? "Phone" : item.source === "website" ? "Website" : "OTA";
+    const source =
+      item.source === "walk_in"
+        ? "Walk-in"
+        : item.source === "phone"
+          ? "Phone"
+          : item.source === "website"
+            ? "Website"
+            : "OTA";
     setSelected({
       res: {
         id: item.bookingCode,
@@ -274,7 +354,10 @@ export function RoomRackPage() {
         status: "confirmed",
         reservationStatus: "confirmed",
         paymentStatus: item.paymentStatus,
-        operationalStatus: { code: "missed_arrival", label: t("roomRack.missedArrival") },
+        operationalStatus: {
+          code: "missed_arrival",
+          label: t("roomRack.missedArrival"),
+        },
         checkIn: item.checkInDate,
         checkOut: item.checkOutDate,
       },
@@ -283,37 +366,53 @@ export function RoomRackPage() {
     });
   }
 
-  const visibleGroups = roomTypeFilter === "all"
-    ? roomTypeGroups
-    : roomTypeGroups.filter((group) => group.id === roomTypeFilter);
-  const matchesReservation = useCallback((reservation: Reservation, roomNumber?: string) => {
-    if (statusFilter !== "all" && reservation.status !== statusFilter) return false;
-    if (sourceFilter !== "all") {
-      const source = reservation.source.toLowerCase();
-      if (sourceFilter === "ota" ? !source.startsWith("ota") : source !== sourceFilter) return false;
-    }
-    const term = search.trim().toLowerCase();
-    return !term || reservation.guestName.toLowerCase().includes(term) ||
-      reservation.id.toLowerCase().includes(term) || roomNumber?.toLowerCase().includes(term) === true;
-  }, [search, sourceFilter, statusFilter]);
+  const visibleGroups =
+    roomTypeFilter === "all"
+      ? roomTypeGroups
+      : roomTypeGroups.filter((group) => group.id === roomTypeFilter);
+  const matchesReservation = useCallback(
+    (reservation: Reservation, roomNumber?: string) => {
+      if (statusFilter !== "all" && reservation.status !== statusFilter)
+        return false;
+      if (sourceFilter !== "all") {
+        const source = reservation.source.toLowerCase();
+        if (
+          sourceFilter === "ota"
+            ? !source.startsWith("ota")
+            : source !== sourceFilter
+        )
+          return false;
+      }
+      const term = search.trim().toLowerCase();
+      return (
+        !term ||
+        reservation.guestName.toLowerCase().includes(term) ||
+        reservation.id.toLowerCase().includes(term) ||
+        roomNumber?.toLowerCase().includes(term) === true
+      );
+    },
+    [search, sourceFilter, statusFilter],
+  );
 
   /** Find room and group by room number. */
-  const findRoom = useCallback((roomNum: string) => {
-    for (const g of roomTypeGroups) {
-      const r = g.rooms.find((rm) => rm.number === roomNum);
-      if (r) return { room: r, group: g };
-    }
-    return null;
-  }, [roomTypeGroups]);
+  const findRoom = useCallback(
+    (roomNum: string) => {
+      for (const g of roomTypeGroups) {
+        const r = g.rooms.find((rm) => rm.number === roomNum);
+        if (r) return { room: r, group: g };
+      }
+      return null;
+    },
+    [roomTypeGroups],
+  );
 
   /** Start dragging from an empty day cell. */
   const handleDragStart = useCallback(
     (roomNumber: string, groupName: string, dayIdx: number) => {
       const found = findRoom(roomNumber);
       if (!found) return;
-      if (
-        !isDayBookable(found.group, found.room, dayIdx, window, todayISO)
-      ) return;
+      if (!isDayBookable(found.group, found.room, dayIdx, window, todayISO))
+        return;
       isDragging.current = true;
       // New drag clears old pending placeholder.
       setPending(null);
@@ -331,9 +430,8 @@ export function RoomRackPage() {
       const lo = Math.min(drag.startIdx, dayIdx);
       const hi = Math.max(drag.startIdx, dayIdx);
       for (let i = lo; i <= hi; i++) {
-        if (
-          !isDayBookable(found.group, found.room, i, window, todayISO)
-        ) return;
+        if (!isDayBookable(found.group, found.room, i, window, todayISO))
+          return;
       }
       setDrag((prev) => (prev ? { ...prev, endIdx: dayIdx } : null));
     },
@@ -379,147 +477,270 @@ export function RoomRackPage() {
   }, [handleDragEnd]);
 
   const metrics = [
-    { key: "available", tone: "success", value: roomRackSummary?.availableRooms, label: t("roomRack.metrics.available"), glyph: "✓" },
-    { key: "ready", tone: "warning", value: roomRackSummary?.readyToCheckIn, label: t("roomRack.metrics.ready"), glyph: "◷" },
-    { key: "in-house", tone: "primary", value: roomRackSummary?.inHouse, label: t("roomRack.metrics.inHouse"), glyph: "●" },
-    { key: "due-out", tone: "info", value: roomRackSummary?.dueOut, label: t("roomRack.metrics.dueOut"), glyph: "↩" },
-    { key: "unavailable", tone: "maintenance", value: roomRackSummary?.unavailable, label: t("roomRack.metrics.unavailable"), glyph: "⚠" },
+    {
+      key: "available",
+      tone: "success",
+      value: roomRackSummary?.availableRooms,
+      label: t("roomRack.metrics.available"),
+      glyph: "✓",
+    },
+    {
+      key: "ready",
+      tone: "warning",
+      value: roomRackSummary?.readyToCheckIn,
+      label: t("roomRack.metrics.ready"),
+      glyph: "◷",
+    },
+    {
+      key: "in-house",
+      tone: "primary",
+      value: roomRackSummary?.inHouse,
+      label: t("roomRack.metrics.inHouse"),
+      glyph: "●",
+    },
+    {
+      key: "due-out",
+      tone: "info",
+      value: roomRackSummary?.dueOut,
+      label: t("roomRack.metrics.dueOut"),
+      glyph: "↩",
+    },
+    {
+      key: "unavailable",
+      tone: "maintenance",
+      value: roomRackSummary?.unavailable,
+      label: t("roomRack.metrics.unavailable"),
+      glyph: "⚠",
+    },
   ] as const;
 
-  const rangeLabel = window.length ? formatRangeLabel(window[0], window[window.length - 1]) : "—";
+  const rangeLabel = window.length
+    ? formatRangeLabel(window[0], window[window.length - 1])
+    : "—";
 
   return (
     <AdminShell title="Reservations" context="Room Rack">
-      <div className="room-rack">
+      <div className={`room-rack${miniView ? " room-rack--mini" : ""}`}>
         {/* Heading */}
         <div className="room-rack__heading">
           <div>
             <span className="room-rack__eyebrow">FRONT DESK · TAPE CHART</span>
             <h1>Room Rack</h1>
-            <p>Visual 14-day availability grid for arrivals, in-house stays, and blocks.</p>
+            <p>
+              Visual 14-day availability grid for arrivals, in-house stays, and
+              blocks.
+            </p>
           </div>
         </div>
 
         {/* Metrics */}
-        {actionNotice && <div className="rr-action-notice" role="status">{actionNotice}</div>}
-        <div className="room-rack__metrics">
-          {metrics.map((m) => (
-            <div key={m.key} className={`rr-metric rr-metric--${m.tone}`}>
-              <span className="rr-metric__icon" aria-hidden="true">{m.glyph}</span>
-              <div>
-                <div className="rr-metric__value">{m.value ?? "—"}</div>
-                <div className="rr-metric__label">{m.label}</div>
+        {actionNotice && (
+          <div className="rr-action-notice" role="status">
+            {actionNotice}
+          </div>
+        )}
+        {!miniView && (
+          <div className="room-rack__metrics">
+            {metrics.map((m) => (
+              <div key={m.key} className={`rr-metric rr-metric--${m.tone}`}>
+                <span className="rr-metric__icon" aria-hidden="true">
+                  {m.glyph}
+                </span>
+                <div>
+                  <div className="rr-metric__value">{m.value ?? "—"}</div>
+                  <div className="rr-metric__label">{m.label}</div>
+                </div>
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
 
         {/* Toolbar */}
-        <div className="room-rack__toolbar">
-          <div className="rr-pager" role="group" aria-label="Date navigation">
-            <button type="button" disabled={!startDate || loading} onClick={() => startDate && setStartDate(shiftDate(startDate, -RACK_DAYS))}>
-              <Icon name="chevronLeft" width={14} height={14} />
-              Prev 14 Days
-            </button>
-            <button type="button" className="rr-pager--today" onClick={() => { setStartDate(todayJakarta()); setRefreshKey((value) => value + 1); }}>
-              Today ({todayISO ? formatDateNumber(buildDateWindow(todayISO, 1)[0]) : "—"} {todayISO ? formatMonthLabel(buildDateWindow(todayISO, 1)[0]) : ""})
-            </button>
-            <button type="button" disabled={!startDate || loading} onClick={() => startDate && setStartDate(shiftDate(startDate, RACK_DAYS))}>
-              Next 14 Days
-              <Icon name="chevronRight" width={14} height={14} />
+        {!miniView && (
+          <div className="room-rack__toolbar">
+            <div className="rr-pager" role="group" aria-label="Date navigation">
+              <button
+                type="button"
+                disabled={!startDate || loading}
+                onClick={() =>
+                  startDate && setStartDate(shiftDate(startDate, -RACK_DAYS))
+                }
+              >
+                <Icon name="chevronLeft" width={14} height={14} />
+                Prev 14 Days
+              </button>
+              <button
+                type="button"
+                className="rr-pager--today"
+                onClick={() => {
+                  setStartDate(todayJakarta());
+                  setRefreshKey((value) => value + 1);
+                }}
+              >
+                Today (
+                {todayISO
+                  ? formatDateNumber(buildDateWindow(todayISO, 1)[0])
+                  : "—"}{" "}
+                {todayISO
+                  ? formatMonthLabel(buildDateWindow(todayISO, 1)[0])
+                  : ""}
+                )
+              </button>
+              <button
+                type="button"
+                disabled={!startDate || loading}
+                onClick={() =>
+                  startDate && setStartDate(shiftDate(startDate, RACK_DAYS))
+                }
+              >
+                Next 14 Days
+                <Icon name="chevronRight" width={14} height={14} />
+              </button>
+            </div>
+            <span className="rr-range-label">{rangeLabel}</span>
+
+            <span className="rr-toolbar-spacer" />
+
+            <span className="rr-search">
+              <Icon name="search" width={15} height={15} />
+              <input
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Search guest or RES#..."
+                aria-label="Search guest or reservation number"
+              />
+            </span>
+            <select
+              aria-label="Filter room type"
+              value={roomTypeFilter}
+              onChange={(event) => setRoomTypeFilter(event.target.value)}
+            >
+              <option value="all">
+                All Room Types ({roomTypeGroups.length})
+              </option>
+              {roomTypeGroups.map((g) => (
+                <option key={g.id ?? g.name} value={g.id ?? g.name}>
+                  {g.name}
+                </option>
+              ))}
+            </select>
+            <select
+              aria-label="Filter status"
+              value={statusFilter}
+              onChange={(event) => setStatusFilter(event.target.value)}
+            >
+              <option value="all">All Statuses</option>
+              <option value="in-house">In-House</option>
+              <option value="confirmed">Confirmed</option>
+              <option value="awaiting-confirmation">
+                Awaiting Confirmation
+              </option>
+              <option value="due-out">Due Out</option>
+              <option value="overdue">Overdue</option>
+              <option value="checked-out">Checked Out</option>
+              <option value="maintenance">Maintenance</option>
+            </select>
+            <select
+              aria-label="Filter source"
+              value={sourceFilter}
+              onChange={(event) => setSourceFilter(event.target.value)}
+            >
+              <option value="all">All Sources</option>
+              <option value="walk-in">Walk-in</option>
+              <option value="website">Website</option>
+              <option value="ota">OTA</option>
+              <option value="phone">Phone</option>
+            </select>
+            <button
+              type="button"
+              className="rr-refresh"
+              disabled={loading}
+              onClick={() => setRefreshKey((value) => value + 1)}
+            >
+              <Icon name="reset" width={15} height={15} />
+              Refresh
             </button>
           </div>
-          <span className="rr-range-label">{rangeLabel}</span>
-
-          <span className="rr-toolbar-spacer" />
-
-          <span className="rr-search">
-            <Icon name="search" width={15} height={15} />
-            <input
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search guest or RES#..."
-              aria-label="Search guest or reservation number"
-            />
-          </span>
-          <select aria-label="Filter room type" value={roomTypeFilter} onChange={(event) => setRoomTypeFilter(event.target.value)}>
-            <option value="all">All Room Types ({roomTypeGroups.length})</option>
-            {roomTypeGroups.map((g) => (
-              <option key={g.id ?? g.name} value={g.id ?? g.name}>{g.name}</option>
-            ))}
-          </select>
-          <select aria-label="Filter status" value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)}>
-            <option value="all">All Statuses</option>
-            <option value="in-house">In-House</option>
-            <option value="confirmed">Confirmed</option>
-            <option value="awaiting-confirmation">Awaiting Confirmation</option>
-            <option value="due-out">Due Out</option>
-            <option value="overdue">Overdue</option>
-            <option value="checked-out">Checked Out</option>
-            <option value="maintenance">Maintenance</option>
-          </select>
-          <select aria-label="Filter source" value={sourceFilter} onChange={(event) => setSourceFilter(event.target.value)}>
-            <option value="all">All Sources</option>
-            <option value="walk-in">Walk-in</option>
-            <option value="website">Website</option>
-            <option value="ota">OTA</option>
-            <option value="phone">Phone</option>
-          </select>
-          <button type="button" className="rr-refresh" disabled={loading} onClick={() => setRefreshKey((value) => value + 1)}>
-            <Icon name="reset" width={15} height={15} />
-            Refresh
-          </button>
-        </div>
+        )}
 
         {/* Legend */}
-        <div className="room-rack__legend">
-          <strong>Reservation</strong>
-          <span className="rr-legend-item">
-            <span className="rr-legend-swatch rr-legend-swatch--warning" /> Upcoming / Ready to Check-in
-          </span>
-          <span className="rr-legend-item">
-            <span className="rr-legend-swatch rr-legend-swatch--awaiting" /> Awaiting Confirmation
-          </span>
-          <span className="rr-legend-item">
-            <span className="rr-legend-swatch rr-legend-swatch--success" /> In House
-          </span>
-          <span className="rr-legend-item">
-            <span className="rr-legend-swatch rr-legend-swatch--info" /> Due Out
-          </span>
-          <span className="rr-legend-item">
-            <span className="rr-legend-swatch rr-legend-swatch--danger" /> Overdue
-          </span>
-          <span className="rr-legend-item">
-            <span className="rr-legend-swatch rr-legend-swatch--checked-out" /> Checked Out
-          </span>
-          <span className="rr-legend-item">
-            <span className="rr-legend-swatch rr-legend-swatch--unassigned" /> Unassigned
-          </span>
-          <span className="rr-legend-divider" aria-hidden="true" />
-          <strong>Room</strong>
-          <span className="rr-legend-item">
-            <span className="rr-legend-swatch rr-legend-swatch--available" /> Available
-          </span>
-          <span className="rr-legend-item">
-            <span className="rr-legend-swatch rr-legend-swatch--success" /> Occupied
-          </span>
-          <span className="rr-legend-item">
-            <span className="rr-legend-swatch rr-legend-swatch--cleaning" /> Cleaning
-          </span>
-          <span className="rr-legend-item">
-            <span className="rr-legend-swatch rr-legend-swatch--maintenance" /> Maintenance
-          </span>
-          <span className="rr-legend-item">
-            <span className="rr-legend-swatch rr-legend-swatch--danger" /> Out of Service
-          </span>
-        </div>
+        {!miniView && (
+          <div className="room-rack__legend">
+            <strong>Reservation</strong>
+            <span className="rr-legend-item">
+              <span className="rr-legend-swatch rr-legend-swatch--warning" />{" "}
+              Upcoming / Ready to Check-in
+            </span>
+            <span className="rr-legend-item">
+              <span className="rr-legend-swatch rr-legend-swatch--awaiting" />{" "}
+              Awaiting Confirmation
+            </span>
+            <span className="rr-legend-item">
+              <span className="rr-legend-swatch rr-legend-swatch--success" /> In
+              House
+            </span>
+            <span className="rr-legend-item">
+              <span className="rr-legend-swatch rr-legend-swatch--info" /> Due
+              Out
+            </span>
+            <span className="rr-legend-item">
+              <span className="rr-legend-swatch rr-legend-swatch--danger" />{" "}
+              Overdue
+            </span>
+            <span className="rr-legend-item">
+              <span className="rr-legend-swatch rr-legend-swatch--checked-out" />{" "}
+              Checked Out
+            </span>
+            <span className="rr-legend-item">
+              <span className="rr-legend-swatch rr-legend-swatch--unassigned" />{" "}
+              Unassigned
+            </span>
+            <span className="rr-legend-divider" aria-hidden="true" />
+            <strong>Room</strong>
+            <span className="rr-legend-item">
+              <span className="rr-legend-swatch rr-legend-swatch--available" />{" "}
+              Available
+            </span>
+            <span className="rr-legend-item">
+              <span className="rr-legend-swatch rr-legend-swatch--success" />{" "}
+              Occupied
+            </span>
+            <span className="rr-legend-item">
+              <span className="rr-legend-swatch rr-legend-swatch--cleaning" />{" "}
+              Cleaning
+            </span>
+            <span className="rr-legend-item">
+              <span className="rr-legend-swatch rr-legend-swatch--maintenance" />{" "}
+              Maintenance
+            </span>
+            <span className="rr-legend-item">
+              <span className="rr-legend-swatch rr-legend-swatch--danger" /> Out
+              of Service
+            </span>
+          </div>
+        )}
 
-        {error && <div className="rr-load-error" role="alert">{error} <button type="button" onClick={() => setRefreshKey((value) => value + 1)}>Try again</button></div>}
+        {error && (
+          <div className="rr-load-error" role="alert">
+            {error}{" "}
+            <button
+              type="button"
+              onClick={() => setRefreshKey((value) => value + 1)}
+            >
+              Try again
+            </button>
+          </div>
+        )}
 
-        {!!rack?.overdueUnassigned?.length && (
-          <section className="rr-overdue-unassigned" aria-labelledby="rr-overdue-unassigned-title">
+        {!miniView && !!rack?.overdueUnassigned?.length && (
+          <section
+            className="rr-overdue-unassigned"
+            aria-labelledby="rr-overdue-unassigned-title"
+          >
             <div className="rr-overdue-unassigned__heading">
-              <h2 id="rr-overdue-unassigned-title">{t("roomRack.overdueUnassignedTitle")}</h2>
+              <h2 id="rr-overdue-unassigned-title">
+                {t("roomRack.overdueUnassignedTitle")}
+              </h2>
               <p>{t("roomRack.overdueUnassignedDescription")}</p>
             </div>
             <div className="rr-overdue-unassigned__list">
@@ -529,69 +750,124 @@ export function RoomRackPage() {
                   type="button"
                   onClick={() => openOverdueUnassigned(item)}
                 >
-                  <strong>{item.bookingCode} · {item.guestName}</strong>
-                  <span>{item.roomTypeName} · {t("roomRack.unassignedCount", { count: item.unassignedRooms })} · {item.checkInDate} → {item.checkOutDate}</span>
+                  <strong>
+                    {item.bookingCode} · {item.guestName}
+                  </strong>
+                  <span>
+                    {item.roomTypeName} ·{" "}
+                    {t("roomRack.unassignedCount", {
+                      count: item.unassignedRooms,
+                    })}{" "}
+                    · {item.checkInDate} → {item.checkOutDate}
+                  </span>
                   <b>{t("roomRack.reviewReservation")}</b>
                 </button>
               ))}
             </div>
-            {rack.overdueUnassignedHasMore && <p className="rr-overdue-unassigned__more">{t("roomRack.overdueUnassignedMore")}</p>}
+            {rack.overdueUnassignedHasMore && (
+              <p className="rr-overdue-unassigned__more">
+                {t("roomRack.overdueUnassignedMore")}
+              </p>
+            )}
           </section>
         )}
 
         {/* Body: chart + detail */}
-        <div className={selected ? "room-rack__body" : "room-rack__body room-rack__body--full"}>
+        <div
+          className={
+            selected
+              ? "room-rack__body"
+              : "room-rack__body room-rack__body--full"
+          }
+        >
           <div className="rr-chart" aria-busy={loading}>
-            {loading && <div className="rr-load-state"><LoadingSkeleton /></div>}
-            {!loading && !error && rack && (
-            <div className="rr-chart__scroll">
-              <div className="rr-grid">
-                {/* Header row */}
-                <div className="rr-head-cell rr-head-cell--room">
-                  <span className="rr-head-cell__eyebrow">Room</span>
-                  <span className="rr-head-cell__title">Unit / Type</span>
-                </div>
-                {window.map((date) => {
-                  const iso = toISODate(date);
-                  const classes = [
-                    "rr-head-cell",
-                    isWeekend(date) ? "rr-head-cell--weekend" : "",
-                    iso === todayISO ? "rr-head-cell--today" : "",
-                  ].filter(Boolean).join(" ");
-                  return (
-                    <div key={iso} className={classes}>
-                      <div className="rr-head-cell__day">{formatDayLabel(date)}</div>
-                      <div className="rr-head-cell__num">{formatDateNumber(date)}</div>
-                      <div className="rr-head-cell__mon">{formatMonthLabel(date)}</div>
-                    </div>
-                  );
-                })}
-
-                {/* Groups */}
-                {visibleGroups.map((group) => (
-                  <RoomGroup
-                    key={group.id ?? group.name}
-                    t={t}
-                    group={group}
-                    window={window}
-                    todayISO={todayISO}
-                    selectedId={selected?.res.reservationRoomId ?? selected?.res.id ?? null}
-                    onSelect={(res, room) => setSelected({ res, room, group })}
-                    matchesReservation={matchesReservation}
-                    drag={drag}
-                    onDragStart={handleDragStart}
-                    onDragMove={handleDragMove}
-                    onDragEnd={handleDragEnd}
-                    pending={pending}
-                    onPendingClick={(draft) => setBooking(draft)}
-                    onCleaningClick={(room) => {
-                      if (room.id) setCleaningRoom({ id: room.id, number: room.number, groupName: group.name });
-                    }}
-                  />
-                ))}
-                {visibleGroups.length === 0 && <div className="rr-empty-state">No room types found.</div>}
+            {loading && (
+              <div className="rr-load-state">
+                <LoadingSkeleton />
               </div>
-            </div>
+            )}
+            {!loading && !error && rack && (
+              <div className="rr-chart__scroll">
+                <div className="rr-grid">
+                  {/* Header row */}
+                  <div className="rr-head-cell rr-head-cell--room">
+                    <div className="rr-head-cell__room-label">
+                      <span className="rr-head-cell__eyebrow">Room</span>
+                      <span className="rr-head-cell__title">Unit / Type</span>
+                    </div>
+                    <button
+                      type="button"
+                      className="rr-controls-toggle"
+                      aria-pressed={miniView}
+                      onClick={() => setMiniView((value) => !value)}
+                    >
+                      {miniView
+                        ? t("roomRack.showControls")
+                        : t("roomRack.hideControls")}
+                    </button>
+                  </div>
+                  {window.map((date) => {
+                    const iso = toISODate(date);
+                    const classes = [
+                      "rr-head-cell",
+                      isWeekend(date) ? "rr-head-cell--weekend" : "",
+                      iso === todayISO ? "rr-head-cell--today" : "",
+                    ]
+                      .filter(Boolean)
+                      .join(" ");
+                    return (
+                      <div key={iso} className={classes}>
+                        <div className="rr-head-cell__day">
+                          {formatDayLabel(date)}
+                        </div>
+                        <div className="rr-head-cell__num">
+                          {formatDateNumber(date)}
+                        </div>
+                        <div className="rr-head-cell__mon">
+                          {formatMonthLabel(date)}
+                        </div>
+                      </div>
+                    );
+                  })}
+
+                  {/* Groups */}
+                  {visibleGroups.map((group) => (
+                    <RoomGroup
+                      key={group.id ?? group.name}
+                      t={t}
+                      group={group}
+                      window={window}
+                      todayISO={todayISO}
+                      selectedId={
+                        selected?.res.reservationRoomId ??
+                        selected?.res.id ??
+                        null
+                      }
+                      onSelect={(res, room) =>
+                        setSelected({ res, room, group })
+                      }
+                      matchesReservation={matchesReservation}
+                      drag={drag}
+                      onDragStart={handleDragStart}
+                      onDragMove={handleDragMove}
+                      onDragEnd={handleDragEnd}
+                      pending={pending}
+                      onPendingClick={(draft) => setBooking(draft)}
+                      onCleaningClick={(room) => {
+                        if (room.id)
+                          setCleaningRoom({
+                            id: room.id,
+                            number: room.number,
+                            groupName: group.name,
+                          });
+                      }}
+                    />
+                  ))}
+                  {visibleGroups.length === 0 && (
+                    <div className="rr-empty-state">No room types found.</div>
+                  )}
+                </div>
+              </div>
             )}
           </div>
 
@@ -601,7 +877,11 @@ export function RoomRackPage() {
               room={selected.room}
               group={selected.group}
               todayISO={todayISO}
-              detail={detail?.reservation.id === selected.res.reservationId ? detail : null}
+              detail={
+                detail?.reservation.id === selected.res.reservationId
+                  ? detail
+                  : null
+              }
               loading={detailLoading}
               error={detailError}
               onUpdated={onReservationUpdated}
@@ -628,7 +908,9 @@ export function RoomRackPage() {
             onClose={() => setCleaningRoom(null)}
             onSaved={() => {
               setCleaningRoom(null);
-              setActionNotice(t("roomRack.roomNowAvailable", { room: cleaningRoom.number }));
+              setActionNotice(
+                t("roomRack.roomNowAvailable", { room: cleaningRoom.number }),
+              );
               setRefreshKey((value) => value + 1);
             }}
           />
@@ -671,7 +953,9 @@ function RoomGroup({
 }) {
   const [collapsed, setCollapsed] = useState(false);
   const unassignedByBooking = new Map<string, Reservation[]>();
-  for (const reservation of group.unassignedReservations.filter((item) => matchesReservation(item))) {
+  for (const reservation of group.unassignedReservations.filter((item) =>
+    matchesReservation(item),
+  )) {
     const key = reservation.reservationId ?? reservation.id;
     const rooms = unassignedByBooking.get(key) ?? [];
     rooms.push(reservation);
@@ -704,10 +988,14 @@ function RoomGroup({
             "rr-cat-cell__rate",
             isWeekend(date) ? "rr-cat-cell__rate--weekend" : "",
             iso === todayISO ? "rr-cat-cell__rate--today" : "",
-          ].filter(Boolean).join(" ");
+          ]
+            .filter(Boolean)
+            .join(" ");
           return (
             <div key={iso} className={classes}>
-              {group.dailyRates[i] == null ? "—" : formatRupiah(group.dailyRates[i])}
+              {group.dailyRates[i] == null
+                ? "—"
+                : formatRupiah(group.dailyRates[i])}
             </div>
           );
         })}
@@ -716,154 +1004,200 @@ function RoomGroup({
       {/* Rooms */}
       {group.rooms.map((room) => {
         // Calculate drag highlight range for this room.
-        const dragLo = drag && drag.roomNumber === room.number ? Math.min(drag.startIdx, drag.endIdx) : -1;
-        const dragHi = drag && drag.roomNumber === room.number ? Math.max(drag.startIdx, drag.endIdx) : -1;
+        const dragLo =
+          drag && drag.roomNumber === room.number
+            ? Math.min(drag.startIdx, drag.endIdx)
+            : -1;
+        const dragHi =
+          drag && drag.roomNumber === room.number
+            ? Math.max(drag.startIdx, drag.endIdx)
+            : -1;
 
         return (
-        <div
-          className={`rr-room-row${collapsed ? " rr-room-row--collapsed" : ""}`}
-          key={room.number}
-          style={{ display: "contents" }}
-          aria-hidden={collapsed}
-          inert={collapsed}
-        >
-          <div className="rr-room-cell">
-            <div className="rr-room-cell__top">
-              <span className="rr-room-cell__num">{room.number}</span>
-              <span className="rr-room-cell__bed">{room.bedType}</span>
+          <div
+            className={`rr-room-row${collapsed ? " rr-room-row--collapsed" : ""}`}
+            key={room.number}
+            style={{ display: "contents" }}
+            aria-hidden={collapsed}
+            inert={collapsed}
+          >
+            <div className="rr-room-cell">
+              <div className="rr-room-cell__top">
+                <span className="rr-room-cell__num">{room.number}</span>
+                <span className="rr-room-cell__bed">{room.bedType}</span>
+              </div>
+              <span className="rr-room-cell__floor">{room.floor}</span>
             </div>
-            <span className="rr-room-cell__floor">{room.floor}</span>
-          </div>
 
-          <div className="rr-lane">
-            {window.map((date, dayIdx) => {
-              const iso = toISODate(date);
-              const isDragHighlight = dayIdx >= dragLo && dayIdx <= dragHi;
-              const heldForUnassigned = isHeldForUnassigned(group, room, dayIdx, window);
-              const cleaningToday = room.status === "cleaning" && iso === todayISO;
-              const bookable = isDayBookable(group, room, dayIdx, window, todayISO);
-              const classes = [
-                "rr-day-cell",
-                isWeekend(date) ? "rr-day-cell--weekend" : "",
-                iso === todayISO ? "rr-day-cell--today" : "",
-                isDragHighlight ? "rr-day-cell--drag" : "",
-                heldForUnassigned ? "rr-day-cell--held" : "",
-                cleaningToday ? "rr-day-cell--cleaning" : "",
-                !bookable ? "rr-day-cell--unavailable" : "",
-              ].filter(Boolean).join(" ");
-              return (
-                <div
-                  key={iso}
-                  className={classes}
-                  title={cleaningToday && heldForUnassigned
-                    ? "Cleaning · Held for Unassigned. Kamar belum siap dan dialokasikan untuk reservasi tanpa nomor kamar."
-                    : cleaningToday
-                      ? "Cleaning. Kamar belum siap dipakai."
-                      : heldForUnassigned
-                        ? "Kamar tersisa dialokasikan untuk reservasi Unassigned"
-                        : undefined}
-                  onMouseDown={(e) => {
-                    if (!bookable) return;
-                    e.preventDefault();
-                    onDragStart(room.number, group.name, dayIdx);
-                  }}
-                  onMouseEnter={() => onDragMove(dayIdx)}
-                  onMouseUp={onDragEnd}
-                >
-                  {cleaningToday && room.id && (
+            <div className="rr-lane">
+              {window.map((date, dayIdx) => {
+                const iso = toISODate(date);
+                const isDragHighlight = dayIdx >= dragLo && dayIdx <= dragHi;
+                const heldForUnassigned = isHeldForUnassigned(
+                  group,
+                  room,
+                  dayIdx,
+                  window,
+                );
+                const cleaningToday =
+                  room.status === "cleaning" && iso === todayISO;
+                const bookable = isDayBookable(
+                  group,
+                  room,
+                  dayIdx,
+                  window,
+                  todayISO,
+                );
+                const classes = [
+                  "rr-day-cell",
+                  isWeekend(date) ? "rr-day-cell--weekend" : "",
+                  iso === todayISO ? "rr-day-cell--today" : "",
+                  isDragHighlight ? "rr-day-cell--drag" : "",
+                  heldForUnassigned ? "rr-day-cell--held" : "",
+                  cleaningToday ? "rr-day-cell--cleaning" : "",
+                  !bookable ? "rr-day-cell--unavailable" : "",
+                ]
+                  .filter(Boolean)
+                  .join(" ");
+                return (
+                  <div
+                    key={iso}
+                    className={classes}
+                    title={
+                      cleaningToday && heldForUnassigned
+                        ? "Cleaning · Held for Unassigned. Kamar belum siap dan dialokasikan untuk reservasi tanpa nomor kamar."
+                        : cleaningToday
+                          ? "Cleaning. Kamar belum siap dipakai."
+                          : heldForUnassigned
+                            ? "Kamar tersisa dialokasikan untuk reservasi Unassigned"
+                            : undefined
+                    }
+                    onMouseDown={(e) => {
+                      if (!bookable) return;
+                      e.preventDefault();
+                      onDragStart(room.number, group.name, dayIdx);
+                    }}
+                    onMouseEnter={() => onDragMove(dayIdx)}
+                    onMouseUp={onDragEnd}
+                  >
+                    {cleaningToday && room.id && (
+                      <button
+                        type="button"
+                        className="rr-day-cell__cleaning"
+                        aria-label={`Room ${room.number} Cleaning. Ubah menjadi Available`}
+                        onClick={() => onCleaningClick(room)}
+                      >
+                        Cleaning
+                      </button>
+                    )}
+                    {heldForUnassigned &&
+                      !isDayOccupied(room, dayIdx, window) && (
+                        <span className="rr-day-cell__held">
+                          Held for
+                          <br />
+                          Unassigned
+                        </span>
+                      )}
+                    {!isDragHighlight && bookable && (
+                      <span className="rr-day-cell__add" aria-hidden="true">
+                        <Icon name="plus" width={14} height={14} />
+                      </span>
+                    )}
+                    {isDragHighlight && (
+                      <span
+                        className="rr-day-cell__drag-label"
+                        aria-hidden="true"
+                      >
+                        {dayIdx === dragLo ? `${dragHi - dragLo + 1}N` : ""}
+                      </span>
+                    )}
+                  </div>
+                );
+              })}
+
+              {room.reservations
+                .filter((res) => matchesReservation(res, room.number))
+                .map((res) => {
+                  const geom = barGeometry(res, window);
+                  if (!geom) return null;
+                  const modifier = barModifier(res, room);
+                  const isMaintenance = modifier === "maintenance";
+                  const style = {
+                    left: `calc(${geom.startIdx} * var(--rr-day-col) + 3px)`,
+                    width: `calc(${geom.span} * var(--rr-day-col) - 6px)`,
+                  } as const;
+                  return (
                     <button
                       type="button"
-                      className="rr-day-cell__cleaning"
-                      aria-label={`Room ${room.number} Cleaning. Ubah menjadi Available`}
-                      onClick={() => onCleaningClick(room)}
+                      key={res.reservationRoomId ?? res.id}
+                      className={[
+                        "rr-bar",
+                        `rr-bar--${modifier}`,
+                        selectedId === (res.reservationRoomId ?? res.id)
+                          ? "rr-bar--selected"
+                          : "",
+                      ]
+                        .filter(Boolean)
+                        .join(" ")}
+                      style={style}
+                      onClick={() => {
+                        if (!isMaintenance) onSelect(res, room);
+                      }}
+                      aria-label={`${res.guestName} ${res.checkIn} to ${res.checkOut}`}
                     >
-                      Cleaning
-                    </button>
-                  )}
-                  {heldForUnassigned && !isDayOccupied(room, dayIdx, window) && (
-                    <span className="rr-day-cell__held">
-                      Held for<br />Unassigned
-                    </span>
-                  )}
-                  {!isDragHighlight && bookable && (
-                    <span className="rr-day-cell__add" aria-hidden="true">
-                      <Icon name="plus" width={14} height={14} />
-                    </span>
-                  )}
-                  {isDragHighlight && (
-                    <span className="rr-day-cell__drag-label" aria-hidden="true">
-                      {dayIdx === dragLo ? `${dragHi - dragLo + 1}N` : ""}
-                    </span>
-                  )}
-                </div>
-              );
-            })}
-
-            {room.reservations.filter((res) => matchesReservation(res, room.number)).map((res) => {
-              const geom = barGeometry(res, window);
-              if (!geom) return null;
-              const modifier = barModifier(res, room);
-              const isMaintenance = modifier === "maintenance";
-              const style = {
-                left: `calc(${geom.startIdx} * var(--rr-day-col) + 3px)`,
-                width: `calc(${geom.span} * var(--rr-day-col) - 6px)`,
-              } as const;
-              return (
-                <button
-                  type="button"
-                  key={res.reservationRoomId ?? res.id}
-                  className={[
-                    "rr-bar",
-                    `rr-bar--${modifier}`,
-                    selectedId === (res.reservationRoomId ?? res.id) ? "rr-bar--selected" : "",
-                  ].filter(Boolean).join(" ")}
-                  style={style}
-                  onClick={() => { if (!isMaintenance) onSelect(res, room); }}
-                  aria-label={`${res.guestName} ${res.checkIn} to ${res.checkOut}`}
-                >
-                  <span className="rr-bar__name">{res.guestName}</span>
-                  <span className="rr-bar__meta">
-                    {isMaintenance ? (
-                      <>{res.maintenanceNote ?? room.maintenanceNote ?? "Blocked"}</>
-                    ) : (
-                      <>
-                        {sourceShort[res.source] ?? res.source}
-                        {modifier === "due-out" && (
-                          <span className="rr-bar__badge">out {CHECKOUT_TIME}</span>
+                      <span className="rr-bar__name">{res.guestName}</span>
+                      <span className="rr-bar__meta">
+                        {isMaintenance ? (
+                          <>
+                            {res.maintenanceNote ??
+                              room.maintenanceNote ??
+                              "Blocked"}
+                          </>
+                        ) : (
+                          <>
+                            {sourceShort[res.source] ?? res.source}
+                            {modifier === "due-out" && (
+                              <span className="rr-bar__badge">
+                                out {CHECKOUT_TIME}
+                              </span>
+                            )}
+                          </>
                         )}
-                      </>
-                    )}
-                  </span>
-                </button>
-              );
-            })}
+                      </span>
+                    </button>
+                  );
+                })}
 
-            {/* Pending placeholder bar from drag-to-create */}
-            {pending && pending.roomNumber === room.number && (() => {
-              const ciIdx = window.findIndex((d) => toISODate(d) === pending.checkIn);
-              if (ciIdx === -1) return null;
-              const span = pending.nights;
-              const style = {
-                left: `calc(${ciIdx} * var(--rr-day-col) + 3px)`,
-                width: `calc(${span} * var(--rr-day-col) - 6px)`,
-              };
-              return (
-                <button
-                  type="button"
-                  className="rr-bar rr-bar--pending"
-                  style={style}
-                  onClick={() => onPendingClick(pending)}
-                  aria-label={`New booking: Room ${pending.roomNumber}, ${pending.nights} night(s). Click to fill details.`}
-                >
-                  <span className="rr-bar__name">+ New Reservation</span>
-                  <span className="rr-bar__meta">
-                    {pending.nights}N · Click to fill details
-                  </span>
-                </button>
-              );
-            })()}
+              {/* Pending placeholder bar from drag-to-create */}
+              {pending &&
+                pending.roomNumber === room.number &&
+                (() => {
+                  const ciIdx = window.findIndex(
+                    (d) => toISODate(d) === pending.checkIn,
+                  );
+                  if (ciIdx === -1) return null;
+                  const span = pending.nights;
+                  const style = {
+                    left: `calc(${ciIdx} * var(--rr-day-col) + 3px)`,
+                    width: `calc(${span} * var(--rr-day-col) - 6px)`,
+                  };
+                  return (
+                    <button
+                      type="button"
+                      className="rr-bar rr-bar--pending"
+                      style={style}
+                      onClick={() => onPendingClick(pending)}
+                      aria-label={`New booking: Room ${pending.roomNumber}, ${pending.nights} night(s). Click to fill details.`}
+                    >
+                      <span className="rr-bar__name">+ New Reservation</span>
+                      <span className="rr-bar__meta">
+                        {pending.nights}N · Click to fill details
+                      </span>
+                    </button>
+                  );
+                })()}
+            </div>
           </div>
-        </div>
         );
       })}
       {[...unassignedByBooking].map(([bookingKey, rooms]) => {
@@ -880,8 +1214,12 @@ function RoomGroup({
           >
             <div className="rr-room-cell rr-room-cell--unassigned">
               <div className="rr-room-cell__top">
-                <span className="rr-room-cell__num">{t("roomRack.unassignedLabel")}</span>
-                <span className="rr-room-cell__unassigned-count">{rooms.length}</span>
+                <span className="rr-room-cell__num">
+                  {t("roomRack.unassignedLabel")}
+                </span>
+                <span className="rr-room-cell__unassigned-count">
+                  {rooms.length}
+                </span>
               </div>
               <span className="rr-room-cell__floor">{reservation.id}</span>
             </div>
@@ -900,10 +1238,18 @@ function RoomGroup({
                   width: `calc(${geometry.span} * var(--rr-day-col) - 6px)`,
                 }}
                 onClick={() => onSelect(reservation, null)}
-                aria-label={t("roomRack.unassignedAria", { guest: reservation.guestName, count: rooms.length, checkIn: reservation.checkIn, checkOut: reservation.checkOut })}
+                aria-label={t("roomRack.unassignedAria", {
+                  guest: reservation.guestName,
+                  count: rooms.length,
+                  checkIn: reservation.checkIn,
+                  checkOut: reservation.checkOut,
+                })}
               >
                 <span className="rr-bar__name">{reservation.guestName}</span>
-                <span className="rr-bar__meta">{sourceShort[reservation.source] ?? reservation.source} · {t("roomRack.unassignedCount", { count: rooms.length })}</span>
+                <span className="rr-bar__meta">
+                  {sourceShort[reservation.source] ?? reservation.source} ·{" "}
+                  {t("roomRack.unassignedCount", { count: rooms.length })}
+                </span>
               </button>
             </div>
           </div>
@@ -929,11 +1275,17 @@ function NewBookingForm({
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
   const [guestNotes, setGuestNotes] = useState("");
-  const [source, setSource] = useState<ReservationSource>(draft.checkIn === todayJakarta() ? "walk_in" : "phone");
-  const [addons, setAddons] = useState<{ variantId: string; quantity: number }[]>([]);
+  const [source, setSource] = useState<ReservationSource>(
+    draft.checkIn === todayJakarta() ? "walk_in" : "phone",
+  );
+  const [addons, setAddons] = useState<
+    { variantId: string; quantity: number }[]
+  >([]);
   const [addingAddon, setAddingAddon] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState("");
-  const [paymentStatus, setPaymentStatus] = useState<"Unpaid" | "Partial" | "Paid">("Unpaid");
+  const [paymentStatus, setPaymentStatus] = useState<
+    "Unpaid" | "Partial" | "Paid"
+  >("Unpaid");
   const [amountPaid, setAmountPaid] = useState(0);
   const [requireDeposit, setRequireDeposit] = useState(false);
   const [depositAmount, setDepositAmount] = useState(500000);
@@ -949,17 +1301,30 @@ function NewBookingForm({
   const [quoteLoading, setQuoteLoading] = useState(true);
   const [feedback, setFeedback] = useState("");
   const [saving, setSaving] = useState(false);
-  const [confirmation, setConfirmation] = useState<"save" | "check-in" | null>(null);
+  const [confirmation, setConfirmation] = useState<"save" | "check-in" | null>(
+    null,
+  );
   const [acknowledged, setAcknowledged] = useState(false);
-  const [checkInContext, setCheckInContext] = useState<CheckInContext | null>(null);
-  const [earlyCheckIn, setEarlyCheckIn] = useState<EarlyCheckInInput>({ acknowledged: false, chargeAmount: 0, paymentTiming: "later" });
-  const [saved, setSaved] = useState<{ bookingId: string; checkedIn: boolean } | null>(null);
+  const [checkInContext, setCheckInContext] = useState<CheckInContext | null>(
+    null,
+  );
+  const [earlyCheckIn, setEarlyCheckIn] = useState<EarlyCheckInInput>({
+    acknowledged: false,
+    chargeAmount: 0,
+    paymentTiming: "later",
+  });
+  const [saved, setSaved] = useState<{
+    bookingId: string;
+    checkedIn: boolean;
+  } | null>(null);
   const requestKey = useRef<{ body: string; key: string } | null>(null);
 
-  const variants = experiences.flatMap((experience) => experience.variants.map((variant) => ({
-    ...variant,
-    label: `${experience.name} · ${variant.subName}`,
-  })));
+  const variants = experiences.flatMap((experience) =>
+    experience.variants.map((variant) => ({
+      ...variant,
+      label: `${experience.name} · ${variant.subName}`,
+    })),
+  );
   const selectedRoom = {
     roomTypeId: draft.roomTypeId,
     roomUnitId: draft.roomUnitId,
@@ -969,22 +1334,38 @@ function NewBookingForm({
   };
   const roomReady = Boolean(
     availability?.bookable &&
-    availability.assignableRoomUnits.some((room) => room.id === draft.roomUnitId),
+    availability.assignableRoomUnits.some(
+      (room) => room.id === draft.roomUnitId,
+    ),
   );
   const total = quote?.bookingTotal ?? 0;
-  const amountCollected = paymentStatus === "Paid" ? total : paymentStatus === "Partial" ? amountPaid : 0;
+  const amountCollected =
+    paymentStatus === "Paid"
+      ? total
+      : paymentStatus === "Partial"
+        ? amountPaid
+        : 0;
   const remaining = Math.max(0, total - amountCollected);
-  const roomCharge = (quote?.charges.rooms[0]?.roomAmount ?? 0) + (quote?.discountTotal ?? 0);
+  const roomCharge =
+    (quote?.charges.rooms[0]?.roomAmount ?? 0) + (quote?.discountTotal ?? 0);
   const extraBedCharge = quote?.charges.extraBedTotal ?? 0;
   const roomDiscount = quote?.discountTotal ?? 0;
   const lastStayDate = shiftDate(draft.checkOut, -1);
-  const applicablePolicies = policies.filter((policy) =>
-    (!policy.stayStart || policy.stayStart <= draft.checkIn) &&
-    (!policy.stayEnd || policy.stayEnd >= lastStayDate) &&
-    (policy.roomTypes.length === 0 || policy.roomTypes.some((room) => room.id === draft.roomTypeId)));
-  const policyId = applicablePolicies.some((policy) => policy.id === selectedPolicyId)
-    ? selectedPolicyId : applicablePolicies[0]?.id ?? "";
-  const activePolicy = applicablePolicies.find((policy) => policy.id === policyId);
+  const applicablePolicies = policies.filter(
+    (policy) =>
+      (!policy.stayStart || policy.stayStart <= draft.checkIn) &&
+      (!policy.stayEnd || policy.stayEnd >= lastStayDate) &&
+      (policy.roomTypes.length === 0 ||
+        policy.roomTypes.some((room) => room.id === draft.roomTypeId)),
+  );
+  const policyId = applicablePolicies.some(
+    (policy) => policy.id === selectedPolicyId,
+  )
+    ? selectedPolicyId
+    : (applicablePolicies[0]?.id ?? "");
+  const activePolicy = applicablePolicies.find(
+    (policy) => policy.id === policyId,
+  );
 
   useEffect(() => {
     const controller = new AbortController();
@@ -993,16 +1374,29 @@ function NewBookingForm({
       try {
         if (!(await restoreSession())) return;
         const [available, experienceResult, methodResult] = await Promise.all([
-          getReservationAvailability(draft.checkIn, draft.checkOut, controller.signal),
+          getReservationAvailability(
+            draft.checkIn,
+            draft.checkOut,
+            controller.signal,
+          ),
           getReservationExperiences(controller.signal),
           getReservationPaymentMethods(controller.signal),
         ]);
         if (controller.signal.aborted) return;
-        setAvailability(available.items.find((item) => item.roomType.id === draft.roomTypeId) ?? null);
+        setAvailability(
+          available.items.find(
+            (item) => item.roomType.id === draft.roomTypeId,
+          ) ?? null,
+        );
         setExperiences(experienceResult.items);
         setMethods(methodResult.items.filter((item) => item.isActive));
       } catch (cause) {
-        if (!controller.signal.aborted) setFeedback(cause instanceof Error ? cause.message : "Pilihan reservasi gagal dimuat.");
+        if (!controller.signal.aborted)
+          setFeedback(
+            cause instanceof Error
+              ? cause.message
+              : "Pilihan reservasi gagal dimuat.",
+          );
       } finally {
         if (!controller.signal.aborted) setAvailabilityLoading(false);
       }
@@ -1014,20 +1408,34 @@ function NewBookingForm({
   useEffect(() => {
     if (source !== "phone") return;
     const controller = new AbortController();
-    const query = new URLSearchParams({ source: "phone", isActive: "true", limit: "100" });
+    const query = new URLSearchParams({
+      source: "phone",
+      isActive: "true",
+      limit: "100",
+    });
     listPolicies(query, controller.signal)
       .then(async (response) => {
-        const pages = await Promise.all(Array.from(
-          { length: Math.ceil(response.total / response.limit) - 1 },
-          (_, index) => {
-            const pageQuery = new URLSearchParams(query);
-            pageQuery.set("page", String(index + 2));
-            return listPolicies(pageQuery, controller.signal);
-          },
-        ));
-        if (!controller.signal.aborted) setPolicies([response, ...pages].flatMap((page) => page.items));
+        const pages = await Promise.all(
+          Array.from(
+            { length: Math.ceil(response.total / response.limit) - 1 },
+            (_, index) => {
+              const pageQuery = new URLSearchParams(query);
+              pageQuery.set("page", String(index + 2));
+              return listPolicies(pageQuery, controller.signal);
+            },
+          ),
+        );
+        if (!controller.signal.aborted)
+          setPolicies([response, ...pages].flatMap((page) => page.items));
       })
-      .catch((cause) => { if (!controller.signal.aborted) setFeedback(cause instanceof Error ? cause.message : "Kebijakan pembatalan gagal dimuat."); });
+      .catch((cause) => {
+        if (!controller.signal.aborted)
+          setFeedback(
+            cause instanceof Error
+              ? cause.message
+              : "Kebijakan pembatalan gagal dimuat.",
+          );
+      });
     return () => controller.abort();
   }, [source]);
 
@@ -1036,49 +1444,112 @@ function NewBookingForm({
     const controller = new AbortController();
     const timer = window.setTimeout(() => {
       setQuoteLoading(true);
-      quoteReservation(source, {
-        checkInDate: draft.checkIn,
-        checkOutDate: draft.checkOut,
-        totalAdults: adults,
-        totalChildren: children,
-        rooms: [selectedRoom],
-        experiences: addons,
-      }, controller.signal)
-        .then((response) => { if (!controller.signal.aborted) { setQuote(response); setFeedback(""); } })
-        .catch((cause) => { if (!controller.signal.aborted) setFeedback(cause instanceof Error ? cause.message : "Quote reservasi gagal dihitung."); })
-        .finally(() => { if (!controller.signal.aborted) setQuoteLoading(false); });
+      quoteReservation(
+        source,
+        {
+          checkInDate: draft.checkIn,
+          checkOutDate: draft.checkOut,
+          totalAdults: adults,
+          totalChildren: children,
+          rooms: [selectedRoom],
+          experiences: addons,
+        },
+        controller.signal,
+      )
+        .then((response) => {
+          if (!controller.signal.aborted) {
+            setQuote(response);
+            setFeedback("");
+          }
+        })
+        .catch((cause) => {
+          if (!controller.signal.aborted)
+            setFeedback(
+              cause instanceof Error
+                ? cause.message
+                : "Quote reservasi gagal dihitung.",
+            );
+        })
+        .finally(() => {
+          if (!controller.signal.aborted) setQuoteLoading(false);
+        });
     }, 350);
-    return () => { window.clearTimeout(timer); controller.abort(); };
-  }, [source, draft.checkIn, draft.checkOut, draft.roomTypeId, draft.roomUnitId, adults, children, extraBed, addons]);
+    return () => {
+      window.clearTimeout(timer);
+      controller.abort();
+    };
+  }, [
+    source,
+    draft.checkIn,
+    draft.checkOut,
+    draft.roomTypeId,
+    draft.roomUnitId,
+    adults,
+    children,
+    extraBed,
+    addons,
+  ]);
 
   async function requestSave(checkInGuest: boolean) {
     if (saving) return;
     if (!draft.roomTypeId || !draft.roomUnitId || !roomReady) {
-      setFeedback("Nomor kamar ini tidak tersedia. Muat ulang Room Rack dan pilih kamar lain.");
+      setFeedback(
+        "Nomor kamar ini tidak tersedia. Muat ulang Room Rack dan pilih kamar lain.",
+      );
       return;
     }
     if (source === "walk_in" && draft.checkIn !== todayJakarta()) {
-      setFeedback("Walk-in hanya tersedia untuk check-in hari ini. Pilih Phone untuk tanggal mendatang.");
+      setFeedback(
+        "Walk-in hanya tersedia untuk check-in hari ini. Pilih Phone untuk tanggal mendatang.",
+      );
       return;
     }
     if (checkInGuest && draft.checkIn !== todayJakarta()) {
       setFeedback("Check-in hanya tersedia pada tanggal check-in hari ini.");
       return;
     }
-    if (!guestName.trim() || !phone.trim()) { setFeedback("Nama dan nomor WhatsApp tamu wajib diisi."); return; }
-    if (!quote || quoteLoading) { setFeedback("Tunggu quote reservasi dari API selesai."); return; }
-    if (paymentStatus === "Partial" && (amountPaid < 1 || amountPaid >= total)) {
-      setFeedback("Pembayaran partial harus lebih dari Rp0 dan kurang dari total reservasi."); return;
+    if (!guestName.trim() || !phone.trim()) {
+      setFeedback("Nama dan nomor WhatsApp tamu wajib diisi.");
+      return;
     }
-    if (amountCollected > 0 && !paymentMethod) { setFeedback("Pilih metode pembayaran."); return; }
-    if (requireDeposit && (depositAmount < 1 || !depositMethod)) { setFeedback("Isi nominal dan metode deposit."); return; }
+    if (!quote || quoteLoading) {
+      setFeedback("Tunggu quote reservasi dari API selesai.");
+      return;
+    }
+    if (
+      paymentStatus === "Partial" &&
+      (amountPaid < 1 || amountPaid >= total)
+    ) {
+      setFeedback(
+        "Pembayaran partial harus lebih dari Rp0 dan kurang dari total reservasi.",
+      );
+      return;
+    }
+    if (amountCollected > 0 && !paymentMethod) {
+      setFeedback("Pilih metode pembayaran.");
+      return;
+    }
+    if (requireDeposit && (depositAmount < 1 || !depositMethod)) {
+      setFeedback("Isi nominal dan metode deposit.");
+      return;
+    }
     setFeedback("");
     setAcknowledged(false);
     setCheckInContext(null);
-    setEarlyCheckIn({ acknowledged: false, chargeAmount: 0, paymentTiming: "later" });
+    setEarlyCheckIn({
+      acknowledged: false,
+      chargeAmount: 0,
+      paymentTiming: "later",
+    });
     if (checkInGuest) {
-      try { setCheckInContext(await getCreateCheckInContext(draft.checkIn)); }
-      catch (cause) { setFeedback(cause instanceof Error ? cause.message : "Jam check-in gagal dimuat."); return; }
+      try {
+        setCheckInContext(await getCreateCheckInContext(draft.checkIn));
+      } catch (cause) {
+        setFeedback(
+          cause instanceof Error ? cause.message : "Jam check-in gagal dimuat.",
+        );
+        return;
+      }
     }
     setConfirmation(checkInGuest ? "check-in" : "save");
   }
@@ -1087,41 +1558,80 @@ function NewBookingForm({
     if (!confirmation || !quote || saving) return;
     const checkInGuest = confirmation === "check-in";
     const payload = {
-      guest: { fullName: guestName.trim(), phone: phone.trim(), ...(email.trim() ? { email: email.trim() } : {}) },
+      guest: {
+        fullName: guestName.trim(),
+        phone: phone.trim(),
+        ...(email.trim() ? { email: email.trim() } : {}),
+      },
       checkInDate: draft.checkIn,
       checkOutDate: draft.checkOut,
       totalAdults: adults,
       totalChildren: children,
-      rooms: [{ ...selectedRoom, ...(source === "phone" ? { cancellationPolicyId: policyId || null } : {}) }],
+      rooms: [
+        {
+          ...selectedRoom,
+          ...(source === "phone"
+            ? { cancellationPolicyId: policyId || null }
+            : {}),
+        },
+      ],
       experiences: addons,
       ...(guestNotes.trim() ? { specialRequests: guestNotes.trim() } : {}),
       confirm: checkInGuest,
       checkIn: checkInGuest,
       acknowledgeOutstanding: checkInGuest && remaining > 0,
       ...(checkInGuest && checkInContext?.required ? { earlyCheckIn } : {}),
-      ...(amountCollected > 0 ? { payment: { methodId: paymentMethod, amount: amountCollected } } : {}),
-      ...(requireDeposit ? { deposit: { methodId: depositMethod, amount: depositAmount, notes: depositNote.trim() } } : {}),
+      ...(amountCollected > 0
+        ? { payment: { methodId: paymentMethod, amount: amountCollected } }
+        : {}),
+      ...(requireDeposit
+        ? {
+            deposit: {
+              methodId: depositMethod,
+              amount: depositAmount,
+              notes: depositNote.trim(),
+            },
+          }
+        : {}),
     };
     const body = JSON.stringify({ source, ...payload });
-    if (requestKey.current?.body !== body) requestKey.current = { body, key: crypto.randomUUID() };
+    if (requestKey.current?.body !== body)
+      requestKey.current = { body, key: crypto.randomUUID() };
     setSaving(true);
     setFeedback("");
     try {
-      const result = await createReservation(source, { idempotencyKey: requestKey.current.key, ...payload });
+      const result = await createReservation(source, {
+        idempotencyKey: requestKey.current.key,
+        ...payload,
+      });
       setConfirmation(null);
-      setSaved({ bookingId: result.reservation.bookingCode, checkedIn: checkInGuest });
+      setSaved({
+        bookingId: result.reservation.bookingCode,
+        checkedIn: checkInGuest,
+      });
       requestKey.current = null;
     } catch (cause) {
-      setFeedback(cause instanceof Error ? cause.message : "Reservasi gagal disimpan.");
+      setFeedback(
+        cause instanceof Error ? cause.message : "Reservasi gagal disimpan.",
+      );
     } finally {
       setSaving(false);
     }
   }
 
   return (
-    <div className="rr-drawer-overlay" onClick={(event) => {
-      if (event.target === event.currentTarget && !saving && !confirmation && !saved) onClose();
-    }}>
+    <div
+      className="rr-drawer-overlay"
+      onClick={(event) => {
+        if (
+          event.target === event.currentTarget &&
+          !saving &&
+          !confirmation &&
+          !saved
+        )
+          onClose();
+      }}
+    >
       <aside
         className="rr-drawer"
         onClick={(e) => e.stopPropagation()}
@@ -1133,7 +1643,15 @@ function NewBookingForm({
             <h2>New Reservation</h2>
             <span className="rr-drawer__sub">Room Rack · Drag-to-Book</span>
           </div>
-          <button type="button" className="rr-detail__close" onClick={onClose} disabled={saving || Boolean(confirmation) || Boolean(saved)} aria-label="Close">×</button>
+          <button
+            type="button"
+            className="rr-detail__close"
+            onClick={onClose}
+            disabled={saving || Boolean(confirmation) || Boolean(saved)}
+            aria-label="Close"
+          >
+            ×
+          </button>
         </div>
 
         {/* Scrollable body: form + summary */}
@@ -1144,8 +1662,29 @@ function NewBookingForm({
             <section className="rr-drawer-section">
               <h3>Reservation Source</h3>
               <div className="rr-drawer-tabs">
-                <button type="button" className={source === "walk_in" ? "rr-drawer-tab rr-drawer-tab--active" : "rr-drawer-tab"} disabled={draft.checkIn !== todayJakarta()} onClick={() => setSource("walk_in")}>Walk-in</button>
-                <button type="button" className={source === "phone" ? "rr-drawer-tab rr-drawer-tab--active" : "rr-drawer-tab"} onClick={() => setSource("phone")}>Phone</button>
+                <button
+                  type="button"
+                  className={
+                    source === "walk_in"
+                      ? "rr-drawer-tab rr-drawer-tab--active"
+                      : "rr-drawer-tab"
+                  }
+                  disabled={draft.checkIn !== todayJakarta()}
+                  onClick={() => setSource("walk_in")}
+                >
+                  Walk-in
+                </button>
+                <button
+                  type="button"
+                  className={
+                    source === "phone"
+                      ? "rr-drawer-tab rr-drawer-tab--active"
+                      : "rr-drawer-tab"
+                  }
+                  onClick={() => setSource("phone")}
+                >
+                  Phone
+                </button>
               </div>
             </section>
 
@@ -1153,7 +1692,9 @@ function NewBookingForm({
             <section className="rr-drawer-section">
               <div className="rr-drawer-section__head">
                 <h3>Stay</h3>
-                <span className="rr-drawer-badge">{draft.nights} {draft.nights === 1 ? "night" : "nights"}</span>
+                <span className="rr-drawer-badge">
+                  {draft.nights} {draft.nights === 1 ? "night" : "nights"}
+                </span>
               </div>
               <div className="rr-drawer-dates">
                 <div className="rr-drawer-date-col">
@@ -1172,26 +1713,57 @@ function NewBookingForm({
               <div className="rr-drawer-room-block">
                 <div className="rr-drawer-room-info">
                   <strong>Room {draft.roomNumber}</strong>
-                  <span>{draft.groupName} · {draft.roomBedType} · {draft.roomFloor}</span>
+                  <span>
+                    {draft.groupName} · {draft.roomBedType} · {draft.roomFloor}
+                  </span>
                 </div>
                 <div className="rr-drawer-fields rr-drawer-fields--3col">
                   <div className="rr-drawer-field">
                     <label htmlFor="rr-adults">Adults</label>
-                    <select id="rr-adults" value={adults} onChange={(e) => setAdults(Number(e.target.value))}>
-                      {Array.from({ length: 10 }, (_, i) => i + 1).map((n) => <option key={n} value={n}>{n}</option>)}
+                    <select
+                      id="rr-adults"
+                      value={adults}
+                      onChange={(e) => setAdults(Number(e.target.value))}
+                    >
+                      {Array.from({ length: 10 }, (_, i) => i + 1).map((n) => (
+                        <option key={n} value={n}>
+                          {n}
+                        </option>
+                      ))}
                     </select>
                   </div>
                   <div className="rr-drawer-field">
                     <label htmlFor="rr-children">Children</label>
-                    <select id="rr-children" value={children} onChange={(e) => setChildren(Number(e.target.value))}>
-                      {Array.from({ length: 11 }, (_, i) => i).map((n) => <option key={n} value={n}>{n}</option>)}
+                    <select
+                      id="rr-children"
+                      value={children}
+                      onChange={(e) => setChildren(Number(e.target.value))}
+                    >
+                      {Array.from({ length: 11 }, (_, i) => i).map((n) => (
+                        <option key={n} value={n}>
+                          {n}
+                        </option>
+                      ))}
                     </select>
                   </div>
                   <div className="rr-drawer-field">
                     <label htmlFor="rr-extra-bed">Extra Bed</label>
-                    <select id="rr-extra-bed" value={extraBed ? "1" : "0"} onChange={(e) => setExtraBed(e.target.value === "1")}>
+                    <select
+                      id="rr-extra-bed"
+                      value={extraBed ? "1" : "0"}
+                      onChange={(e) => setExtraBed(e.target.value === "1")}
+                    >
                       <option value="0">No</option>
-                      <option value="1" disabled={!availability?.roomType.extraBedEnabled}>Yes (+{formatRupiah(availability?.roomType.extraBedPricePerNight ?? 0)}/night)</option>
+                      <option
+                        value="1"
+                        disabled={!availability?.roomType.extraBedEnabled}
+                      >
+                        Yes (+
+                        {formatRupiah(
+                          availability?.roomType.extraBedPricePerNight ?? 0,
+                        )}
+                        /night)
+                      </option>
                     </select>
                   </div>
                 </div>
@@ -1202,16 +1774,41 @@ function NewBookingForm({
               <section className="rr-drawer-section">
                 <h3>Cancellation Policy</h3>
                 <div className="rr-drawer-field">
-                  <label htmlFor="rr-policy">Policy for {draft.groupName}</label>
-                  <select id="rr-policy" value={policyId} onChange={(event) => setSelectedPolicyId(event.target.value)}>
-                    {applicablePolicies.length === 0 && <option value="">100% cancellation charge · Non-refundable</option>}
-                    {applicablePolicies.map((policy) => <option key={policy.id} value={policy.id}>{policy.name}</option>)}
+                  <label htmlFor="rr-policy">
+                    Policy for {draft.groupName}
+                  </label>
+                  <select
+                    id="rr-policy"
+                    value={policyId}
+                    onChange={(event) =>
+                      setSelectedPolicyId(event.target.value)
+                    }
+                  >
+                    {applicablePolicies.length === 0 && (
+                      <option value="">
+                        100% cancellation charge · Non-refundable
+                      </option>
+                    )}
+                    {applicablePolicies.map((policy) => (
+                      <option key={policy.id} value={policy.id}>
+                        {policy.name}
+                      </option>
+                    ))}
                   </select>
                   {activePolicy && (
                     <div className="rr-drawer-policy-rules">
                       {activePolicy.rules.map((rule) => (
                         <p key={rule.id}>
-                          {rule.timingType === "more_than" ? "Lebih dari" : "Dalam"} {rule.daysBefore} hari sebelum check-in: {rule.chargeType === "percentage" ? `${rule.chargeValue}%` : rule.chargeType === "fixed" ? formatRupiah(rule.chargeValue) : `${rule.chargeValue} malam`} biaya pembatalan.
+                          {rule.timingType === "more_than"
+                            ? "Lebih dari"
+                            : "Dalam"}{" "}
+                          {rule.daysBefore} hari sebelum check-in:{" "}
+                          {rule.chargeType === "percentage"
+                            ? `${rule.chargeValue}%`
+                            : rule.chargeType === "fixed"
+                              ? formatRupiah(rule.chargeValue)
+                              : `${rule.chargeValue} malam`}{" "}
+                          biaya pembatalan.
                         </p>
                       ))}
                     </div>
@@ -1225,20 +1822,53 @@ function NewBookingForm({
               <h3>Guest Information</h3>
               <div className="rr-drawer-fields">
                 <div className="rr-drawer-field">
-                  <label htmlFor="rr-guest-name">Full Name <span className="rr-required">*</span></label>
-                  <input id="rr-guest-name" autoFocus value={guestName} onChange={(e) => setGuestName(e.target.value)} placeholder="Guest full name" />
+                  <label htmlFor="rr-guest-name">
+                    Full Name <span className="rr-required">*</span>
+                  </label>
+                  <input
+                    id="rr-guest-name"
+                    autoFocus
+                    value={guestName}
+                    onChange={(e) => setGuestName(e.target.value)}
+                    placeholder="Guest full name"
+                  />
                 </div>
                 <div className="rr-drawer-field">
-                  <label htmlFor="rr-phone">WhatsApp <span className="rr-required">*</span></label>
-                  <input id="rr-phone" type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+62 812-xxxx-xxxx" />
+                  <label htmlFor="rr-phone">
+                    WhatsApp <span className="rr-required">*</span>
+                  </label>
+                  <input
+                    id="rr-phone"
+                    type="tel"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    placeholder="+62 812-xxxx-xxxx"
+                  />
                 </div>
                 <div className="rr-drawer-field">
-                  <label htmlFor="rr-email">Email <span className="rr-optional">(Optional)</span></label>
-                  <input id="rr-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="guest@example.com" />
+                  <label htmlFor="rr-email">
+                    Email <span className="rr-optional">(Optional)</span>
+                  </label>
+                  <input
+                    id="rr-email"
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="guest@example.com"
+                  />
                 </div>
                 <div className="rr-drawer-field">
-                  <label htmlFor="rr-notes">Special Requests <span className="rr-optional">(Optional)</span></label>
-                  <textarea id="rr-notes" rows={2} value={guestNotes} onChange={(e) => setGuestNotes(e.target.value)} placeholder="Extra pillows, late check-in, etc." />
+                  <label htmlFor="rr-notes">
+                    Special Requests{" "}
+                    <span className="rr-optional">(Optional)</span>
+                  </label>
+                  <textarea
+                    id="rr-notes"
+                    rows={2}
+                    value={guestNotes}
+                    onChange={(e) => setGuestNotes(e.target.value)}
+                    placeholder="Extra pillows, late check-in, etc."
+                  />
                 </div>
               </div>
             </section>
@@ -1247,7 +1877,13 @@ function NewBookingForm({
             <section className="rr-drawer-section">
               <div className="rr-drawer-section__head">
                 <h3>Experiences &amp; Add-ons</h3>
-                <button type="button" className="rr-drawer-add-btn" onClick={() => setAddingAddon((v) => !v)}>＋ Add</button>
+                <button
+                  type="button"
+                  className="rr-drawer-add-btn"
+                  onClick={() => setAddingAddon((v) => !v)}
+                >
+                  ＋ Add
+                </button>
               </div>
               {addingAddon && (
                 <div className="rr-drawer-field">
@@ -1257,23 +1893,38 @@ function NewBookingForm({
                     value=""
                     onChange={(e) => {
                       if (e.target.value) {
-                        setAddons((prev) => [...prev, { variantId: e.target.value, quantity: 1 }]);
+                        setAddons((prev) => [
+                          ...prev,
+                          { variantId: e.target.value, quantity: 1 },
+                        ]);
                       }
                       setAddingAddon(false);
                     }}
                   >
                     <option value="">Pilih paket</option>
-                    {variants.filter((variant) => !addons.some((item) => item.variantId === variant.id)).map((variant) => (
-                      <option key={variant.id} value={variant.id}>{variant.label} · {formatRupiah(variant.price)}</option>
-                    ))}
+                    {variants
+                      .filter(
+                        (variant) =>
+                          !addons.some((item) => item.variantId === variant.id),
+                      )
+                      .map((variant) => (
+                        <option key={variant.id} value={variant.id}>
+                          {variant.label} · {formatRupiah(variant.price)}
+                        </option>
+                      ))}
                   </select>
                 </div>
               )}
               <div className="rr-drawer-addons">
                 {addons.map((item) => {
-                  const opt = variants.find((variant) => variant.id === item.variantId);
+                  const opt = variants.find(
+                    (variant) => variant.id === item.variantId,
+                  );
                   if (!opt) return null;
-                  const cost = quote?.charges.experiences.find((charge) => charge.variantId === item.variantId)?.amount ?? opt.price * item.quantity;
+                  const cost =
+                    quote?.charges.experiences.find(
+                      (charge) => charge.variantId === item.variantId,
+                    )?.amount ?? opt.price * item.quantity;
                   return (
                     <div className="rr-drawer-addon" key={item.variantId}>
                       <div className="rr-drawer-addon__info">
@@ -1282,17 +1933,66 @@ function NewBookingForm({
                       </div>
                       <div className="rr-drawer-addon__controls">
                         <div className="rr-drawer-qty">
-                          <button type="button" onClick={() => setAddons((prev) => prev.map((a) => a.variantId === item.variantId ? { ...a, quantity: Math.max(1, a.quantity - 1) } : a))}>−</button>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setAddons((prev) =>
+                                prev.map((a) =>
+                                  a.variantId === item.variantId
+                                    ? {
+                                        ...a,
+                                        quantity: Math.max(1, a.quantity - 1),
+                                      }
+                                    : a,
+                                ),
+                              )
+                            }
+                          >
+                            −
+                          </button>
                           <span>{item.quantity}</span>
-                          <button type="button" onClick={() => setAddons((prev) => prev.map((a) => a.variantId === item.variantId ? { ...a, quantity: Math.min(20, a.quantity + 1) } : a))}>+</button>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setAddons((prev) =>
+                                prev.map((a) =>
+                                  a.variantId === item.variantId
+                                    ? {
+                                        ...a,
+                                        quantity: Math.min(20, a.quantity + 1),
+                                      }
+                                    : a,
+                                ),
+                              )
+                            }
+                          >
+                            +
+                          </button>
                         </div>
-                        <strong className="rr-drawer-addon__total">{formatRupiah(cost)}</strong>
-                        <button type="button" className="rr-drawer-addon__remove" aria-label={`Hapus ${opt.label}`} onClick={() => setAddons((prev) => prev.filter((a) => a.variantId !== item.variantId))}>×</button>
+                        <strong className="rr-drawer-addon__total">
+                          {formatRupiah(cost)}
+                        </strong>
+                        <button
+                          type="button"
+                          className="rr-drawer-addon__remove"
+                          aria-label={`Hapus ${opt.label}`}
+                          onClick={() =>
+                            setAddons((prev) =>
+                              prev.filter(
+                                (a) => a.variantId !== item.variantId,
+                              ),
+                            )
+                          }
+                        >
+                          ×
+                        </button>
                       </div>
                     </div>
                   );
                 })}
-                {addons.length === 0 && <p className="rr-drawer-empty">Belum ada add-on.</p>}
+                {addons.length === 0 && (
+                  <p className="rr-drawer-empty">Belum ada add-on.</p>
+                )}
               </div>
             </section>
 
@@ -1302,14 +2002,28 @@ function NewBookingForm({
               <div className="rr-drawer-fields rr-drawer-fields--grid">
                 <div className="rr-drawer-field">
                   <label htmlFor="rr-pay-method">Payment Method</label>
-                  <select id="rr-pay-method" value={paymentMethod} onChange={(e) => setPaymentMethod(e.target.value)}>
+                  <select
+                    id="rr-pay-method"
+                    value={paymentMethod}
+                    onChange={(e) => setPaymentMethod(e.target.value)}
+                  >
                     <option value="">Select method</option>
-                    {methods.map((method) => <option key={method.id} value={method.id}>{method.name}</option>)}
+                    {methods.map((method) => (
+                      <option key={method.id} value={method.id}>
+                        {method.name}
+                      </option>
+                    ))}
                   </select>
                 </div>
                 <div className="rr-drawer-field">
                   <label htmlFor="rr-pay-status">Payment Status</label>
-                  <select id="rr-pay-status" value={paymentStatus} onChange={(e) => setPaymentStatus(e.target.value as typeof paymentStatus)}>
+                  <select
+                    id="rr-pay-status"
+                    value={paymentStatus}
+                    onChange={(e) =>
+                      setPaymentStatus(e.target.value as typeof paymentStatus)
+                    }
+                  >
                     <option value="Unpaid">Unpaid</option>
                     <option value="Partial">Partial</option>
                     <option value="Paid">Paid</option>
@@ -1317,7 +2031,17 @@ function NewBookingForm({
                 </div>
                 <div className="rr-drawer-field">
                   <label htmlFor="rr-amount-paid">Amount Paid</label>
-                  <input id="rr-amount-paid" inputMode="numeric" disabled={paymentStatus !== "Partial"} value={formatRupiah(amountCollected)} onChange={(e) => setAmountPaid(Number(e.target.value.replace(/\D/g, "")) || 0)} />
+                  <input
+                    id="rr-amount-paid"
+                    inputMode="numeric"
+                    disabled={paymentStatus !== "Partial"}
+                    value={formatRupiah(amountCollected)}
+                    onChange={(e) =>
+                      setAmountPaid(
+                        Number(e.target.value.replace(/\D/g, "")) || 0,
+                      )
+                    }
+                  />
                 </div>
               </div>
             </section>
@@ -1326,24 +2050,56 @@ function NewBookingForm({
             <section className="rr-drawer-section">
               <div className="rr-drawer-section__head">
                 <h3>Deposit</h3>
-                <label className="rr-drawer-toggle"><input type="checkbox" checked={requireDeposit} onChange={(e) => setRequireDeposit(e.target.checked)} /> Require Deposit</label>
+                <label className="rr-drawer-toggle">
+                  <input
+                    type="checkbox"
+                    checked={requireDeposit}
+                    onChange={(e) => setRequireDeposit(e.target.checked)}
+                  />{" "}
+                  Require Deposit
+                </label>
               </div>
               {requireDeposit && (
                 <div className="rr-drawer-fields rr-drawer-fields--grid">
                   <div className="rr-drawer-field">
                     <label htmlFor="rr-dep-amount">Deposit Amount</label>
-                    <input id="rr-dep-amount" inputMode="numeric" value={formatRupiah(depositAmount)} onChange={(e) => setDepositAmount(Number(e.target.value.replace(/\D/g, "")) || 0)} />
+                    <input
+                      id="rr-dep-amount"
+                      inputMode="numeric"
+                      value={formatRupiah(depositAmount)}
+                      onChange={(e) =>
+                        setDepositAmount(
+                          Number(e.target.value.replace(/\D/g, "")) || 0,
+                        )
+                      }
+                    />
                   </div>
                   <div className="rr-drawer-field">
                     <label htmlFor="rr-dep-method">Deposit Method</label>
-                    <select id="rr-dep-method" value={depositMethod} onChange={(e) => setDepositMethod(e.target.value)}>
+                    <select
+                      id="rr-dep-method"
+                      value={depositMethod}
+                      onChange={(e) => setDepositMethod(e.target.value)}
+                    >
                       <option value="">Select method</option>
-                      {methods.map((method) => <option key={method.id} value={method.id}>{method.name}</option>)}
+                      {methods.map((method) => (
+                        <option key={method.id} value={method.id}>
+                          {method.name}
+                        </option>
+                      ))}
                     </select>
                   </div>
                   <div className="rr-drawer-field rr-drawer-field--full">
-                    <label htmlFor="rr-dep-note">Deposit Note <span className="rr-optional">(Optional)</span></label>
-                    <input id="rr-dep-note" value={depositNote} onChange={(e) => setDepositNote(e.target.value)} placeholder="Reference number, remarks" />
+                    <label htmlFor="rr-dep-note">
+                      Deposit Note{" "}
+                      <span className="rr-optional">(Optional)</span>
+                    </label>
+                    <input
+                      id="rr-dep-note"
+                      value={depositNote}
+                      onChange={(e) => setDepositNote(e.target.value)}
+                      placeholder="Reference number, remarks"
+                    />
                   </div>
                 </div>
               )}
@@ -1362,7 +2118,11 @@ function NewBookingForm({
               {/* Stay dates */}
               <div className="booking-summary__stay">
                 <span>Stay</span>
-                <strong>{formatStayDate(draft.checkIn)} → {formatStayDate(draft.checkOut)} · {draft.nights} {draft.nights === 1 ? "night" : "nights"}</strong>
+                <strong>
+                  {formatStayDate(draft.checkIn)} →{" "}
+                  {formatStayDate(draft.checkOut)} · {draft.nights}{" "}
+                  {draft.nights === 1 ? "night" : "nights"}
+                </strong>
               </div>
 
               {/* Line items */}
@@ -1375,7 +2135,9 @@ function NewBookingForm({
                 {extraBed && (
                   <div>
                     <span>↳ Extra Bed · {draft.nights} malam</span>
-                    <strong>{quote ? formatRupiah(extraBedCharge) : "—"}</strong>
+                    <strong>
+                      {quote ? formatRupiah(extraBedCharge) : "—"}
+                    </strong>
                   </div>
                 )}
 
@@ -1387,12 +2149,19 @@ function NewBookingForm({
                 )}
 
                 {addons.map((item) => {
-                  const opt = variants.find((variant) => variant.id === item.variantId);
+                  const opt = variants.find(
+                    (variant) => variant.id === item.variantId,
+                  );
                   if (!opt) return null;
-                  const cost = quote?.charges.experiences.find((charge) => charge.variantId === item.variantId)?.amount ?? opt.price * item.quantity;
+                  const cost =
+                    quote?.charges.experiences.find(
+                      (charge) => charge.variantId === item.variantId,
+                    )?.amount ?? opt.price * item.quantity;
                   return (
                     <div key={item.variantId}>
-                      <span>{opt.label} × {item.quantity}</span>
+                      <span>
+                        {opt.label} × {item.quantity}
+                      </span>
                       <strong>{formatRupiah(cost)}</strong>
                     </div>
                   );
@@ -1411,8 +2180,11 @@ function NewBookingForm({
                       <li key={campaign.id}>
                         <strong>{campaign.name}</strong>
                         <span>
-                          Berlaku sampai {campaign.stayEnd || campaign.bookingEnd
-                            ? formatStayDate(campaign.stayEnd ?? campaign.bookingEnd ?? "")
+                          Berlaku sampai{" "}
+                          {campaign.stayEnd || campaign.bookingEnd
+                            ? formatStayDate(
+                                campaign.stayEnd ?? campaign.bookingEnd ?? "",
+                              )
                             : "tanpa batas tanggal"}
                         </span>
                       </li>
@@ -1425,14 +2197,27 @@ function NewBookingForm({
               <div className="booking-summary__totals">
                 <div>
                   <strong>Booking Total</strong>
-                  <strong>{quote ? formatRupiah(total) : quoteLoading ? "Calculating…" : "—"}</strong>
+                  <strong>
+                    {quote
+                      ? formatRupiah(total)
+                      : quoteLoading
+                        ? "Calculating…"
+                        : "—"}
+                  </strong>
                 </div>
 
                 {source === "phone" ? (
                   <>
                     <div>
                       <span>Payment Status</span>
-                      <span className={"status-badge status-badge--" + (paymentStatus === "Paid" ? "success" : "warning")}>{paymentStatus}</span>
+                      <span
+                        className={
+                          "status-badge status-badge--" +
+                          (paymentStatus === "Paid" ? "success" : "warning")
+                        }
+                      >
+                        {paymentStatus}
+                      </span>
                     </div>
                     <div>
                       <span>Amount Paid</span>
@@ -1447,11 +2232,18 @@ function NewBookingForm({
                   <>
                     <div>
                       <span>Deposit</span>
-                      <span>{formatRupiah(requireDeposit ? depositAmount : 0)}</span>
+                      <span>
+                        {formatRupiah(requireDeposit ? depositAmount : 0)}
+                      </span>
                     </div>
                     <div className="booking-summary__collected">
                       <strong>Total Collected</strong>
-                      <strong>{formatRupiah(amountCollected + (requireDeposit ? depositAmount : 0))}</strong>
+                      <strong>
+                        {formatRupiah(
+                          amountCollected +
+                            (requireDeposit ? depositAmount : 0),
+                        )}
+                      </strong>
                     </div>
                   </>
                 )}
@@ -1460,14 +2252,20 @@ function NewBookingForm({
               {/* Deposit note */}
               {source !== "phone" && (
                 <p className="booking-summary__note">
-                  Deposit is held separately and is not included in booking revenue.
+                  Deposit is held separately and is not included in booking
+                  revenue.
                 </p>
               )}
 
-              {feedback && <p className="rr-drawer-feedback" role="alert">{feedback}</p>}
+              {feedback && (
+                <p className="rr-drawer-feedback" role="alert">
+                  {feedback}
+                </p>
+              )}
               {!availabilityLoading && !roomReady && (
                 <p className="rr-drawer-feedback" role="alert">
-                  Room {draft.roomNumber} tidak tersedia untuk tanggal ini. Pilih kamar lain di Room Rack.
+                  Room {draft.roomNumber} tidak tersedia untuk tanggal ini.
+                  Pilih kamar lain di Room Rack.
                 </p>
               )}
 
@@ -1475,13 +2273,67 @@ function NewBookingForm({
               <div className="booking-summary__actions">
                 {source === "phone" ? (
                   <>
-                    <button type="button" className="action-button" disabled={saving || availabilityLoading || !roomReady || quoteLoading || !quote} onClick={() => void requestSave(false)}>Save Reservation</button>
-                    {draft.checkIn === todayJakarta() && <button type="button" className="reservation-secondary-button" disabled={saving || availabilityLoading || !roomReady || quoteLoading || !quote} onClick={() => void requestSave(true)}>Save &amp; Check-in</button>}
+                    <button
+                      type="button"
+                      className="action-button"
+                      disabled={
+                        saving ||
+                        availabilityLoading ||
+                        !roomReady ||
+                        quoteLoading ||
+                        !quote
+                      }
+                      onClick={() => void requestSave(false)}
+                    >
+                      Save Reservation
+                    </button>
+                    {draft.checkIn === todayJakarta() && (
+                      <button
+                        type="button"
+                        className="reservation-secondary-button"
+                        disabled={
+                          saving ||
+                          availabilityLoading ||
+                          !roomReady ||
+                          quoteLoading ||
+                          !quote
+                        }
+                        onClick={() => void requestSave(true)}
+                      >
+                        Save &amp; Check-in
+                      </button>
+                    )}
                   </>
                 ) : (
                   <>
-                    <button type="button" className="action-button" disabled={saving || availabilityLoading || !roomReady || quoteLoading || !quote} onClick={() => void requestSave(true)}>Save &amp; Check-in</button>
-                    <button type="button" className="reservation-secondary-button" disabled={saving || availabilityLoading || !roomReady || quoteLoading || !quote} onClick={() => void requestSave(false)}>Save Reservation</button>
+                    <button
+                      type="button"
+                      className="action-button"
+                      disabled={
+                        saving ||
+                        availabilityLoading ||
+                        !roomReady ||
+                        quoteLoading ||
+                        !quote
+                      }
+                      onClick={() => void requestSave(true)}
+                    >
+                      Save &amp; Check-in
+                    </button>
+                    <button
+                      type="button"
+                      className="reservation-secondary-button"
+                      disabled={
+                        saving ||
+                        availabilityLoading ||
+                        !roomReady ||
+                        quoteLoading ||
+                        !quote
+                      }
+                      onClick={() => void requestSave(false)}
+                    >
+                      Save Reservation
+                    </button>
                   </>
                 )}
               </div>
@@ -1489,7 +2341,8 @@ function NewBookingForm({
               {/* Phone mode note */}
               {source === "phone" && (
                 <p className="booking-summary__note booking-summary__note--after">
-                  Nomor kamar dapat diubah saat tamu tiba. Check-in dengan sisa tagihan memerlukan konfirmasi petugas.
+                  Nomor kamar dapat diubah saat tamu tiba. Check-in dengan sisa
+                  tagihan memerlukan konfirmasi petugas.
                 </p>
               )}
             </aside>
@@ -1503,7 +2356,9 @@ function NewBookingForm({
           total={total}
           rooms={1}
           nights={draft.nights}
-          onCancel={() => { if (!saving) setConfirmation(null); }}
+          onCancel={() => {
+            if (!saving) setConfirmation(null);
+          }}
           onConfirm={() => void submit()}
           outstandingBalance={remaining}
           acknowledged={acknowledged}
@@ -1516,7 +2371,13 @@ function NewBookingForm({
           busy={saving}
         />
       )}
-      {saved && <ReservationSuccessTransition bookingId={saved.bookingId} checkedIn={saved.checkedIn} onContinue={onComplete} />}
+      {saved && (
+        <ReservationSuccessTransition
+          bookingId={saved.bookingId}
+          checkedIn={saved.checkedIn}
+          onContinue={onComplete}
+        />
+      )}
     </div>
   );
 }

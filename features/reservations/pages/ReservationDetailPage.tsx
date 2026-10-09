@@ -32,6 +32,7 @@ const labels: Record<string, string> = {
   confirmed: "Confirmed",
   checked_in: "Checked-in",
   checked_out: "Checked-out",
+  no_show: "No Show",
   cancelled: "Cancelled",
   expired: "Expired",
   unpaid: "Unpaid",
@@ -86,6 +87,7 @@ function StatusBadge({ value }: { value: string }) {
           ? "neutral"
           : value === "cancelled" ||
               value === "expired" ||
+              value === "no_show" ||
               value === "failed" ||
               value === "unpaid"
             ? "danger"
@@ -168,9 +170,7 @@ export function ReservationDetailPage() {
       } catch (cause) {
         if (active && !controller.signal.aborted) {
           setError(
-            cause instanceof Error
-              ? cause.message
-              : t("detail.loadError"),
+            cause instanceof Error ? cause.message : t("detail.loadError"),
           );
         }
       } finally {
@@ -209,7 +209,11 @@ export function ReservationDetailPage() {
         <header className="reservation-detail-heading">
           <div>
             <div className="reservation-detail-title">
-              <h1>{isInHouse ? t("detail.guestStay") : t("detail.reservationDetail")}</h1>
+              <h1>
+                {isInHouse
+                  ? t("detail.guestStay")
+                  : t("detail.reservationDetail")}
+              </h1>
             </div>
             {reservation && (
               <div className="reservation-detail-badges">
@@ -227,7 +231,9 @@ export function ReservationDetailPage() {
                 <strong>{reservation.bookingCode}</strong> ·{" "}
                 {reservation.source === "phone"
                   ? t("detail.createdViaPhone")
-                  : t("detail.sourcePrefix", { source: label(reservation.source) })}
+                  : t("detail.sourcePrefix", {
+                      source: label(reservation.source),
+                    })}
               </p>
             )}
           </div>
@@ -274,7 +280,9 @@ export function ReservationDetailPage() {
                   </strong>{" "}
                   {reservation?.reservationStatus === "pending"
                     ? t("detail.holdPendingMessage")
-                    : t("detail.holdConfirmedMessage", { amount: rupiah(detail.summary.remainingBalance) })}
+                    : t("detail.holdConfirmedMessage", {
+                        amount: rupiah(detail.summary.remainingBalance),
+                      })}
                 </div>
                 <span>
                   {reservation?.paymentStatus === "partial"
@@ -292,16 +300,29 @@ export function ReservationDetailPage() {
                     <span>{t("detail.sections.primaryContact")}</span>
                   </div>
                   <div className="reservation-detail-info-grid">
-                    <Info name={t("detail.fields.fullName")} value={detail.guest.fullName} />
-                    <Info name={t("detail.fields.whatsappPhone")} value={detail.guest.phone} />
-                    <Info name={t("detail.fields.email")} value={detail.guest.email ?? t("common.emptyDash")} />
+                    <Info
+                      name={t("detail.fields.fullName")}
+                      value={detail.guest.fullName}
+                    />
+                    <Info
+                      name={t("detail.fields.whatsappPhone")}
+                      value={detail.guest.phone}
+                    />
+                    <Info
+                      name={t("detail.fields.email")}
+                      value={detail.guest.email ?? t("common.emptyDash")}
+                    />
                   </div>
                 </section>
 
                 <section>
                   <div className="reservation-detail-section-title">
                     <h2>{t("detail.sections.stayDetails")}</h2>
-                    <span>{t("detail.sections.nightStay", { nights: detail.summary.nights })}</span>
+                    <span>
+                      {t("detail.sections.nightStay", {
+                        nights: detail.summary.nights,
+                      })}
+                    </span>
                   </div>
                   {isPreStay && isOutstanding ? (
                     <div className="pending-detail-stay-grid">
@@ -323,13 +344,21 @@ export function ReservationDetailPage() {
                         <small>{t("detail.fields.duration")}</small>
                         <strong>
                           {detail.summary.nights}{" "}
-                          {detail.summary.nights === 1 ? t("common.night") : t("common.nights")}
+                          {detail.summary.nights === 1
+                            ? t("common.night")
+                            : t("common.nights")}
                         </strong>
                       </div>
                       <div>
                         <small>{t("detail.fields.totalGuests")}</small>
-                        <strong>{t("detail.rooms.adults", { count: detail.reservation.adults })}</strong>
-                        <span>{detail.reservation.children} {t("common.children")}</span>
+                        <strong>
+                          {t("detail.rooms.adults", {
+                            count: detail.reservation.adults,
+                          })}
+                        </strong>
+                        <span>
+                          {detail.reservation.children} {t("common.children")}
+                        </span>
                       </div>
                     </div>
                   ) : (
@@ -344,7 +373,10 @@ export function ReservationDetailPage() {
                       />
                       <Info
                         name={t("detail.fields.totalGuests")}
-                        value={t("detail.fields.adultsChildren", { adults: detail.reservation.adults, children: detail.reservation.children })}
+                        value={t("detail.fields.adultsChildren", {
+                          adults: detail.reservation.adults,
+                          children: detail.reservation.children,
+                        })}
                       />
                     </div>
                   )}
@@ -372,7 +404,9 @@ export function ReservationDetailPage() {
                     <span>
                       {detail.rooms.length === 1
                         ? t("detail.sections.roomCountSingle")
-                        : t("detail.sections.roomsCount", { count: detail.rooms.length })}
+                        : t("detail.sections.roomsCount", {
+                            count: detail.rooms.length,
+                          })}
                     </span>
                   </div>
                   {isPreStay &&
@@ -409,9 +443,13 @@ export function ReservationDetailPage() {
                                 )}
                               </td>
                               <td>
-                                {t("detail.rooms.adults", { count: room.adults })}
+                                {t("detail.rooms.adults", {
+                                  count: room.adults,
+                                })}
                                 {room.children
-                                  ? t("detail.rooms.childrenSuffix", { count: room.children })
+                                  ? t("detail.rooms.childrenSuffix", {
+                                      count: room.children,
+                                    })
                                   : ""}
                               </td>
                               <td>{room.nights.length}</td>
@@ -424,13 +462,32 @@ export function ReservationDetailPage() {
                                 )}
                               </td>
                               <td>
-                                {room.extraBeds.some((bed) => bed.dateTo === detail.reservation.checkOutDate)
-                                  ? t("detail.rooms.bed", { count: room.extraBeds.filter((bed) => bed.dateTo === detail.reservation.checkOutDate).reduce((sum, bed) => sum + bed.quantity, 0) })
+                                {room.extraBeds.some(
+                                  (bed) =>
+                                    bed.dateTo ===
+                                    detail.reservation.checkOutDate,
+                                )
+                                  ? t("detail.rooms.bed", {
+                                      count: room.extraBeds
+                                        .filter(
+                                          (bed) =>
+                                            bed.dateTo ===
+                                            detail.reservation.checkOutDate,
+                                        )
+                                        .reduce(
+                                          (sum, bed) => sum + bed.quantity,
+                                          0,
+                                        ),
+                                    })
                                   : t("common.emptyDash")}
                               </td>
                               {isInHouse && (
                                 <td>
-                                  <ReservationRoomOperations detail={detail} room={room} onUpdated={onUpdated} />
+                                  <ReservationRoomOperations
+                                    detail={detail}
+                                    room={room}
+                                    onUpdated={onUpdated}
+                                  />
                                 </td>
                               )}
                             </tr>
@@ -442,15 +499,26 @@ export function ReservationDetailPage() {
                                 <td colSpan={isInHouse ? 7 : 6}>
                                   ↳{" "}
                                   <strong>
-                                    {t("detail.rooms.extraBedLine", { room: room.roomNumber ? t("roomRack.newBooking.room", { roomNumber: room.roomNumber }) : room.roomTypeNameSnapshot })}
+                                    {t("detail.rooms.extraBedLine", {
+                                      room: room.roomNumber
+                                        ? t("roomRack.newBooking.room", {
+                                            roomNumber: room.roomNumber,
+                                          })
+                                        : room.roomTypeNameSnapshot,
+                                    })}
                                   </strong>{" "}
-                                  · {t("detail.rooms.extraBedDetail", {
+                                  ·{" "}
+                                  {t("detail.rooms.extraBedDetail", {
                                     quantity: bed.quantity,
                                     from: dateLabel(bed.dateFrom),
                                     to: dateLabel(bed.dateTo),
-                                    nights: stayNights(bed.dateFrom, bed.dateTo),
+                                    nights: stayNights(
+                                      bed.dateFrom,
+                                      bed.dateTo,
+                                    ),
                                     rate: rupiah(bed.unitPricePerNight),
-                                  })} ={" "}
+                                  })}{" "}
+                                  ={" "}
                                   <strong>
                                     {rupiah(
                                       bed.quantity *
@@ -515,7 +583,9 @@ export function ReservationDetailPage() {
                     </div>
                   ))}
                   {detail.experiences.length === 0 && (
-                    <p className="reservation-empty">{t("detail.experiences.empty")}</p>
+                    <p className="reservation-empty">
+                      {t("detail.experiences.empty")}
+                    </p>
                   )}
                 </section>
 
@@ -545,7 +615,9 @@ export function ReservationDetailPage() {
                       {rupiah(detail.summary.paidAmount)}
                     </SummaryRow>
                     <div className="pending-detail-balance">
-                      <span>{t("detail.fields.remainingBalanceOutstanding")}</span>
+                      <span>
+                        {t("detail.fields.remainingBalanceOutstanding")}
+                      </span>
                       <strong>{rupiah(detail.summary.remainingBalance)}</strong>
                     </div>
                   </div>
@@ -554,7 +626,11 @@ export function ReservationDetailPage() {
                 <section>
                   <div className="reservation-detail-section-title">
                     <h2>{t("detail.sections.paymentHistory")}</h2>
-                    <span>{t("detail.sections.transactions", { count: detail.payments.length })}</span>
+                    <span>
+                      {t("detail.sections.transactions", {
+                        count: detail.payments.length,
+                      })}
+                    </span>
                   </div>
                   <div className="pending-detail-history">
                     {detail.payments.map((payment) => (
@@ -571,9 +647,7 @@ export function ReservationDetailPage() {
                     ))}
                     {detail.payments.length === 0 && (
                       <div className="pending-detail-payment-empty">
-                        <strong>
-                          {t("detail.payment.empty")}
-                        </strong>
+                        <strong>{t("detail.payment.empty")}</strong>
                       </div>
                     )}
                   </div>
@@ -590,7 +664,12 @@ export function ReservationDetailPage() {
                         key={deposit.id}
                       >
                         <div className="reservation-detail-row">
-                          <span>{t("detail.depositRow.held", { method: deposit.method?.name ?? t("common.emptyDash") })}</span>
+                          <span>
+                            {t("detail.depositRow.held", {
+                              method:
+                                deposit.method?.name ?? t("common.emptyDash"),
+                            })}
+                          </span>
                           <strong>{rupiah(deposit.amountHeld)}</strong>
                         </div>
                         <div className="reservation-detail-row">
@@ -624,10 +703,16 @@ export function ReservationDetailPage() {
                       ? t("detail.sections.staySummary")
                       : t("detail.sections.stickySummary")}
                   </h2>
-                  <span>{t("detail.sections.nightLabel", { nights: detail.summary.nights })}</span>
+                  <span>
+                    {t("detail.sections.nightLabel", {
+                      nights: detail.summary.nights,
+                    })}
+                  </span>
                 </div>
                 <div className="reservation-detail-summary-rows">
-                  <SummaryRow name={t("detail.fields.guest")}>{detail.guest.fullName}</SummaryRow>
+                  <SummaryRow name={t("detail.fields.guest")}>
+                    {detail.guest.fullName}
+                  </SummaryRow>
                   <SummaryRow name={t("detail.fields.stayPeriod")}>
                     {dateLabel(detail.reservation.checkInDate)} →{" "}
                     {dateLabel(detail.reservation.checkOutDate)}
@@ -639,7 +724,10 @@ export function ReservationDetailPage() {
                   </SummaryRow>
                   <SummaryRow name={t("detail.fields.roomNumbers")}>
                     {detail.rooms
-                      .map((room) => room.roomNumber || t("detail.rooms.notAssigned"))
+                      .map(
+                        (room) =>
+                          room.roomNumber || t("detail.rooms.notAssigned"),
+                      )
                       .join(", ")}
                   </SummaryRow>
                   <div className="reservation-detail-summary-divider" />

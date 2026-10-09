@@ -5,6 +5,7 @@ import "../styles/reports.css";
 import { useEffect, useRef, useState } from "react";
 import { AdminShell } from "../../../components/layout/AdminShell";
 import { restoreSession } from "../../../lib/auth";
+import { DateRangePicker } from "../../campaigns/components/DateRangePicker";
 import {
   getRevenueFilterOptions,
   getRevenueReport,
@@ -22,6 +23,19 @@ import en from "../locales/en.json";
 import id from "../locales/id.json";
 
 const money = (value: number) => `Rp${value.toLocaleString("id-ID")}`;
+
+function defaultRevenueDateRange(now = new Date()) {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Jakarta",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(now);
+  const value = (type: string) => parts.find((part) => part.type === type)!.value;
+  const year = value("year");
+  const month = value("month");
+  return { from: `${year}-${month}-01`, to: `${year}-${month}-${value("day")}` };
+}
 
 const emptyTotals: RevenueTotals = {
   reservations: 0,
@@ -159,8 +173,8 @@ function exportCsv(items: RevenueReportItem[]) {
 export function RevenueReportPage() {
   const { t } = useTranslations({ en, id });
   const [dateBy, setDateBy] = useState<RevenueReportDateBy>("booking");
-  const [from, setFrom] = useState("2026-09-01");
-  const [to, setTo] = useState("2026-10-31");
+  const [from, setFrom] = useState(() => defaultRevenueDateRange().from);
+  const [to, setTo] = useState(() => defaultRevenueDateRange().to);
   const [source, setSource] = useState("");
   const [paymentStatus, setPaymentStatus] = useState("");
   const [reservationStatus, setReservationStatus] = useState("");
@@ -249,9 +263,10 @@ export function RevenueReportPage() {
   ]);
 
   function reset() {
+    const range = defaultRevenueDateRange();
     setDateBy("booking");
-    setFrom("2026-09-01");
-    setTo("2026-10-31");
+    setFrom(range.from);
+    setTo(range.to);
     setSource("");
     setPaymentStatus("");
     setReservationStatus("");
@@ -330,21 +345,16 @@ export function RevenueReportPage() {
                 <option value="check_in">{t("revenue.dateBy.checkIn")}</option>
               </select>
             </label>
-            <div className="revenue-report-date-range">
-              <input
-                aria-label={t("revenue.filters.fromDate")}
-                type="date"
-                value={from}
-                onChange={(event) => setFrom(event.target.value)}
-              />
-              <span>–</span>
-              <input
-                aria-label={t("revenue.filters.toDate")}
-                type="date"
-                value={to}
-                onChange={(event) => setTo(event.target.value)}
-              />
-            </div>
+            <DateRangePicker
+              label={`${t("revenue.filters.fromDate")} – ${t("revenue.filters.toDate")}`}
+              start={from}
+              end={to}
+              numberOfMonths={2}
+              onChange={(start, end) => {
+                setFrom(start);
+                setTo(end);
+              }}
+            />
           </div>
           <div className="revenue-report-filter-row">
             <select

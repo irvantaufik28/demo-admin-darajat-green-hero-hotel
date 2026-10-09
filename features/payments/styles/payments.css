@@ -67,15 +67,6 @@
 .payments-filters select {
   max-width: 165px;
 }
-.payments-date-filter {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  color: var(--text-secondary);
-}
-.payments-date-filter input {
-  max-width: 125px;
-}
 .payments-table-shell {
   overflow: hidden;
   border: 1px solid var(--border);

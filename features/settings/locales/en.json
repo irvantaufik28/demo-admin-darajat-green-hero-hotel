@@ -156,9 +156,10 @@
     },
     "noShow": {
       "title": "No-show",
-      "handlingLabel": "No-show Handling",
-      "handlingValue": "Manual by Staff",
-      "help": "Staff manually marks a confirmed guest as no-show when the guest does not arrive."
+      "automaticLabel": "Automatic No-show",
+      "automaticDescription": "The worker marks confirmed reservations that have not checked in and have no room assignment.",
+      "cutoffLabel": "Cut-off Time",
+      "help": "The cut-off applies on the day after check-in. Manual handling remains available when automation is disabled."
     },
     "saved": "Reservation settings saved.",
     "errors": {
@@ -166,6 +167,7 @@
       "loadFailed": "Failed to load reservation settings.",
       "saveFailed": "Failed to save reservation settings.",
       "timesRequired": "Check-in and check-out times are required.",
+      "noShowCutoffRequired": "The no-show cut-off time is required.",
       "expiryRange": "Website payment expiry must be between 1 and 1,440 minutes."
     }
   }

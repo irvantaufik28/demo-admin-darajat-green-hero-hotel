@@ -12,6 +12,7 @@ import { RoomRackReservationSummary } from "../components/RoomRackReservationSum
 import { RoomRackCleaningModal } from "../components/RoomRackCleaningModal";
 import { SaveReservationConfirmation } from "../components/SaveReservationConfirmation";
 import { ReservationSuccessTransition } from "../components/ReservationSuccessTransition";
+import { ReservationErrorToast } from "../components/ReservationErrorToast";
 import {
   getReservationDetail,
   type ApiReservationDetail,
@@ -57,6 +58,7 @@ import {
   type RoomRackResponse,
 } from "../services/room-rack";
 import { todayJakarta } from "../utils/stay-dates";
+import { isValidGuestNik, normalizeGuestNik } from "../utils/guest-identity";
 import { useTranslations, type Translate } from "../../../lib/i18n";
 import en from "../locales/en.json";
 import id from "../locales/id.json";
@@ -1268,10 +1270,12 @@ function NewBookingForm({
   onClose: () => void;
   onComplete: () => void;
 }) {
+  const { t } = useTranslations({ en, id });
   const [adults, setAdults] = useState(2);
   const [children, setChildren] = useState(0);
   const [extraBed, setExtraBed] = useState(false);
   const [guestName, setGuestName] = useState("");
+  const [guestNik, setGuestNik] = useState("");
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
   const [guestNotes, setGuestNotes] = useState("");
@@ -1300,6 +1304,9 @@ function NewBookingForm({
   const [quote, setQuote] = useState<ReservationQuote | null>(null);
   const [quoteLoading, setQuoteLoading] = useState(true);
   const [feedback, setFeedback] = useState("");
+  const [validationMode, setValidationMode] = useState<
+    "save" | "check-in" | null
+  >(null);
   const [saving, setSaving] = useState(false);
   const [confirmation, setConfirmation] = useState<"save" | "check-in" | null>(
     null,
@@ -1492,6 +1499,7 @@ function NewBookingForm({
 
   async function requestSave(checkInGuest: boolean) {
     if (saving) return;
+    setValidationMode(checkInGuest ? "check-in" : "save");
     if (!draft.roomTypeId || !draft.roomUnitId || !roomReady) {
       setFeedback(
         "Nomor kamar ini tidak tersedia. Muat ulang Room Rack dan pilih kamar lain.",
@@ -1510,6 +1518,12 @@ function NewBookingForm({
     }
     if (!guestName.trim() || !phone.trim()) {
       setFeedback("Nama dan nomor WhatsApp tamu wajib diisi.");
+      return;
+    }
+    if (checkInGuest && !isValidGuestNik(guestNik)) {
+      setFeedback(
+        "NIK tamu pemesan wajib diisi dengan 16 digit sebelum check-in.",
+      );
       return;
     }
     if (!quote || quoteLoading) {
@@ -1560,6 +1574,7 @@ function NewBookingForm({
     const payload = {
       guest: {
         fullName: guestName.trim(),
+        ...(guestNik ? { nik: guestNik } : {}),
         phone: phone.trim(),
         ...(email.trim() ? { email: email.trim() } : {}),
       },
@@ -1632,6 +1647,14 @@ function NewBookingForm({
           onClose();
       }}
     >
+      {feedback && (
+        <ReservationErrorToast
+          message={feedback}
+          title={t("common.errorToastTitle")}
+          closeLabel={t("common.closeMessage")}
+          onClose={() => setFeedback("")}
+        />
+      )}
       <aside
         className="rr-drawer"
         onClick={(e) => e.stopPropagation()}
@@ -1828,6 +1851,9 @@ function NewBookingForm({
                   <input
                     id="rr-guest-name"
                     autoFocus
+                    aria-invalid={
+                      validationMode !== null && !guestName.trim()
+                    }
                     value={guestName}
                     onChange={(e) => setGuestName(e.target.value)}
                     placeholder="Guest full name"
@@ -1840,9 +1866,31 @@ function NewBookingForm({
                   <input
                     id="rr-phone"
                     type="tel"
+                    aria-invalid={validationMode !== null && !phone.trim()}
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
                     placeholder="+62 812-xxxx-xxxx"
+                  />
+                </div>
+                <div className="rr-drawer-field">
+                  <label htmlFor="rr-guest-nik">
+                    NIK{" "}
+                    <span className="rr-optional">(Wajib saat check-in)</span>
+                  </label>
+                  <input
+                    id="rr-guest-nik"
+                    inputMode="numeric"
+                    aria-invalid={
+                      validationMode === "check-in" &&
+                      !isValidGuestNik(guestNik)
+                    }
+                    autoComplete="off"
+                    maxLength={16}
+                    value={guestNik}
+                    onChange={(event) =>
+                      setGuestNik(normalizeGuestNik(event.target.value))
+                    }
+                    placeholder="3200xxxxxxxxxxxx"
                   />
                 </div>
                 <div className="rr-drawer-field">
@@ -2004,6 +2052,11 @@ function NewBookingForm({
                   <label htmlFor="rr-pay-method">Payment Method</label>
                   <select
                     id="rr-pay-method"
+                    aria-invalid={
+                      validationMode !== null &&
+                      amountCollected > 0 &&
+                      !paymentMethod
+                    }
                     value={paymentMethod}
                     onChange={(e) => setPaymentMethod(e.target.value)}
                   >
@@ -2078,6 +2131,9 @@ function NewBookingForm({
                     <label htmlFor="rr-dep-method">Deposit Method</label>
                     <select
                       id="rr-dep-method"
+                      aria-invalid={
+                        validationMode !== null && !depositMethod
+                      }
                       value={depositMethod}
                       onChange={(e) => setDepositMethod(e.target.value)}
                     >
@@ -2254,18 +2310,6 @@ function NewBookingForm({
                 <p className="booking-summary__note">
                   Deposit is held separately and is not included in booking
                   revenue.
-                </p>
-              )}
-
-              {feedback && (
-                <p className="rr-drawer-feedback" role="alert">
-                  {feedback}
-                </p>
-              )}
-              {!availabilityLoading && !roomReady && (
-                <p className="rr-drawer-feedback" role="alert">
-                  Room {draft.roomNumber} tidak tersedia untuk tanggal ini.
-                  Pilih kamar lain di Room Rack.
                 </p>
               )}
 

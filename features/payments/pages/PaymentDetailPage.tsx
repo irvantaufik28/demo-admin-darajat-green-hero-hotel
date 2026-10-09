@@ -19,6 +19,10 @@ import {
   type ApiReservationDetail,
   type PaymentMethodOption,
 } from "../../reservations/services/api";
+import {
+  noShowSettlementPresentation,
+  reservationDetailPresentation,
+} from "../../reservations/utils/detail-rules";
 import { useTranslations, type Translate } from "../../../lib/i18n";
 import en from "../locales/en.json";
 import id from "../locales/id.json";
@@ -104,29 +108,47 @@ export function PaymentDetailPage() {
     }
   }
 
-  useEffect(() => {
-    if (!invoiceOpen || detail?.reservation.reservationStatus !== "cancelled") return;
-    let active = true;
+  async function openInvoicePreview() {
     setInvoiceRefund(null);
     setInvoiceRefundError("");
+    setInvoiceOpen(true);
+    if (
+      !["cancelled", "no_show"].includes(
+        detail?.reservation.reservationStatus ?? "",
+      )
+    )
+      return;
     setInvoiceRefundLoading(true);
-    getRefundEligibility(reservationId)
-      .then((result) => { if (active) setInvoiceRefund(result); })
-      .catch((cause) => {
-        if (active) setInvoiceRefundError(cause instanceof Error ? cause.message : t("detail.messages.refundCalcLoadError"));
-      })
-      .finally(() => { if (active) setInvoiceRefundLoading(false); });
-    return () => { active = false; };
-  }, [invoiceOpen, detail?.reservation.reservationStatus, reservationId]);
+    try {
+      setInvoiceRefund(await getRefundEligibility(reservationId));
+    } catch (cause) {
+      setInvoiceRefundError(
+        cause instanceof Error
+          ? cause.message
+          : t("detail.messages.refundCalcLoadError"),
+      );
+    } finally {
+      setInvoiceRefundLoading(false);
+    }
+  }
 
   useEffect(() => {
     const controller = new AbortController();
-    setLoading(true);
-    load(controller.signal).catch((cause) => {
-      if (!controller.signal.aborted) setError(cause instanceof Error ? cause.message : t("detail.messages.detailLoadError"));
-    }).finally(() => { if (!controller.signal.aborted) setLoading(false); });
+    void Promise.resolve()
+      .then(() => load(controller.signal))
+      .catch((cause) => {
+        if (!controller.signal.aborted)
+          setError(
+            cause instanceof Error
+              ? cause.message
+              : t("detail.messages.detailLoadError"),
+          );
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setLoading(false);
+      });
     return () => controller.abort();
-  }, [load]);
+  }, [load, t]);
 
   async function savePayment() {
     if (!detail || !methodId || amount <= 0 || amount > detail.summary.remainingBalance) {
@@ -151,7 +173,14 @@ export function PaymentDetailPage() {
 
   const { reservation, guest, summary } = detail;
   const bookingCode = reservation.bookingCode;
-  const message = paymentMessage(reservation.paymentStatus, t);
+  const message =
+    reservation.reservationStatus === "no_show"
+      ? reservationDetailPresentation(detail)
+      : paymentMessage(reservation.paymentStatus, t);
+  const noShowSettlement =
+    reservation.reservationStatus === "no_show"
+      ? noShowSettlementPresentation(detail)
+      : null;
   const charges: Charge[] = detail.charges.map((charge) => ({
     id: charge.id,
     label: charge.description,
@@ -170,7 +199,7 @@ export function PaymentDetailPage() {
 
   return <AdminShell title={t("shell.title")} context={bookingCode}>
     <div className="payment-detail-page">
-      <div className="payment-detail-heading"><div><nav><Link href="/payments">{t("detail.breadcrumb")}</Link><span>/</span>{bookingCode}</nav><h1>{t("detail.title")} <span className={`payment-detail-state payment-detail-state--${message.tone}`}>{message.title}</span></h1><p>{t("detail.subtitle")}</p></div><button type="button" onClick={() => setInvoiceOpen(true)}>▣ {t("detail.printInvoice")}</button></div>
+      <div className="payment-detail-heading"><div><nav><Link href="/payments">{t("detail.breadcrumb")}</Link><span>/</span>{bookingCode}</nav><h1>{t("detail.title")} <span className={`payment-detail-state payment-detail-state--${message.tone}`}>{message.title}</span></h1><p>{t("detail.subtitle")}</p></div><button type="button" onClick={openInvoicePreview}>▣ {t("detail.printInvoice")}</button></div>
       <div className={`payment-detail-banner payment-detail-banner--${message.tone}`}><strong>{message.title}</strong><span>{message.description}</span></div>
       <div className="payment-detail-grid"><div className="payment-detail-main">
         <section className="payment-detail-card"><header><h2>{t("detail.cards.bookingGuest")}</h2><span className={`reservations-badge reservations-badge--${["cancelled", "expired"].includes(reservation.reservationStatus) ? "danger" : "success"}`}>{label(reservation.reservationStatus)}</span></header><div className="payment-detail-facts"><div><span>{t("detail.facts.bookingId")}</span><strong>{bookingCode}</strong></div><div><span>{t("detail.facts.guest")}</span><strong>{guest.fullName}</strong></div><div><span>{t("detail.facts.source")}</span><strong>{source}</strong></div><div><span>{t("detail.facts.whatsapp")}</span><strong>{guest.phone}</strong></div><div><span>{t("detail.facts.checkIn")}</span><strong>{dateLabel(reservation.checkInDate)}</strong></div><div><span>{t("detail.facts.email")}</span><strong>{guest.email ?? "—"}</strong></div><div><span>{t("detail.facts.checkOut")}</span><strong>{dateLabel(reservation.checkOutDate)}</strong></div><div><span>{t("detail.facts.durationGuests")}</span><strong>{summary.nights} {summary.nights === 1 ? t("detail.facts.night") : t("detail.facts.nights")} · {reservation.adults} {t("detail.facts.adults")}{reservation.children ? `, ${reservation.children} ${t("detail.facts.children")}` : ""}</strong></div></div></section>
@@ -179,7 +208,7 @@ export function PaymentDetailPage() {
         <section className="payment-detail-card"><header><h2>{t("detail.cards.chargesPayments")}</h2></header><div className="payment-detail-charges"><div><span>{t("detail.charges.roomsSubtotal")}</span><strong>{money(roomSubtotal)}</strong></div><div><span>{t("detail.charges.addOnsAdjustments")}</span><strong>{money(addonsSubtotal)}</strong></div><div className="payment-detail-total"><span>{t("detail.charges.bookingTotal")}</span><strong>{money(summary.bookingTotal)}</strong></div></div></section>
         <section className="payment-detail-card"><header><h2>{t("detail.cards.paymentHistory")}</h2></header><div className="payment-detail-table-scroll"><table className="payment-detail-table"><thead><tr><th>{t("detail.history.date")}</th><th>{t("detail.history.amount")}</th><th>{t("detail.history.method")}</th><th>{t("detail.history.reference")}</th><th>{t("detail.history.recordedBy")}</th></tr></thead><tbody>{successfulPayments.map((payment) => <tr key={payment.id}><td>{payment.paidAt ? dateLabel(payment.paidAt) : "—"}</td><td className="payment-detail-positive">{money(payment.amount)}</td><td>{payment.method?.name ?? "—"}</td><td>{payment.providerReference ?? "—"}</td><td>{payment.recordedBy?.name ?? "—"}</td></tr>)}{detail.refunds.filter((refund) => refund.status === "succeeded").map((refund) => <tr key={refund.id}><td>{refund.processedAt ? dateLabel(refund.processedAt) : "—"}</td><td className="payment-detail-negative">−{money(refund.amount)}</td><td>{t("detail.history.refund")}</td><td>{refund.providerReference ?? "—"}</td><td>{refund.processedBy?.name ?? "—"}</td></tr>)}{successfulPayments.length === 0 && summary.refundedAmount === 0 && <tr><td colSpan={5} className="payment-detail-empty">{t("detail.history.empty")}</td></tr>}</tbody></table></div></section>
         {summary.depositBalance > 0 && <div className="payment-detail-deposit"><strong>{t("detail.summary.securityDeposit")}: {money(summary.depositBalance)}</strong><span>{t("detail.summary.securityDepositNote")}</span></div>}
-      </div><aside className="payment-detail-summary"><div className="payment-detail-card"><header><h2>{t("detail.cards.paymentSummary")}</h2><span className={`reservations-badge reservations-badge--${message.tone}`}>{label(reservation.paymentStatus)}</span></header><div className="payment-detail-summary-body"><div><span>{t("detail.summary.bookingTotal")}</span><strong>{money(summary.bookingTotal)}</strong></div><div><span>{t("detail.summary.paid")}</span><strong className="payment-detail-positive">{money(summary.grossPaidAmount)}</strong></div>{summary.refundedAmount > 0 && <div><span>{t("detail.summary.refunded")}</span><strong className="payment-detail-negative">{money(summary.refundedAmount)}</strong></div>}<div className="payment-detail-summary-balance"><span>{t("detail.summary.remaining")}</span><strong className={summary.remainingBalance ? "payment-detail-negative" : ""}>{money(summary.remainingBalance)}</strong></div>{summary.depositBalance > 0 && <div><span>{t("detail.summary.securityDeposit")}</span><strong>{money(summary.depositBalance)}</strong></div>}<p>{message.description}</p>{reservation.checkoutOutstandingReason && <p>{t("detail.summary.checkoutOutstandingReason", { reason: reservation.checkoutOutstandingReason })}</p>}{summary.remainingBalance > 0 && ["pending", "confirmed", "checked_in", "checked_out"].includes(reservation.reservationStatus) && <button type="button" onClick={openPaymentModal}>{t("detail.summary.recordPayment")}</button>}{reservation.reservationStatus === "cancelled" && summary.grossPaidAmount > 0 && <button type="button" onClick={() => setRefundOpen(true)}>{t("detail.summary.viewRefund")}</button>}<button type="button" onClick={() => setInvoiceOpen(true)}>▣ {t("detail.printInvoice")}</button><Link href="/payments">← {t("detail.backToPayments")}</Link></div></div></aside></div>
+      </div><aside className="payment-detail-summary"><div className="payment-detail-card"><header><h2>{t("detail.cards.paymentSummary")}</h2><span className={`reservations-badge reservations-badge--${message.tone}`}>{label(reservation.paymentStatus)}</span></header><div className="payment-detail-summary-body"><div><span>{t("detail.summary.bookingTotal")}</span><strong>{money(summary.bookingTotal)}</strong></div><div><span>{t("detail.summary.paid")}</span><strong className="payment-detail-positive">{money(summary.grossPaidAmount)}</strong></div>{summary.refundedAmount > 0 && <div><span>{t("detail.summary.refunded")}</span><strong className="payment-detail-negative">{money(summary.refundedAmount)}</strong></div>}<div className="payment-detail-summary-balance"><span>{t("detail.summary.remaining")}</span><strong className={summary.remainingBalance ? "payment-detail-negative" : ""}>{money(summary.remainingBalance)}</strong></div>{summary.depositBalance > 0 && <div><span>{t("detail.summary.securityDeposit")}</span><strong>{money(summary.depositBalance)}</strong></div>}{noShowSettlement && <div><span>{t("detail.summary.settlement")}</span><strong>{noShowSettlement.label}</strong></div>}<p>{message.description}</p>{reservation.checkoutOutstandingReason && <p>{t("detail.summary.checkoutOutstandingReason", { reason: reservation.checkoutOutstandingReason })}</p>}{summary.remainingBalance > 0 && ["pending", "confirmed", "checked_in", "checked_out"].includes(reservation.reservationStatus) && <button type="button" onClick={openPaymentModal}>{t("detail.summary.recordPayment")}</button>}{((reservation.reservationStatus === "cancelled" && summary.grossPaidAmount > 0) || (reservation.reservationStatus === "no_show" && noShowSettlement?.status !== "settled" && (summary.grossPaidAmount > 0 || summary.depositBalance > 0))) && <button type="button" onClick={() => setRefundOpen(true)}>{t("detail.summary.viewRefund")}</button>}<button type="button" onClick={openInvoicePreview}>▣ {t("detail.printInvoice")}</button><Link href="/payments">← {t("detail.backToPayments")}</Link></div></div></aside></div>
     </div>
     {paymentOpen && <RecordPaymentModal balance={summary.remainingBalance} amount={amount} methodId={methodId} methods={methods} loadingMethods={methodsLoading} saving={saving} error={error} onAmountChange={setAmount} onMethodChange={setMethodId} onClose={() => setPaymentOpen(false)} onSave={savePayment} />}
     {refundOpen && <RefundModal reservationId={reservationId} canManage={canManageRefund} onClose={() => setRefundOpen(false)} onChanged={() => load()} />}

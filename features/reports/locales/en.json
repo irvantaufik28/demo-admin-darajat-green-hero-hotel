@@ -128,7 +128,7 @@
       "refunded": "Refunded",
       "outstanding": "Outstanding"
     },
-    "disclaimer": "Security Deposit is excluded from revenue and net collection calculations. Discount data is not yet available, so it shows Rp0.",
+    "disclaimer": "Security Deposit is excluded from revenue and net collection calculations. Discounts are calculated from stored room-night discounts.",
     "filters": {
       "ariaLabel": "Revenue filters",
       "currency": "Currency: IDR (Rupiah)",

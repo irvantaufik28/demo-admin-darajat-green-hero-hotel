@@ -5,6 +5,7 @@ import { ReservationDetailActions } from "./ReservationDetailActions";
 import { RoomRackAssignRoom } from "./RoomRackAssignRoom";
 import { RoomRackUnassignRoom } from "./RoomRackUnassignRoom";
 import type { ApiReservationDetail } from "../services/api";
+import { noShowSettlementPresentation } from "../utils/detail-rules";
 import {
   formatRupiah,
   type Reservation,
@@ -87,6 +88,9 @@ export function RoomRackReservationSummary({
     detail?.reservation.reservationStatus ?? reservation.reservationStatus;
   const checkedIn = reservationStatus === "checked_in";
   const checkedOut = reservationStatus === "checked_out";
+  const noShow = reservationStatus === "no_show";
+  const noShowSettlement =
+    detail && noShow ? noShowSettlementPresentation(detail) : null;
   const checkIn = detail?.reservation.checkInDate ?? reservation.checkIn;
   const checkOut = detail?.reservation.checkOutDate ?? reservation.checkOut;
   const operationalStatus =
@@ -247,6 +251,8 @@ export function RoomRackReservationSummary({
                     ? "Checked-out"
                     : checkedIn
                       ? "Checked-in"
+                      : noShow
+                        ? "No Show"
                       : reservationStatus === "pending"
                         ? "Pending"
                         : "Confirmed"
@@ -256,12 +262,19 @@ export function RoomRackReservationSummary({
                     ? "neutral"
                     : checkedIn
                       ? "info"
+                      : noShow
+                        ? "danger"
                       : reservationStatus === "pending"
                         ? "warning"
                         : "success"
                 }
               />
             </SummaryRow>
+            {noShowSettlement && (
+              <SummaryRow label={t("detail.fields.settlement")}>
+                {noShowSettlement.label}
+              </SummaryRow>
+            )}
             <SummaryRow label={t("roomRack.summary.operationalStatus")}>
               <Badge label={operationalStatus} tone={operationalTone} />
             </SummaryRow>
@@ -331,7 +344,11 @@ export function RoomRackReservationSummary({
                 />
               ))}
           {detail && (
-            <ReservationDetailActions detail={detail} onUpdated={onUpdated} />
+            <ReservationDetailActions
+              detail={detail}
+              onUpdated={onUpdated}
+              todayISO={todayISO}
+            />
           )}
           <Link
             className="reservation-secondary-button rr-detail-panel__view-link"

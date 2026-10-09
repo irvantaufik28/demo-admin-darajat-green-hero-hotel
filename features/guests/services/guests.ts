@@ -3,6 +3,7 @@ import { apiRequest } from "../../../lib/api/client";
 export type Guest = {
   id: string;
   fullName: string;
+  nik: string | null;
   phone: string | null;
   email: string | null;
   nationality: string | null;
@@ -54,6 +55,7 @@ export function updateGuestNotes(guest: Guest, internalNotes: string) {
     method: "PUT",
     body: {
       fullName: guest.fullName,
+      nik: guest.nik,
       phone: guest.phone,
       email: guest.email,
       nationality: guest.nationality,

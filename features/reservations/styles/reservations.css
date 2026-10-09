@@ -247,6 +247,26 @@
   border-color: var(--primary);
   box-shadow: 0 0 0 2px rgba(23, 61, 49, 0.1);
 }
+.reservation-field--invalid label,
+.rr-drawer-field:has([aria-invalid="true"]) label,
+.reservation-operation-guest-identity:has([aria-invalid="true"]) label,
+.reservation-operation-rooms label:has([aria-invalid="true"]) {
+  color: #a83226;
+}
+.reservation-field--invalid input,
+.reservation-field--invalid select,
+input[aria-invalid="true"],
+select[aria-invalid="true"] {
+  border-color: #d84a3d;
+  box-shadow: 0 0 0 2px rgb(216 74 61 / 12%);
+}
+.reservation-field--invalid input:focus,
+.reservation-field--invalid select:focus,
+input[aria-invalid="true"]:focus,
+select[aria-invalid="true"]:focus {
+  border-color: #c2372c;
+  box-shadow: 0 0 0 3px rgb(216 74 61 / 16%);
+}
 .reservation-field input:disabled {
   background: var(--background);
   color: var(--text-secondary);
@@ -810,6 +830,57 @@
   font-size: 20px;
   line-height: 1;
 }
+.reservation-error-toast {
+  position: fixed;
+  z-index: 1300;
+  top: 86px;
+  right: 24px;
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr) 24px;
+  align-items: start;
+  gap: 10px;
+  width: min(420px, calc(100vw - 32px));
+  padding: 14px;
+  border: 1px solid #e1b8b3;
+  border-radius: 8px;
+  background: #fff8f7;
+  box-shadow: 0 12px 32px rgb(36 31 28 / 18%);
+  color: #7f241d;
+}
+.reservation-error-toast__icon {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: #b53d32;
+  color: #fff;
+  font-weight: 700;
+}
+.reservation-error-toast strong {
+  display: block;
+  color: #74251f;
+  font-size: 13px;
+}
+.reservation-error-toast p {
+  margin: 3px 0 0;
+  color: #8b3932;
+  font-size: 12px;
+  line-height: 1.45;
+}
+.reservation-error-toast button {
+  border: 0;
+  background: transparent;
+  color: #8b3932;
+  font-size: 20px;
+  line-height: 1;
+}
+@media (max-width: 640px) {
+  .reservation-error-toast {
+    top: 16px;
+    right: 16px;
+  }
+}
 .ota-source-panel .reservation-panel__heading {
   margin-bottom: 14px;
 }
@@ -842,10 +913,9 @@
 }
 .ota-room-row {
   display: grid;
-  grid-template-columns: minmax(120px, 1.35fr) auto minmax(125px, 1fr) minmax(
-      105px,
-      auto
-    ) 20px;
+  grid-template-columns:
+    minmax(120px, 1.35fr) auto minmax(125px, 1fr) minmax(105px, auto)
+    20px;
   align-items: end;
   gap: 10px;
   padding: 12px;
@@ -2376,6 +2446,7 @@
   display: grid;
   gap: 10px;
 }
+.reservation-operation-guest-identity label,
 .reservation-operation-rooms label,
 .reservation-operation-deposit-fields label {
   display: grid;
@@ -2383,9 +2454,15 @@
   color: var(--text-secondary);
   font-size: 11.5px;
 }
+.reservation-operation-guest-identity label > span,
 .reservation-operation-rooms label > span {
   color: #a83226;
 }
+.reservation-operation-guest-identity small {
+  color: var(--text-secondary);
+  font-size: 10.5px;
+}
+.reservation-operation-guest-identity input,
 .reservation-operation-rooms select,
 .reservation-operation-deposit-fields input,
 .reservation-operation-deposit-fields select {

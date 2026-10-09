@@ -9,15 +9,24 @@ import { QuantityControl } from "./QuantityControl";
 import { ReservationField } from "./ReservationField";
 import { SaveReservationConfirmation } from "./SaveReservationConfirmation";
 import { ReservationSuccessTransition } from "./ReservationSuccessTransition";
+import { ReservationErrorToast } from "./ReservationErrorToast";
 import {
   calculateNights,
   formatRupiah,
   formatStayDate,
 } from "../constants/walk-in-data";
 import { restoreSession } from "../../../lib/auth";
-import { listPolicies, type PolicyRecord, type PolicyRuleRecord } from "../../cancellation-policies/services/cancellation-policies";
+import {
+  listPolicies,
+  type PolicyRecord,
+  type PolicyRuleRecord,
+} from "../../cancellation-policies/services/cancellation-policies";
 import { nextStayDate, todayJakarta } from "../utils/stay-dates";
-import { autoAllocateRooms, roomAllocationError } from "../utils/room-allocation";
+import {
+  autoAllocateRooms,
+  roomAllocationError,
+} from "../utils/room-allocation";
+import { isValidGuestNik, normalizeGuestNik } from "../utils/guest-identity";
 import {
   createReservation,
   getReservationAvailability,
@@ -56,24 +65,37 @@ function money(value: string) {
 }
 
 function describeCancellationRule(t: Translate, rule: PolicyRuleRecord) {
-  const timing = rule.timingType === "more_than"
-    ? t("form.cancellationPolicy.ruleMoreThan", { days: rule.daysBefore })
-    : t("form.cancellationPolicy.ruleWithin", { days: rule.daysBefore });
-  const charge = rule.chargeType === "percentage"
-    ? rule.chargeValue === 0 ? t("form.cancellationPolicy.chargeFree") : t("form.cancellationPolicy.chargePercentage", { value: rule.chargeValue })
-    : rule.chargeType === "fixed"
-      ? t("form.cancellationPolicy.chargeFixed", { amount: formatRupiah(rule.chargeValue) })
-      : t("form.cancellationPolicy.chargeNights", { value: rule.chargeValue });
+  const timing =
+    rule.timingType === "more_than"
+      ? t("form.cancellationPolicy.ruleMoreThan", { days: rule.daysBefore })
+      : t("form.cancellationPolicy.ruleWithin", { days: rule.daysBefore });
+  const charge =
+    rule.chargeType === "percentage"
+      ? rule.chargeValue === 0
+        ? t("form.cancellationPolicy.chargeFree")
+        : t("form.cancellationPolicy.chargePercentage", {
+            value: rule.chargeValue,
+          })
+      : rule.chargeType === "fixed"
+        ? t("form.cancellationPolicy.chargeFixed", {
+            amount: formatRupiah(rule.chargeValue),
+          })
+        : t("form.cancellationPolicy.chargeNights", {
+            value: rule.chargeValue,
+          });
   return t("form.cancellationPolicy.ruleTemplate", { timing, charge });
 }
 
 function describeNoShow(t: Translate, policy: PolicyRecord) {
   if (!policy.noShowChargeType) return null;
-  const charge = policy.noShowChargeType === "first_night"
-    ? t("form.cancellationPolicy.noShowFirstNight")
-    : policy.noShowChargeType === "full_stay"
-      ? t("form.cancellationPolicy.noShowFullStay")
-      : t("form.cancellationPolicy.noShowPercentage", { value: policy.noShowChargeValue });
+  const charge =
+    policy.noShowChargeType === "first_night"
+      ? t("form.cancellationPolicy.noShowFirstNight")
+      : policy.noShowChargeType === "full_stay"
+        ? t("form.cancellationPolicy.noShowFullStay")
+        : t("form.cancellationPolicy.noShowPercentage", {
+            value: policy.noShowChargeValue,
+          });
   return t("form.cancellationPolicy.noShowTemplate", { charge });
 }
 
@@ -95,10 +117,13 @@ export function ReservationApiForm({ source }: { source: ReservationSource }) {
   >([]);
   const [addingExperience, setAddingExperience] = useState(false);
   const [guestName, setGuestName] = useState("");
+  const [guestNik, setGuestNik] = useState("");
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
   const [notes, setNotes] = useState("");
-  const [roomPolicySelections, setRoomPolicySelections] = useState<Record<string, string>>({});
+  const [roomPolicySelections, setRoomPolicySelections] = useState<
+    Record<string, string>
+  >({});
   const [paymentStatus, setPaymentStatus] = useState<PaymentStatus>("Unpaid");
   const [paymentMethodId, setPaymentMethodId] = useState("");
   const [partialAmount, setPartialAmount] = useState(0);
@@ -112,12 +137,21 @@ export function ReservationApiForm({ source }: { source: ReservationSource }) {
   const [availabilityLoading, setAvailabilityLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [feedback, setFeedback] = useState("");
+  const [validationMode, setValidationMode] = useState<
+    "save" | "check-in" | null
+  >(null);
   const [saveConfirmation, setSaveConfirmation] = useState<
     "save" | "check-in" | null
   >(null);
   const [acknowledged, setAcknowledged] = useState(false);
-  const [checkInContext, setCheckInContext] = useState<CheckInContext | null>(null);
-  const [earlyCheckIn, setEarlyCheckIn] = useState<EarlyCheckInInput>({ acknowledged: false, chargeAmount: 0, paymentTiming: "later" });
+  const [checkInContext, setCheckInContext] = useState<CheckInContext | null>(
+    null,
+  );
+  const [earlyCheckIn, setEarlyCheckIn] = useState<EarlyCheckInInput>({
+    acknowledged: false,
+    chargeAmount: 0,
+    paymentTiming: "later",
+  });
   const [saved, setSaved] = useState<{
     bookingId: string;
     checkedIn: boolean;
@@ -140,17 +174,28 @@ export function ReservationApiForm({ source }: { source: ReservationSource }) {
         : 0;
   const balance = Math.max(0, total - amountPaid);
   const lastStayDate = checkOut
-    ? new Date(Date.parse(`${checkOut}T00:00:00Z`) - 86_400_000).toISOString().slice(0, 10)
+    ? new Date(Date.parse(`${checkOut}T00:00:00Z`) - 86_400_000)
+        .toISOString()
+        .slice(0, 10)
     : "";
-  const stayPolicies = policies.filter((policy) => nights > 0 &&
-    (!policy.stayStart || policy.stayStart <= checkIn) &&
-    (!policy.stayEnd || policy.stayEnd >= lastStayDate),
+  const stayPolicies = policies.filter(
+    (policy) =>
+      nights > 0 &&
+      (!policy.stayStart || policy.stayStart <= checkIn) &&
+      (!policy.stayEnd || policy.stayEnd >= lastStayDate),
   );
-  const policiesForRoom = (room: RoomEntry) => stayPolicies.filter((policy) =>
-    policy.roomTypes.length === 0 || policy.roomTypes.some((linked) => linked.id === room.roomTypeId));
+  const policiesForRoom = (room: RoomEntry) =>
+    stayPolicies.filter(
+      (policy) =>
+        policy.roomTypes.length === 0 ||
+        policy.roomTypes.some((linked) => linked.id === room.roomTypeId),
+    );
   const selectedPolicyForRoom = (room: RoomEntry) => {
     const options = policiesForRoom(room);
-    return options.find((policy) => policy.id === roomPolicySelections[room.key]) ?? options[0];
+    return (
+      options.find((policy) => policy.id === roomPolicySelections[room.key]) ??
+      options[0]
+    );
   };
   const currentQuoteInput = JSON.stringify({
     checkIn,
@@ -246,22 +291,33 @@ export function ReservationApiForm({ source }: { source: ReservationSource }) {
   useEffect(() => {
     if (!isPhone) return;
     const controller = new AbortController();
-    const query = new URLSearchParams({ source: "phone", isActive: "true", limit: "100" });
+    const query = new URLSearchParams({
+      source: "phone",
+      isActive: "true",
+      limit: "100",
+    });
     listPolicies(query, controller.signal)
       .then(async (result) => {
         const pages = await Promise.all(
-          Array.from({ length: Math.ceil(result.total / result.limit) - 1 }, (_, index) => {
-            const pageQuery = new URLSearchParams(query);
-            pageQuery.set("page", String(index + 2));
-            return listPolicies(pageQuery, controller.signal);
-          }),
+          Array.from(
+            { length: Math.ceil(result.total / result.limit) - 1 },
+            (_, index) => {
+              const pageQuery = new URLSearchParams(query);
+              pageQuery.set("page", String(index + 2));
+              return listPolicies(pageQuery, controller.signal);
+            },
+          ),
         );
-        if (!controller.signal.aborted) setPolicies([result, ...pages].flatMap((page) => page.items));
+        if (!controller.signal.aborted)
+          setPolicies([result, ...pages].flatMap((page) => page.items));
       })
       .catch((error) => {
-        if (!controller.signal.aborted) setFeedback(
-          error instanceof Error ? error.message : t("form.errors.policiesLoadError"),
-        );
+        if (!controller.signal.aborted)
+          setFeedback(
+            error instanceof Error
+              ? error.message
+              : t("form.errors.policiesLoadError"),
+          );
       });
     return () => controller.abort();
   }, [isPhone]);
@@ -326,24 +382,33 @@ export function ReservationApiForm({ source }: { source: ReservationSource }) {
     );
     const difference = count - current.length;
     if (difference > 0) {
-      setRooms((previous) => autoAllocateRooms([
-        ...previous,
-        ...Array.from({ length: difference }, () => ({
-          key: crypto.randomUUID(),
-          roomTypeId: option.roomType.id,
-          adults: 0,
-          children: 0,
-          extraBeds: 0,
-        })),
-      ], available, searchAdults, searchChildren));
+      setRooms((previous) =>
+        autoAllocateRooms(
+          [
+            ...previous,
+            ...Array.from({ length: difference }, () => ({
+              key: crypto.randomUUID(),
+              roomTypeId: option.roomType.id,
+              adults: 0,
+              children: 0,
+              extraBeds: 0,
+            })),
+          ],
+          available,
+          searchAdults,
+          searchChildren,
+        ),
+      );
     } else if (difference < 0) {
       const removed = new Set(current.slice(count).map((room) => room.key));
-      setRooms((previous) => autoAllocateRooms(
-        previous.filter((room) => !removed.has(room.key)),
-        available,
-        searchAdults,
-        searchChildren,
-      ));
+      setRooms((previous) =>
+        autoAllocateRooms(
+          previous.filter((room) => !removed.has(room.key)),
+          available,
+          searchAdults,
+          searchChildren,
+        ),
+      );
     }
   }
 
@@ -363,14 +428,23 @@ export function ReservationApiForm({ source }: { source: ReservationSource }) {
     if (nights < 1) return t("form.errors.checkOutAfterCheckIn");
     if (!rooms.length) return t("form.errors.selectRoom");
     if (availabilityLoading) return t("form.errors.waitAvailability");
-    if (rooms.some((room) => !available.find(
-      (option) => option.roomType.id === room.roomTypeId && option.bookable,
-    ))) return t("form.errors.roomsUnavailable");
+    if (
+      rooms.some(
+        (room) =>
+          !available.find(
+            (option) =>
+              option.roomType.id === room.roomTypeId && option.bookable,
+          ),
+      )
+    )
+      return t("form.errors.roomsUnavailable");
     if (allocationError) return allocationError;
     if (!quote || quoteLoading || quotedInput !== currentQuoteInput)
       return t("form.errors.waitQuote");
     if (!guestName.trim() || !phone.trim())
       return t("form.errors.guestRequired");
+    if (checkInGuest && !isValidGuestNik(guestNik))
+      return t("form.errors.guestNikRequired");
     if (checkInGuest && rooms.some((room) => !room.roomUnitId))
       return t("form.errors.roomNumbersRequired");
     const ids = rooms.map((room) => room.roomUnitId).filter(Boolean);
@@ -382,7 +456,8 @@ export function ReservationApiForm({ source }: { source: ReservationSource }) {
     ) {
       return t("form.errors.partialInvalid");
     }
-    if (amountPaid > 0 && !paymentMethodId) return t("form.errors.methodRequired");
+    if (amountPaid > 0 && !paymentMethodId)
+      return t("form.errors.methodRequired");
     if (requireDeposit && (depositAmount < 1 || !depositMethodId))
       return t("form.errors.depositRequired");
     if (checkInGuest && balance > 0 && !acknowledged)
@@ -391,8 +466,13 @@ export function ReservationApiForm({ source }: { source: ReservationSource }) {
   }
 
   async function requestSave(checkInGuest: boolean) {
+    setValidationMode(checkInGuest ? "check-in" : "save");
     if (checkInGuest && checkIn !== todayJakarta()) {
       setFeedback(t("form.errors.checkInTodayOnly"));
+      return;
+    }
+    if (checkInGuest && !isValidGuestNik(guestNik)) {
+      setFeedback(t("form.errors.guestNikRequired"));
       return;
     }
     const error = validate(false);
@@ -407,12 +487,20 @@ export function ReservationApiForm({ source }: { source: ReservationSource }) {
     setAcknowledged(false);
     setFeedback("");
     setCheckInContext(null);
-    setEarlyCheckIn({ acknowledged: false, chargeAmount: 0, paymentTiming: "later" });
+    setEarlyCheckIn({
+      acknowledged: false,
+      chargeAmount: 0,
+      paymentTiming: "later",
+    });
     if (checkInGuest) {
       try {
         setCheckInContext(await getCreateCheckInContext(checkIn));
       } catch (cause) {
-        setFeedback(cause instanceof Error ? cause.message : t("form.errors.checkInTimeLoadError"));
+        setFeedback(
+          cause instanceof Error
+            ? cause.message
+            : t("form.errors.checkInTimeLoadError"),
+        );
         return;
       }
     }
@@ -428,6 +516,7 @@ export function ReservationApiForm({ source }: { source: ReservationSource }) {
     const payload = {
       guest: {
         fullName: guestName.trim(),
+        ...(guestNik ? { nik: guestNik } : {}),
         phone: phone.trim(),
         ...(email.trim() ? { email: email.trim() } : {}),
       },
@@ -437,7 +526,12 @@ export function ReservationApiForm({ source }: { source: ReservationSource }) {
       totalChildren: searchChildren,
       rooms: rooms.map(({ key, ...room }) => ({
         ...room,
-        ...(isPhone ? { cancellationPolicyId: selectedPolicyForRoom({ key, ...room })?.id ?? null } : {}),
+        ...(isPhone
+          ? {
+              cancellationPolicyId:
+                selectedPolicyForRoom({ key, ...room })?.id ?? null,
+            }
+          : {}),
       })),
       experiences: selectedExperiences,
       ...(notes.trim() ? { specialRequests: notes.trim() } : {}),
@@ -491,6 +585,14 @@ export function ReservationApiForm({ source }: { source: ReservationSource }) {
       badge={isPhone ? t("shell.phoneMode") : t("shell.walkInMode")}
     >
       <div className="walkin-page">
+        {feedback && (
+          <ReservationErrorToast
+            message={feedback}
+            title={t("common.errorToastTitle")}
+            closeLabel={t("common.closeMessage")}
+            onClose={() => setFeedback("")}
+          />
+        )}
         <div className="walkin-heading">
           <div>
             <h1>{isPhone ? t("form.phoneTitle") : t("form.walkInTitle")}</h1>
@@ -507,6 +609,7 @@ export function ReservationApiForm({ source }: { source: ReservationSource }) {
               setRooms([]);
               setSelectedExperiences([]);
               setGuestName("");
+              setGuestNik("");
               setPhone("");
               setEmail("");
               setNotes("");
@@ -515,26 +618,12 @@ export function ReservationApiForm({ source }: { source: ReservationSource }) {
               setPartialAmount(0);
               setRequireDeposit(false);
               setFeedback("");
+              setValidationMode(null);
             }}
           >
             ↻ &nbsp; {t("form.resetForm")}
           </button>
         </div>
-        {feedback && (
-          <div
-            className="reservation-feedback reservation-feedback--error"
-            role="alert"
-          >
-            {feedback}
-            <button
-              type="button"
-              onClick={() => setFeedback("")}
-              aria-label={t("common.closeMessage")}
-            >
-              ×
-            </button>
-          </div>
-        )}
         <div className="walkin-columns">
           <div className="walkin-form-column">
             <section className="reservation-panel reservation-source-panel">
@@ -546,14 +635,18 @@ export function ReservationApiForm({ source }: { source: ReservationSource }) {
               >
                 <Link
                   href="/reservations/create-reservation-walkin"
-                  className={isPhone ? "source-tab" : "source-tab source-tab--active"}
+                  className={
+                    isPhone ? "source-tab" : "source-tab source-tab--active"
+                  }
                   aria-current={isPhone ? undefined : "page"}
                 >
                   {t("form.sourceTabs.walkIn")}
                 </Link>
                 <Link
                   href="/reservations/create-reservation-phone"
-                  className={isPhone ? "source-tab source-tab--active" : "source-tab"}
+                  className={
+                    isPhone ? "source-tab source-tab--active" : "source-tab"
+                  }
                   aria-current={isPhone ? "page" : undefined}
                 >
                   {t("form.sourceTabs.phone")}
@@ -570,11 +663,18 @@ export function ReservationApiForm({ source }: { source: ReservationSource }) {
               <div className="reservation-panel__heading">
                 <h2>{t("form.sections.stay")}</h2>
                 <span className="status-badge status-badge--success">
-                  {nights === 1 ? t("form.stay.nightBadge", { nights }) : t("form.stay.nightsBadge", { nights })}
+                  {nights === 1
+                    ? t("form.stay.nightBadge", { nights })
+                    : t("form.stay.nightsBadge", { nights })}
                 </span>
               </div>
               <div className="stay-fields stay-fields--date-range">
-                <ReservationField label={t("form.stay.dateRangeLabel")} htmlFor="stay-date-range">
+                <ReservationField
+                  label={t("form.stay.dateRangeLabel")}
+                  htmlFor="stay-date-range"
+                  required
+                  invalid={validationMode !== null && nights < 1}
+                >
                   <DateRangePicker
                     id="stay-date-range"
                     label={t("form.stay.dateRangePickerLabel")}
@@ -590,14 +690,24 @@ export function ReservationApiForm({ source }: { source: ReservationSource }) {
                     }}
                   />
                 </ReservationField>
-                <ReservationField label={t("form.stay.adultsLabel")} htmlFor="adults">
+                <ReservationField
+                  label={t("form.stay.adultsLabel")}
+                  htmlFor="adults"
+                >
                   <select
                     id="adults"
                     value={searchAdults}
                     onChange={(event) => {
                       const adults = Number(event.target.value);
                       setSearchAdults(adults);
-                      setRooms((previous) => autoAllocateRooms(previous, available, adults, searchChildren));
+                      setRooms((previous) =>
+                        autoAllocateRooms(
+                          previous,
+                          available,
+                          adults,
+                          searchChildren,
+                        ),
+                      );
                     }}
                   >
                     {Array.from({ length: 20 }, (_, index) => index + 1).map(
@@ -609,14 +719,24 @@ export function ReservationApiForm({ source }: { source: ReservationSource }) {
                     )}
                   </select>
                 </ReservationField>
-                <ReservationField label={t("form.stay.childrenLabel")} htmlFor="children">
+                <ReservationField
+                  label={t("form.stay.childrenLabel")}
+                  htmlFor="children"
+                >
                   <select
                     id="children"
                     value={searchChildren}
                     onChange={(event) => {
                       const children = Number(event.target.value);
                       setSearchChildren(children);
-                      setRooms((previous) => autoAllocateRooms(previous, available, searchAdults, children));
+                      setRooms((previous) =>
+                        autoAllocateRooms(
+                          previous,
+                          available,
+                          searchAdults,
+                          children,
+                        ),
+                      );
                     }}
                   >
                     {Array.from({ length: 21 }, (_, index) => index).map(
@@ -634,7 +754,10 @@ export function ReservationApiForm({ source }: { source: ReservationSource }) {
                   disabled={availabilityLoading}
                   onClick={() => void refreshAvailability()}
                 >
-                  ⌕ &nbsp; {availabilityLoading ? t("form.stay.checking") : t("form.stay.check")}
+                  ⌕ &nbsp;{" "}
+                  {availabilityLoading
+                    ? t("form.stay.checking")
+                    : t("form.stay.check")}
                 </button>
               </div>
             </section>
@@ -642,96 +765,140 @@ export function ReservationApiForm({ source }: { source: ReservationSource }) {
               <div className="reservation-panel__heading">
                 <h2>{t("form.sections.availableRooms")}</h2>
                 <span className="reservation-panel__meta">
-                  {t("form.availableRooms.selectedMeta", { count: selectedRooms })}
+                  {t("form.availableRooms.selectedMeta", {
+                    count: selectedRooms,
+                  })}
                 </span>
               </div>
               <div className="available-rooms">
                 <p className="room-allocation-guidance">
-                  {t("form.availableRooms.allocationGuidance", { adults: searchAdults, children: searchChildren })}
+                  {t("form.availableRooms.allocationGuidance", {
+                    adults: searchAdults,
+                    children: searchChildren,
+                  })}
                 </p>
                 {availabilityLoading && <LoadingSkeleton rows={3} />}
-                {!availabilityLoading && available.map((option) => {
-                  const count = rooms.filter(
-                    (room) => room.roomTypeId === option.roomType.id,
-                  ).length;
-                  const bookableCount = option.bookable ? option.availableRooms : 0;
-                  const assignableCount = Math.min(
-                    bookableCount,
-                    option.assignableRoomUnits.length,
-                  );
-                  const maxAdults = Math.max(0, ...option.capacityPatterns.map((pattern) => pattern.adults));
-                  const maxChildren = Math.max(0, ...option.capacityPatterns.map((pattern) => pattern.children));
-                  return (
-                    <div
-                      className={`room-option${count ? " room-option--selected" : ""}${option.bookable ? "" : " room-option--unavailable"}`}
-                      key={option.roomType.id}
-                    >
-                      <div>
-                        <div className="room-option__name">
-                          <strong>{option.roomType.name}</strong>
-                          {!option.bookable && (
-                            <span className="room-option__unavailable-badge">
-                              {t("form.availableRooms.cannotSelectBadge")}
+                {!availabilityLoading &&
+                  available.map((option) => {
+                    const count = rooms.filter(
+                      (room) => room.roomTypeId === option.roomType.id,
+                    ).length;
+                    const bookableCount = option.bookable
+                      ? option.availableRooms
+                      : 0;
+                    const assignableCount = Math.min(
+                      bookableCount,
+                      option.assignableRoomUnits.length,
+                    );
+                    const maxAdults = Math.max(
+                      0,
+                      ...option.capacityPatterns.map(
+                        (pattern) => pattern.adults,
+                      ),
+                    );
+                    const maxChildren = Math.max(
+                      0,
+                      ...option.capacityPatterns.map(
+                        (pattern) => pattern.children,
+                      ),
+                    );
+                    return (
+                      <div
+                        className={`room-option${count ? " room-option--selected" : ""}${option.bookable ? "" : " room-option--unavailable"}`}
+                        key={option.roomType.id}
+                      >
+                        <div>
+                          <div className="room-option__name">
+                            <strong>{option.roomType.name}</strong>
+                            {!option.bookable && (
+                              <span className="room-option__unavailable-badge">
+                                {t("form.availableRooms.cannotSelectBadge")}
+                              </span>
+                            )}
+                          </div>
+                          <div className="room-option__availability">
+                            <span>
+                              {option.bookable
+                                ? t("form.availableRooms.stockAvailable", {
+                                    count: option.availableRooms,
+                                  })
+                                : t("form.availableRooms.stockUnavailable", {
+                                    count: option.availableRooms,
+                                  })}
                             </span>
-                          )}
-                        </div>
-                        <div className="room-option__availability">
-                          <span>
-                            {option.bookable
-                              ? t("form.availableRooms.stockAvailable", { count: option.availableRooms })
-                              : t("form.availableRooms.stockUnavailable", { count: option.availableRooms })}
-                          </span>
-                          <span
+                            <span
+                              className={
+                                assignableCount === 0
+                                  ? "room-option__assignment room-option__assignment--empty"
+                                  : "room-option__assignment"
+                              }
+                            >
+                              {roomAssignmentFuture
+                                ? t(
+                                    "form.availableRooms.assignmentReadyFuture",
+                                    { count: assignableCount },
+                                  )
+                                : t("form.availableRooms.assignmentReady", {
+                                    count: assignableCount,
+                                  })}
+                            </span>
+                          </div>
+                          <small
                             className={
-                              assignableCount === 0
-                                ? "room-option__assignment room-option__assignment--empty"
-                                : "room-option__assignment"
+                              option.bookable
+                                ? undefined
+                                : "room-option__reason"
                             }
                           >
-                            {roomAssignmentFuture
-                              ? t("form.availableRooms.assignmentReadyFuture", { count: assignableCount })
-                              : t("form.availableRooms.assignmentReady", { count: assignableCount })}
-                          </span>
+                            {option.bookable
+                              ? t("form.availableRooms.perRoomCapacity", {
+                                  adults: maxAdults,
+                                  children: maxChildren
+                                    ? t("form.availableRooms.perRoomChildren", {
+                                        count: maxChildren,
+                                      })
+                                    : "",
+                                  extraBeds: option.roomType.maxExtraBeds,
+                                })
+                              : option.unavailableReasons
+                                  .map((reason) =>
+                                    t(unavailableReasonKeys[reason] ?? reason),
+                                  )
+                                  .join(" · ") ||
+                                t("form.availableRooms.notAvailableForSearch")}
+                          </small>
                         </div>
-                        <small className={option.bookable ? undefined : "room-option__reason"}>
-                          {option.bookable
-                            ? t("form.availableRooms.perRoomCapacity", { adults: maxAdults, children: maxChildren ? t("form.availableRooms.perRoomChildren", { count: maxChildren }) : "", extraBeds: option.roomType.maxExtraBeds })
-                            : option.unavailableReasons
-                                .map((reason) => t(unavailableReasonKeys[reason] ?? reason))
-                                .join(" · ") || t("form.availableRooms.notAvailableForSearch")}
-                        </small>
-                      </div>
-                      <div className="room-option__right">
-                        <div className="room-option__rate">
-                          <strong>
-                            {option.totalPrice === null
-                              ? t("common.emptyDash")
-                              : formatRupiah(
-                                  Math.round(option.totalPrice / nights),
-                                )}
-                          </strong>
-                          <small>{t("form.availableRooms.perNight")}</small>
+                        <div className="room-option__right">
+                          <div className="room-option__rate">
+                            <strong>
+                              {option.totalPrice === null
+                                ? t("common.emptyDash")
+                                : formatRupiah(
+                                    Math.round(option.totalPrice / nights),
+                                  )}
+                            </strong>
+                            <small>{t("form.availableRooms.perNight")}</small>
+                          </div>
+                          <QuantityControl
+                            label={option.roomType.name}
+                            value={count}
+                            max={
+                              option.bookable
+                                ? Math.min(
+                                    option.availableRooms,
+                                    checkIn <= initialDate
+                                      ? option.assignableRoomUnits.length
+                                      : 20,
+                                    20,
+                                  )
+                                : 0
+                            }
+                            onChange={(value) => setRoomCount(option, value)}
+                          />
                         </div>
-                        <QuantityControl
-                          label={option.roomType.name}
-                          value={count}
-                          max={
-                            option.bookable
-                              ? Math.min(
-                                  option.availableRooms,
-                                  checkIn <= initialDate
-                                    ? option.assignableRoomUnits.length
-                                    : 20,
-                                  20,
-                                )
-                              : 0
-                          }
-                          onChange={(value) => setRoomCount(option, value)}
-                        />
                       </div>
-                    </div>
-                  );
-                })}
+                    );
+                  })}
                 {!availabilityLoading && available.length === 0 && (
                   <p className="reservation-empty">
                     {t("form.availableRooms.empty")}
@@ -742,16 +909,30 @@ export function ReservationApiForm({ source }: { source: ReservationSource }) {
             <section className="reservation-panel">
               <h2>{t("form.sections.assignRooms")}</h2>
               {rooms.length > 0 && (
-                <p className={allocationError ? "room-allocation-status room-allocation-status--error" : "room-allocation-status"}>
-                  {t("form.assignRooms.allocationStatus", { allocatedAdults, adults: searchAdults, allocatedChildren, children: searchChildren })}
-                  {allocationError ? ` ${allocationError}` : t("form.assignRooms.allocationComplete")}
+                <p
+                  className={
+                    allocationError
+                      ? "room-allocation-status room-allocation-status--error"
+                      : "room-allocation-status"
+                  }
+                >
+                  {t("form.assignRooms.allocationStatus", {
+                    allocatedAdults,
+                    adults: searchAdults,
+                    allocatedChildren,
+                    children: searchChildren,
+                  })}
+                  {allocationError
+                    ? ` ${allocationError}`
+                    : t("form.assignRooms.allocationComplete")}
                 </p>
               )}
               {rooms.some(
                 (room) =>
                   !room.roomUnitId &&
-                  available.find((option) => option.roomType.id === room.roomTypeId)
-                    ?.assignableRoomUnits.length === 0,
+                  available.find(
+                    (option) => option.roomType.id === room.roomTypeId,
+                  )?.assignableRoomUnits.length === 0,
               ) && (
                 <p className="assign-rooms-note">
                   {t("form.assignRooms.noRoomNumberNote")}
@@ -777,13 +958,18 @@ export function ReservationApiForm({ source }: { source: ReservationSource }) {
                         if (!option) return null;
                         const roomIndex = rooms
                           .slice(0, index + 1)
-                          .filter((item) => item.roomTypeId === room.roomTypeId)
-                          .length;
+                          .filter(
+                            (item) => item.roomTypeId === room.roomTypeId,
+                          ).length;
                         return (
                           <tr key={room.key}>
                             <th scope="row">
                               <strong>{option.roomType.name}</strong>
-                              <small>{t("form.assignRooms.room", { index: roomIndex })}</small>
+                              <small>
+                                {t("form.assignRooms.room", {
+                                  index: roomIndex,
+                                })}
+                              </small>
                             </th>
                             <td>
                               <select
@@ -810,7 +996,9 @@ export function ReservationApiForm({ source }: { source: ReservationSource }) {
                                         other.roomUnitId === unit.id,
                                     )}
                                   >
-                                    {t("form.assignRooms.roomNumberOption", { roomNumber: unit.roomNumber })}
+                                    {t("form.assignRooms.roomNumberOption", {
+                                      roomNumber: unit.roomNumber,
+                                    })}
                                   </option>
                                 ))}
                               </select>
@@ -857,11 +1045,17 @@ export function ReservationApiForm({ source }: { source: ReservationSource }) {
                                     }
                                   />
                                   <small>
-                                    {t("form.assignRooms.perNight", { price: formatRupiah(option.roomType.extraBedPricePerNight) })}
+                                    {t("form.assignRooms.perNight", {
+                                      price: formatRupiah(
+                                        option.roomType.extraBedPricePerNight,
+                                      ),
+                                    })}
                                   </small>
                                 </div>
                               ) : (
-                                <span className="assign-rooms-unavailable">{t("common.emptyDash")}</span>
+                                <span className="assign-rooms-unavailable">
+                                  {t("common.emptyDash")}
+                                </span>
                               )}
                             </td>
                           </tr>
@@ -883,6 +1077,7 @@ export function ReservationApiForm({ source }: { source: ReservationSource }) {
                   label={t("form.guest.fullName")}
                   htmlFor="guest-name"
                   required
+                  invalid={validationMode !== null && !guestName.trim()}
                 >
                   <input
                     id="guest-name"
@@ -890,7 +1085,12 @@ export function ReservationApiForm({ source }: { source: ReservationSource }) {
                     onChange={(event) => setGuestName(event.target.value)}
                   />
                 </ReservationField>
-                <ReservationField label={t("form.guest.whatsapp")} htmlFor="whatsapp" required>
+                <ReservationField
+                  label={t("form.guest.whatsapp")}
+                  htmlFor="whatsapp"
+                  required
+                  invalid={validationMode !== null && !phone.trim()}
+                >
                   <input
                     id="whatsapp"
                     type="tel"
@@ -898,7 +1098,31 @@ export function ReservationApiForm({ source }: { source: ReservationSource }) {
                     onChange={(event) => setPhone(event.target.value)}
                   />
                 </ReservationField>
-                <ReservationField label={t("form.guest.email")} htmlFor="email" optional>
+                <ReservationField
+                  label={t("form.guest.nik")}
+                  htmlFor="guest-nik"
+                  required={validationMode === "check-in"}
+                  invalid={
+                    validationMode === "check-in" && !isValidGuestNik(guestNik)
+                  }
+                >
+                  <input
+                    id="guest-nik"
+                    inputMode="numeric"
+                    autoComplete="off"
+                    maxLength={16}
+                    value={guestNik}
+                    onChange={(event) =>
+                      setGuestNik(normalizeGuestNik(event.target.value))
+                    }
+                    placeholder="3200xxxxxxxxxxxx"
+                  />
+                </ReservationField>
+                <ReservationField
+                  label={t("form.guest.email")}
+                  htmlFor="email"
+                  optional
+                >
                   <input
                     id="email"
                     type="email"
@@ -906,7 +1130,11 @@ export function ReservationApiForm({ source }: { source: ReservationSource }) {
                     onChange={(event) => setEmail(event.target.value)}
                   />
                 </ReservationField>
-                <ReservationField label={t("form.guest.notes")} htmlFor="notes" optional>
+                <ReservationField
+                  label={t("form.guest.notes")}
+                  htmlFor="notes"
+                  optional
+                >
                   <input
                     id="notes"
                     value={notes}
@@ -924,58 +1152,135 @@ export function ReservationApiForm({ source }: { source: ReservationSource }) {
                   </p>
                 ) : (
                   <div className="reservation-policy-rooms">
-                      {rooms.map((room, index) => {
-                        const roomType = available.find((option) => option.roomType.id === room.roomTypeId);
-                        const roomIndex = rooms.slice(0, index + 1)
-                          .filter((item) => item.roomTypeId === room.roomTypeId).length;
-                        const roomNumber = roomType?.assignableRoomUnits.find((unit) => unit.id === room.roomUnitId)?.roomNumber;
-                        const roomPolicies = policiesForRoom(room);
-                        const selectedPolicy = selectedPolicyForRoom(room);
-                        const roomTypeName = roomType?.roomType.name ?? t("detail.rooms.notAssigned");
-                        return (
-                          <div className="reservation-policy-room" key={room.key}>
-                            <div className="reservation-policy-room__heading">
-                              <strong>{roomNumber ? t("form.cancellationPolicy.roomHeadingWithNumber", { roomType: roomTypeName, index: roomIndex, number: roomNumber }) : t("form.cancellationPolicy.roomHeading", { roomType: roomTypeName, index: roomIndex })}</strong>
-                              <span>{selectedPolicy ? t("form.cancellationPolicy.policyApplies") : t("form.cancellationPolicy.default")}</span>
-                            </div>
-                            <div className="reservation-policy-options" role="group" aria-label={t("form.cancellationPolicy.groupLabel", { roomType: roomTypeName, index: roomIndex })}>
-                              {roomPolicies.length === 0 && (
-                                <div className="reservation-policy-option reservation-policy-option--fallback">
-                                  <input type="checkbox" checked readOnly aria-label={t("form.cancellationPolicy.default")} />
-                                  <span className="reservation-policy-copy">
-                                    <strong>{t("form.cancellationPolicy.fallbackName")}</strong>
-                                    <small>{t("form.cancellationPolicy.fallbackDescription")}</small>
-                                  </span>
-                                  <span className="reservation-policy-default">{t("form.cancellationPolicy.default")}</span>
-                                </div>
-                              )}
-                              {roomPolicies.map((policy) => (
-                                <label className="reservation-policy-option" key={policy.id}>
-                                  <input
-                                    type="checkbox"
-                                    checked={selectedPolicy?.id === policy.id}
-                                    onChange={(event) => setRoomPolicySelections((current) => ({
-                                      ...current,
-                                      [room.key]: event.target.checked ? policy.id : "",
-                                    }))}
-                                  />
-                                  <span className="reservation-policy-copy">
-                                    <strong>{policy.name}</strong>
-                                    {policy.rules.length ? [...policy.rules]
-                                      .sort((first, second) => first.sortOrder - second.sortOrder)
-                                      .map((rule) => <small key={rule.id}>{describeCancellationRule(t, rule)}</small>)
-                                      : <small>{t("form.cancellationPolicy.rulesUndefined")}</small>}
-                                    {describeNoShow(t, policy) && <small>{describeNoShow(t, policy)}</small>}
-                                  </span>
-                                  {selectedPolicy?.id === policy.id && !roomPolicySelections[room.key] && (
-                                    <span className="reservation-policy-default">{t("form.cancellationPolicy.autoSelected")}</span>
-                                  )}
-                                </label>
-                              ))}
-                            </div>
+                    {rooms.map((room, index) => {
+                      const roomType = available.find(
+                        (option) => option.roomType.id === room.roomTypeId,
+                      );
+                      const roomIndex = rooms
+                        .slice(0, index + 1)
+                        .filter(
+                          (item) => item.roomTypeId === room.roomTypeId,
+                        ).length;
+                      const roomNumber = roomType?.assignableRoomUnits.find(
+                        (unit) => unit.id === room.roomUnitId,
+                      )?.roomNumber;
+                      const roomPolicies = policiesForRoom(room);
+                      const selectedPolicy = selectedPolicyForRoom(room);
+                      const roomTypeName =
+                        roomType?.roomType.name ??
+                        t("detail.rooms.notAssigned");
+                      return (
+                        <div className="reservation-policy-room" key={room.key}>
+                          <div className="reservation-policy-room__heading">
+                            <strong>
+                              {roomNumber
+                                ? t(
+                                    "form.cancellationPolicy.roomHeadingWithNumber",
+                                    {
+                                      roomType: roomTypeName,
+                                      index: roomIndex,
+                                      number: roomNumber,
+                                    },
+                                  )
+                                : t("form.cancellationPolicy.roomHeading", {
+                                    roomType: roomTypeName,
+                                    index: roomIndex,
+                                  })}
+                            </strong>
+                            <span>
+                              {selectedPolicy
+                                ? t("form.cancellationPolicy.policyApplies")
+                                : t("form.cancellationPolicy.default")}
+                            </span>
                           </div>
-                        );
-                      })}
+                          <div
+                            className="reservation-policy-options"
+                            role="group"
+                            aria-label={t(
+                              "form.cancellationPolicy.groupLabel",
+                              { roomType: roomTypeName, index: roomIndex },
+                            )}
+                          >
+                            {roomPolicies.length === 0 && (
+                              <div className="reservation-policy-option reservation-policy-option--fallback">
+                                <input
+                                  type="checkbox"
+                                  checked
+                                  readOnly
+                                  aria-label={t(
+                                    "form.cancellationPolicy.default",
+                                  )}
+                                />
+                                <span className="reservation-policy-copy">
+                                  <strong>
+                                    {t("form.cancellationPolicy.fallbackName")}
+                                  </strong>
+                                  <small>
+                                    {t(
+                                      "form.cancellationPolicy.fallbackDescription",
+                                    )}
+                                  </small>
+                                </span>
+                                <span className="reservation-policy-default">
+                                  {t("form.cancellationPolicy.default")}
+                                </span>
+                              </div>
+                            )}
+                            {roomPolicies.map((policy) => (
+                              <label
+                                className="reservation-policy-option"
+                                key={policy.id}
+                              >
+                                <input
+                                  type="checkbox"
+                                  checked={selectedPolicy?.id === policy.id}
+                                  onChange={(event) =>
+                                    setRoomPolicySelections((current) => ({
+                                      ...current,
+                                      [room.key]: event.target.checked
+                                        ? policy.id
+                                        : "",
+                                    }))
+                                  }
+                                />
+                                <span className="reservation-policy-copy">
+                                  <strong>{policy.name}</strong>
+                                  {policy.rules.length ? (
+                                    [...policy.rules]
+                                      .sort(
+                                        (first, second) =>
+                                          first.sortOrder - second.sortOrder,
+                                      )
+                                      .map((rule) => (
+                                        <small key={rule.id}>
+                                          {describeCancellationRule(t, rule)}
+                                        </small>
+                                      ))
+                                  ) : (
+                                    <small>
+                                      {t(
+                                        "form.cancellationPolicy.rulesUndefined",
+                                      )}
+                                    </small>
+                                  )}
+                                  {describeNoShow(t, policy) && (
+                                    <small>{describeNoShow(t, policy)}</small>
+                                  )}
+                                </span>
+                                {selectedPolicy?.id === policy.id &&
+                                  !roomPolicySelections[room.key] && (
+                                    <span className="reservation-policy-default">
+                                      {t(
+                                        "form.cancellationPolicy.autoSelected",
+                                      )}
+                                    </span>
+                                  )}
+                              </label>
+                            ))}
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
                 )}
               </section>
@@ -993,7 +1298,9 @@ export function ReservationApiForm({ source }: { source: ReservationSource }) {
               </div>
               {addingExperience && (
                 <div className="extra-picker">
-                  <label htmlFor="extra-choice">{t("form.experiences.pickAddOn")}</label>
+                  <label htmlFor="extra-choice">
+                    {t("form.experiences.pickAddOn")}
+                  </label>
                   <select
                     id="extra-choice"
                     value=""
@@ -1006,7 +1313,9 @@ export function ReservationApiForm({ source }: { source: ReservationSource }) {
                       setAddingExperience(false);
                     }}
                   >
-                    <option value="">{t("form.experiences.selectPackage")}</option>
+                    <option value="">
+                      {t("form.experiences.selectPackage")}
+                    </option>
                     {variants
                       .filter(
                         (variant) =>
@@ -1032,7 +1341,10 @@ export function ReservationApiForm({ source }: { source: ReservationSource }) {
                     <div className="selected-extra" key={item.variantId}>
                       <div className="selected-extra__description">
                         <strong>{variant.label}</strong>
-                        <small>{formatRupiah(variant.price)} {t("form.experiences.perPackage")}</small>
+                        <small>
+                          {formatRupiah(variant.price)}{" "}
+                          {t("form.experiences.perPackage")}
+                        </small>
                       </div>
                       <div className="selected-extra__actions">
                         <QuantityControl
@@ -1055,7 +1367,9 @@ export function ReservationApiForm({ source }: { source: ReservationSource }) {
                         </strong>
                         <button
                           type="button"
-                          aria-label={t("ota.rooms.removeAriaLabel", { name: variant.label })}
+                          aria-label={t("ota.rooms.removeAriaLabel", {
+                            name: variant.label,
+                          })}
                           onClick={() =>
                             setSelectedExperiences((current) =>
                               current.filter(
@@ -1071,7 +1385,9 @@ export function ReservationApiForm({ source }: { source: ReservationSource }) {
                   );
                 })}
                 {selectedExperiences.length === 0 && (
-                  <p className="reservation-empty">{t("form.experiences.empty")}</p>
+                  <p className="reservation-empty">
+                    {t("form.experiences.empty")}
+                  </p>
                 )}
               </div>
             </section>
@@ -1081,6 +1397,12 @@ export function ReservationApiForm({ source }: { source: ReservationSource }) {
                 <ReservationField
                   label={t("form.payment.methodLabel")}
                   htmlFor="payment-method"
+                  required={amountPaid > 0}
+                  invalid={
+                    validationMode !== null &&
+                    amountPaid > 0 &&
+                    !paymentMethodId
+                  }
                 >
                   <select
                     id="payment-method"
@@ -1106,16 +1428,23 @@ export function ReservationApiForm({ source }: { source: ReservationSource }) {
                       setPaymentStatus(event.target.value as PaymentStatus)
                     }
                   >
-                    {([
-                      ["Unpaid", "status.unpaid"],
-                      ["Partial", "status.partial"],
-                      ["Paid", "status.paid"],
-                    ] as const).map(([value, key]) => (
-                      <option key={value} value={value}>{t(key)}</option>
+                    {(
+                      [
+                        ["Unpaid", "status.unpaid"],
+                        ["Partial", "status.partial"],
+                        ["Paid", "status.paid"],
+                      ] as const
+                    ).map(([value, key]) => (
+                      <option key={value} value={value}>
+                        {t(key)}
+                      </option>
                     ))}
                   </select>
                 </ReservationField>
-                <ReservationField label={t("form.payment.amountPaidLabel")} htmlFor="amount-paid">
+                <ReservationField
+                  label={t("form.payment.amountPaidLabel")}
+                  htmlFor="amount-paid"
+                >
                   <input
                     id="amount-paid"
                     inputMode="numeric"
@@ -1147,6 +1476,8 @@ export function ReservationApiForm({ source }: { source: ReservationSource }) {
                   <ReservationField
                     label={t("form.deposit.amountLabel")}
                     htmlFor="deposit-amount"
+                    required
+                    invalid={validationMode !== null && depositAmount < 1}
                   >
                     <input
                       id="deposit-amount"
@@ -1160,6 +1491,8 @@ export function ReservationApiForm({ source }: { source: ReservationSource }) {
                   <ReservationField
                     label={t("form.deposit.methodLabel")}
                     htmlFor="deposit-method"
+                    required
+                    invalid={validationMode !== null && !depositMethodId}
                   >
                     <select
                       id="deposit-method"
@@ -1194,36 +1527,51 @@ export function ReservationApiForm({ source }: { source: ReservationSource }) {
           <aside className="booking-summary">
             <div className="booking-summary__header">
               <h2>{t("form.summary.title")}</h2>
-              <span>{isPhone ? t("form.summary.phone") : t("form.summary.walkIn")}</span>
+              <span>
+                {isPhone ? t("form.summary.phone") : t("form.summary.walkIn")}
+              </span>
             </div>
             <div className="booking-summary__stay">
               <span>{t("form.summary.stay")}</span>
               <strong>
-                {t("form.summary.stayValue", { from: formatStayDate(checkIn), to: formatStayDate(checkOut), nights })}
+                {t("form.summary.stayValue", {
+                  from: formatStayDate(checkIn),
+                  to: formatStayDate(checkOut),
+                  nights,
+                })}
               </strong>
             </div>
             <div className="booking-summary__lines">
               {rooms.map((room, index) => {
-                const roomDiscount = quote?.rows
-                  .filter((row) => row.roomIndex === index)
-                  .reduce((sum, row) => sum + row.discountAmount, 0) ?? 0;
+                const roomDiscount =
+                  quote?.rows
+                    .filter((row) => row.roomIndex === index)
+                    .reduce((sum, row) => sum + row.discountAmount, 0) ?? 0;
                 return (
                   <div className="booking-summary__room" key={room.key}>
                     <div>
                       <span>
-                        {t("form.summary.room", { roomType: available.find(
-                          (item) => item.roomType.id === room.roomTypeId,
-                        )?.roomType.name ?? t("detail.rooms.notAssigned"), index: index + 1 })}
+                        {t("form.summary.room", {
+                          roomType:
+                            available.find(
+                              (item) => item.roomType.id === room.roomTypeId,
+                            )?.roomType.name ?? t("detail.rooms.notAssigned"),
+                          index: index + 1,
+                        })}
                       </span>
                       <strong>
                         {quote
-                          ? formatRupiah(quote.charges.rooms[index]?.subtotal ?? 0)
+                          ? formatRupiah(
+                              quote.charges.rooms[index]?.subtotal ?? 0,
+                            )
                           : t("common.emptyDash")}
                       </strong>
                     </div>
                     {roomDiscount > 0 && (
                       <div className="booking-summary__discount">
-                        <span>{t("form.summary.roomDiscount", { index: index + 1 })}</span>
+                        <span>
+                          {t("form.summary.roomDiscount", { index: index + 1 })}
+                        </span>
                         <span>−{formatRupiah(roomDiscount)}</span>
                       </div>
                     )}
@@ -1233,7 +1581,13 @@ export function ReservationApiForm({ source }: { source: ReservationSource }) {
               {selectedExperiences.map((item) => (
                 <div key={item.variantId}>
                   <span>
-                    {t("form.summary.experience", { label: variants.find((variant) => variant.id === item.variantId)?.label ?? t("form.sections.experiencesAddOns"), quantity: item.quantity })}
+                    {t("form.summary.experience", {
+                      label:
+                        variants.find(
+                          (variant) => variant.id === item.variantId,
+                        )?.label ?? t("form.sections.experiencesAddOns"),
+                      quantity: item.quantity,
+                    })}
                   </span>
                   <strong>
                     {quote
@@ -1247,7 +1601,9 @@ export function ReservationApiForm({ source }: { source: ReservationSource }) {
                 </div>
               ))}
               {!rooms.length && (
-                <div className="booking-summary__empty">{t("form.summary.selectRooms")}</div>
+                <div className="booking-summary__empty">
+                  {t("form.summary.selectRooms")}
+                </div>
               )}
             </div>
             {quote && quote.appliedCampaigns.length > 0 && (
@@ -1259,8 +1615,14 @@ export function ReservationApiForm({ source }: { source: ReservationSource }) {
                       <strong>{campaign.name}</strong>
                       <span>
                         {campaign.stayEnd || campaign.bookingEnd
-                          ? t("form.summary.campaignValidUntil", { date: formatStayDate(campaign.stayEnd ?? campaign.bookingEnd ?? "") })
-                          : t("form.summary.campaignValidUntil", { date: t("form.summary.campaignNoLimit") })}
+                          ? t("form.summary.campaignValidUntil", {
+                              date: formatStayDate(
+                                campaign.stayEnd ?? campaign.bookingEnd ?? "",
+                              ),
+                            })
+                          : t("form.summary.campaignValidUntil", {
+                              date: t("form.summary.campaignNoLimit"),
+                            })}
                       </span>
                     </li>
                   ))}
@@ -1283,11 +1645,13 @@ export function ReservationApiForm({ source }: { source: ReservationSource }) {
               <div>
                 <strong>{t("form.summary.bookingTotal")}</strong>
                 <strong>
-                  {quoteLoading
-                    ? <LoadingSkeleton variant="inline" />
-                    : quote
-                      ? formatRupiah(total)
-                      : t("common.emptyDash")}
+                  {quoteLoading ? (
+                    <LoadingSkeleton variant="inline" />
+                  ) : quote ? (
+                    formatRupiah(total)
+                  ) : (
+                    t("common.emptyDash")
+                  )}
                 </strong>
               </div>
               <div>

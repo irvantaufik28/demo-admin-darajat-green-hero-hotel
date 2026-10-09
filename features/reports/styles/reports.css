@@ -154,15 +154,6 @@
   color: var(--text-secondary);
   font-size: 11px;
 }
-.report-reservations-dates {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  color: var(--text-secondary);
-}
-.report-reservations-dates input {
-  max-width: 145px;
-}
 .report-reservations-filter-extra select {
   min-width: 145px;
 }
@@ -376,8 +367,7 @@
   flex-wrap: wrap;
   gap: 9px;
 }
-.revenue-report-filter-row label,
-.revenue-report-date-range {
+.revenue-report-filter-row label {
   display: inline-flex;
   align-items: center;
   gap: 8px;
@@ -398,9 +388,6 @@
 }
 .revenue-report-filter-row select {
   min-width: 155px;
-}
-.revenue-report-date-range input {
-  width: 145px;
 }
 .revenue-report-currency {
   margin-right: auto;

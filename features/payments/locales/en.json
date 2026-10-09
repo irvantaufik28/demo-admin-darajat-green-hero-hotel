@@ -21,8 +21,7 @@
       "sourceAll": "Source: All",
       "methodAriaLabel": "Payment method",
       "methodAll": "Method: All",
-      "fromDateAriaLabel": "From check-in date",
-      "toDateAriaLabel": "To check-in date",
+      "dateRangeAriaLabel": "Check-in date range",
       "reset": "Reset"
     },
     "table": {
@@ -34,11 +33,18 @@
       "paid": "Paid",
       "refunded": "Refunded",
       "remaining": "Remaining",
+      "noShowPenalty": "No-show Penalty",
       "paymentStatus": "Payment Status",
+      "settlement": "Settlement",
       "method": "Method",
       "action": "Action",
       "view": "View",
       "emptyCell": "—"
+    },
+    "settlement": {
+      "settled": "Settled",
+      "refundRequired": "Refund required",
+      "manualReview": "Manual review"
     },
     "messages": {
       "empty": "No payments match the filter.",
@@ -63,7 +69,9 @@
       "paid": "Paid",
       "refunded": "Refunded",
       "remaining": "Remaining",
+      "noShowPenalty": "No-show Penalty",
       "paymentStatus": "Payment Status",
+      "settlement": "Settlement",
       "method": "Method"
     }
   },
@@ -175,6 +183,7 @@
       "refunded": "Refunded",
       "remaining": "Remaining",
       "securityDeposit": "Security Deposit",
+      "settlement": "Settlement",
       "securityDepositNote": "Recorded separately from the reservation total.",
       "checkoutOutstandingReason": "Reason for checking out with an outstanding balance: {reason}",
       "recordPayment": "Record Payment",
@@ -219,6 +228,7 @@
   "refundModal": {
     "ariaLabel": "Manage refund",
     "title": "Manual Refund",
+    "noShowTitle": "No-show Settlement",
     "closeAriaLabel": "Close refund",
     "loading": "Loading refund eligibility...",
     "loadError": "Failed to load refund data.",
@@ -226,15 +236,19 @@
       "booking": "Booking",
       "paid": "Paid",
       "cancellationPolicy": "Cancellation policy",
+      "noShowPolicy": "No-show policy",
       "manualReview": "Manual review",
       "cancellationCharge": "Cancellation charge",
+      "noShowPenalty": "Realized no-show penalty",
       "review": "Review",
       "estimatedRefund": "Estimated refund",
-      "alreadyRefunded": "Already refunded"
+      "alreadyRefunded": "Already refunded",
+      "securityDepositReturn": "Security deposit to return"
     },
     "calculation": {
       "ariaLabel": "Cancellation calculation details",
       "title": "Cancellation calculation",
+      "noShowTitle": "No-show settlement calculation",
       "cancelledDaysBefore": "Cancelled {days} days before check-in.",
       "cancelledAfterCheckIn": "Cancelled after the check-in date.",
       "room": "Room",
@@ -277,6 +291,14 @@
       "noRefund": "No Refund",
       "completeRefund": "Complete Refund"
     },
+    "deposit": {
+      "title": "Security Deposit Return",
+      "description": "The security deposit is not a no-show penalty and must be returned.",
+      "heldAmount": "Original deposit {amount}",
+      "reason": "Refund reason",
+      "reference": "Refund reference",
+      "refund": "Record Deposit Return"
+    },
     "history": {
       "title": "Refund History",
       "reference": "Reference: {reference}",
@@ -289,14 +311,16 @@
       "refundCompleted": "The refund is completed and recorded in the payment history.",
       "noRefundCompleted": "No Refund completed and recorded in the audit trail.",
       "refundMarkedCompleted": "The refund was marked completed.",
-      "refundMarkedFailed": "The refund was marked failed."
+      "refundMarkedFailed": "The refund was marked failed.",
+      "depositRefundCompleted": "The security deposit was recorded as returned."
     },
     "errors": {
       "noRefundAvailable": "No refund can be completed. Resolve the pending refund first.",
       "reasonRequired": "The refund reason is required.",
       "overrideReasonRequired": "The override or manual review reason is required.",
       "noRefundReasonRequired": "The No Refund reason is required.",
-      "processFailed": "The refund process failed."
+      "processFailed": "The refund process failed.",
+      "depositRefundDetailsRequired": "Deposit refund reason and reference are required."
     }
   },
   "invoice": {
@@ -308,6 +332,7 @@
     "brandAddress": "Jl. Raya Kamojang - Darajat, Samarang, Garut, Jawa Barat 44161",
     "invoiceTitle": "INVOICE",
     "reservationCancelled": "Reservation Cancelled",
+    "reservationNoShow": "No-show Reservation",
     "billedTo": "Billed To",
     "bookingRef": "Booking Ref",
     "night": "night",
@@ -338,6 +363,8 @@
     },
     "cancellation": {
       "title": "Cancellation & Refund",
+      "noShowTitle": "No-show Settlement",
+      "noShowPenalty": "Realized no-show penalty",
       "loading": "Loading cancellation calculation...",
       "loadError": "Failed to load the cancellation calculation: {error}",
       "savedPolicyDaysBefore": "The policy saved when the reservation was created, calculated based on a cancellation {days} days before check-in.",

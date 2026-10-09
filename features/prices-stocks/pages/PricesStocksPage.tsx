@@ -6,6 +6,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { AdminShell } from "../../../components/layout/AdminShell";
 import { Icon } from "../../../components/ui/Icon";
 import { restoreSession } from "../../../lib/auth";
+import { DateRangePicker } from "../../campaigns/components/DateRangePicker";
 import { getRoomTypes, type RoomTypeRecord } from "../../rooms/services/room-types";
 import {
   getInventory,
@@ -511,7 +512,21 @@ export function PricesStocksPage() {
         <div className="ps-toolbar-controls">
           <label>{t("toolbar.roomType")} <select value={roomId} disabled={dirtyDates.length > 0 || bulkPending || loading} onChange={(event) => { setRoomId(event.target.value); setPage(1); }}><option value="">{t("toolbar.selectRoomType")}</option>{roomTypes.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label>
           <span className="ps-toolbar-divider" />
-          <div className="ps-date-controls"><span>{t("toolbar.dateRange")}</span><input aria-label={t("toolbar.fromDateAria")} type="date" value={fromDate} disabled={dirtyDates.length > 0 || bulkPending || loading} onChange={(event) => { setFromDate(event.target.value); setPage(1); }} /><span>—</span><input aria-label={t("toolbar.toDateAria")} type="date" value={toDate} disabled={dirtyDates.length > 0 || bulkPending || loading} onChange={(event) => { setToDate(event.target.value); setPage(1); }} /></div>
+          <div className="ps-date-controls">
+            <span>{t("toolbar.dateRange")}</span>
+            <DateRangePicker
+              label={t("toolbar.dateRange")}
+              start={fromDate}
+              end={toDate}
+              numberOfMonths={2}
+              disabled={dirtyDates.length > 0 || bulkPending || loading}
+              onChange={(start, end) => {
+                setFromDate(start);
+                setToDate(end);
+                setPage(1);
+              }}
+            />
+          </div>
         </div>
         <span className="ps-record-count">{t("toolbar.recordCount", { count: dates.length })}</span>
       </div>

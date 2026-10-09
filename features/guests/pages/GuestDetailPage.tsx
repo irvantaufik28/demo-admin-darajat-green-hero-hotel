@@ -131,6 +131,7 @@ export function GuestDetailPage({ guestKey }: { guestKey: string }) {
           <header><h2>{t("detail.profile.title")}</h2></header>
           <dl className="guests-profile-grid">
             <div><dt>{t("detail.profile.name")}</dt><dd>{guest.fullName}</dd></div>
+            <div><dt>{t("detail.profile.nik")}</dt><dd>{guest.nik || "—"}</dd></div>
             <div><dt>{t("detail.profile.phone")}</dt><dd>{guest.phone || "—"}</dd></div>
             <div><dt>{t("detail.profile.email")}</dt><dd>{guest.email || "—"}</dd></div>
             <div><dt>{t("detail.profile.address")}</dt><dd>{guest.address || "—"}</dd></div>

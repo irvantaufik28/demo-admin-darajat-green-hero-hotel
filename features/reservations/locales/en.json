@@ -27,6 +27,7 @@
     "adults": "Adults",
     "children": "Children",
     "notAssigned": "Not Assigned",
+    "errorToastTitle": "Check the reservation details",
     "closeMessage": "Close message",
     "closeModal": "Close modal",
     "saving": "Saving...",
@@ -281,7 +282,8 @@
       "remainingBalanceOutstanding": "Remaining Balance (Outstanding)",
       "depositBalance": "Deposit Balance",
       "paymentStatus": "Payment Status",
-      "reservationStatus": "Reservation Status"
+      "reservationStatus": "Reservation Status",
+      "settlement": "Settlement"
     },
     "rooms": {
       "assignedAtCheckIn": "Room numbers are assigned during check-in.",
@@ -368,6 +370,8 @@
       "paymentTimingLater": "Make it a pay-later charge",
       "paymentTimingNow": "Record Payment now",
       "assignRoom": "Assign {roomType}",
+      "guestNikLabel": "Booking Guest NIK",
+      "guestNikHint": "Enter the 16-digit NIK shown on the booking guest's identity document.",
       "selectRoom": "Select room",
       "roomAvailable": "{roomNumber} — Available",
       "assignAtArrival": "Select the room number when the guest arrives at the hotel.",
@@ -398,7 +402,9 @@
       "checkoutRulesLoadError": "Failed to load checkout rules.",
       "paymentInvalid": "Select a method and enter a payment between Rp1 and the remaining balance.",
       "roomsRequired": "Select a different room number for each reservation room.",
+      "guestNikRequired": "The booking guest's 16-digit NIK is required before check-in.",
       "balanceConfirmRequired": "Confirm the remaining balance before check-in.",
+      "outstandingCheckInDisabled": "Check-in can only continue after full payment because check-in with an outstanding balance is disabled.",
       "earlyCheckInRequired": "Confirm early check-in before continuing.",
       "earlyCheckInMethodRequired": "Select a payment method for the early check-in charge.",
       "depositRequired": "Enter the deposit amount and select a deposit payment method.",
@@ -407,6 +413,7 @@
       "lateCheckoutRequired": "Confirm the late checkout before continuing.",
       "lateCheckoutMethodRequired": "Select a payment method for the late checkout charge.",
       "checkoutOverrideRequired": "The balance after deposit deduction must be fully paid, or the checkout performed by an Owner/Manager.",
+      "outstandingCheckOutDisabled": "Checkout can only continue after the remaining balance is fully paid because checkout with an outstanding balance is disabled.",
       "checkoutReasonRequired": "Check the confirmation and write a reason for checking out with a remaining balance.",
       "refundReferenceRequired": "Enter a refund reference for each refunded deposit.",
       "cancelReasonRequired": "The cancellation reason is required.",
@@ -525,6 +532,7 @@
     "bookingTotal": "Booking total {amount}",
     "includingEarlyCheckIn": " including early check-in charge",
     "balanceAcknowledgement": "I confirm the remaining balance of {amount} has been explained to the guest. If it is not fully paid at check-out, staff must record a confirmation and reason.",
+    "outstandingCheckInDisabled": "Check-in can only continue after full payment because check-in with an outstanding balance is disabled.",
     "checkInButton": "Confirm Save & Check-in",
     "saveButton": "Confirm Save Reservation"
   },
@@ -1030,6 +1038,7 @@
     },
     "guest": {
       "fullName": "Full Name",
+      "nik": "NIK (Required at check-in)",
       "whatsapp": "WhatsApp",
       "email": "Email",
       "notes": "Notes"
@@ -1130,6 +1139,7 @@
       "roomsUnavailable": "The selected rooms are not available for this capacity or date.",
       "waitQuote": "Wait for the API price calculation to finish.",
       "guestRequired": "The guest name and WhatsApp number are required.",
+      "guestNikRequired": "The booking guest's 16-digit NIK is required before check-in.",
       "roomNumbersRequired": "Select a number for each room before check-in.",
       "duplicateRoomNumbers": "A room number cannot be used twice.",
       "partialInvalid": "A Partial payment must be greater than Rp0 and less than the reservation total.",

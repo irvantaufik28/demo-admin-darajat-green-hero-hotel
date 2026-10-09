@@ -18,6 +18,7 @@ type DateRangePickerProps = {
   minDate?: string;
   minNights?: number;
   fixedStart?: boolean;
+  numberOfMonths?: 1 | 2;
 };
 
 const WEEKDAY_KEYS = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"] as const;
@@ -54,6 +55,15 @@ function monthDates(value: string) {
   );
 }
 
+function formatMonth(value: string) {
+  const [year, month] = value.split("-").map(Number);
+  return new Intl.DateTimeFormat("id-ID", {
+    month: "long",
+    year: "numeric",
+    timeZone: "UTC",
+  }).format(new Date(Date.UTC(year, month - 1, 1)));
+}
+
 export function DateRangePicker({
   label,
   start,
@@ -64,12 +74,14 @@ export function DateRangePicker({
   minDate,
   minNights = 0,
   fixedStart = false,
+  numberOfMonths = 1,
 }: DateRangePickerProps) {
   const { t } = useTranslations({ en: enMessages, id: idMessages });
   const triggerRef = useRef<HTMLButtonElement>(null);
   const popoverRef = useRef<HTMLDivElement>(null);
   const [open, setOpen] = useState(false);
   const [month, setMonth] = useState(start.slice(0, 7) || "1970-01");
+  const [hoveredDate, setHoveredDate] = useState("");
   const [position, setPosition] = useState({ top: 0, left: 0 });
 
   useEffect(() => {
@@ -77,7 +89,7 @@ export function DateRangePicker({
     const updatePosition = () => {
       const rect = triggerRef.current?.getBoundingClientRect();
       if (!rect) return;
-      const width = Math.min(320, window.innerWidth - 24);
+      const width = Math.min(numberOfMonths === 2 ? 640 : 320, window.innerWidth - 24);
       setPosition({
         top:
           rect.bottom + 6 + 360 > window.innerHeight
@@ -108,17 +120,20 @@ export function DateRangePicker({
       document.removeEventListener("pointerdown", closeOnOutside);
       document.removeEventListener("keydown", closeOnEscape);
     };
-  }, [open]);
+  }, [numberOfMonths, open]);
 
   function toggle() {
     if (disabled) return;
-    if (!open)
+    if (!open) {
       setMonth(start.slice(0, 7) || new Date().toISOString().slice(0, 7));
+      setHoveredDate("");
+    }
     setOpen((current) => !current);
   }
 
   function select(date: string) {
     if (minDate && date < minDate) return;
+    setHoveredDate("");
     if (fixedStart) {
       if (date > start) {
         onChange(start, date);
@@ -139,12 +154,17 @@ export function DateRangePicker({
     }
   }
 
-  const [year, monthNumber] = month.split("-").map(Number);
-  const monthLabel = new Intl.DateTimeFormat("id-ID", {
-    month: "long",
-    year: "numeric",
-    timeZone: "UTC",
-  }).format(new Date(Date.UTC(year, monthNumber - 1, 1)));
+  const visibleMonths = numberOfMonths === 2 ? [month, shiftMonth(month, 1)] : [month];
+  const previewStart = start && !end && hoveredDate
+    ? start < hoveredDate
+      ? start
+      : hoveredDate
+    : "";
+  const previewEnd = start && !end && hoveredDate
+    ? start < hoveredDate
+      ? hoveredDate
+      : start
+    : "";
 
   return (
     <>
@@ -168,60 +188,76 @@ export function DateRangePicker({
         createPortal(
           <div
             ref={popoverRef}
-            className="cf-range-popover"
+            className={`cf-range-popover${numberOfMonths === 2 ? " cf-range-popover--two-months" : ""}`}
             style={position}
             role="dialog"
             aria-label={`${label} date range`}
           >
-            <div className="cf-range-heading">
-              <button
-                type="button"
-                aria-label={t("dateRangePicker.previousMonthAria")}
-                disabled={Boolean(
-                  minDate && shiftMonth(month, -1) < minDate.slice(0, 7),
-                )}
-                onClick={() => setMonth(shiftMonth(month, -1))}
-              >
-                ‹
-              </button>
-              <strong>{monthLabel}</strong>
-              <button
-                type="button"
-                aria-label={t("dateRangePicker.nextMonthAria")}
-                onClick={() => setMonth(shiftMonth(month, 1))}
-              >
-                ›
-              </button>
-            </div>
-            <div className="cf-range-grid">
-              {WEEKDAY_KEYS.map((day) => (
-                <span className="cf-range-weekday" key={day}>
-                  {t(`dateRangePicker.weekdays.${day}`)}
-                </span>
-              ))}
-              {monthDates(month).map((date, index) =>
-                date ? (
-                  <button
-                    type="button"
-                    key={date}
-                    className={`cf-range-day${date === start || date === end ? " cf-range-day--edge" : start && end && date > start && date < end ? " cf-range-day--inside" : ""}`}
-                    disabled={Boolean(
-                      (minDate && date < minDate) ||
-                      (fixedStart && date <= start),
+            <div
+              className="cf-range-months"
+              onMouseLeave={() => setHoveredDate("")}
+            >
+              {visibleMonths.map((visibleMonth, monthIndex) => (
+                <div className="cf-range-month" key={visibleMonth}>
+                  <div className="cf-range-heading">
+                    {monthIndex === 0 ? (
+                      <button
+                        type="button"
+                        aria-label={t("dateRangePicker.previousMonthAria")}
+                        disabled={Boolean(
+                          minDate && shiftMonth(month, -1) < minDate.slice(0, 7),
+                        )}
+                        onClick={() => setMonth(shiftMonth(month, -1))}
+                      >
+                        ‹
+                      </button>
+                    ) : <span className="cf-range-heading-spacer" />}
+                    <strong>{formatMonth(visibleMonth)}</strong>
+                    {monthIndex === visibleMonths.length - 1 ? (
+                      <button
+                        type="button"
+                        aria-label={t("dateRangePicker.nextMonthAria")}
+                        onClick={() => setMonth(shiftMonth(month, 1))}
+                      >
+                        ›
+                      </button>
+                    ) : <span className="cf-range-heading-spacer" />}
+                  </div>
+                  <div className="cf-range-grid">
+                    {WEEKDAY_KEYS.map((day) => (
+                      <span className="cf-range-weekday" key={day}>
+                        {t(`dateRangePicker.weekdays.${day}`)}
+                      </span>
+                    ))}
+                    {monthDates(visibleMonth).map((date, index) =>
+                      date ? (
+                        <button
+                          type="button"
+                          key={date}
+                          className={`cf-range-day${date === start || date === end ? " cf-range-day--edge" : start && end && date > start && date < end ? " cf-range-day--inside" : previewStart && date > previewStart && date < previewEnd ? " cf-range-day--preview" : ""}${start && !end && date === hoveredDate && date !== start ? " cf-range-day--preview-edge" : ""}`}
+                          disabled={Boolean(
+                            (minDate && date < minDate) ||
+                            (fixedStart && date <= start),
+                          )}
+                          aria-pressed={
+                            date === start ||
+                            date === end ||
+                            Boolean(start && end && date > start && date < end)
+                          }
+                          onMouseEnter={() => {
+                            if (start && !end) setHoveredDate(date);
+                          }}
+                          onClick={() => select(date)}
+                        >
+                          {Number(date.slice(-2))}
+                        </button>
+                      ) : (
+                        <span key={`empty-${visibleMonth}-${index}`} />
+                      ),
                     )}
-                    aria-pressed={
-                      date === start ||
-                      date === end ||
-                      Boolean(start && end && date > start && date < end)
-                    }
-                    onClick={() => select(date)}
-                  >
-                    {Number(date.slice(-2))}
-                  </button>
-                ) : (
-                  <span key={`empty-${index}`} />
-                ),
-              )}
+                  </div>
+                </div>
+              ))}
             </div>
             <div className="cf-range-footer">
               <span>

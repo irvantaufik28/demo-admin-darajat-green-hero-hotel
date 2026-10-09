@@ -27,10 +27,13 @@ import {
 import { EarlyCheckInFields } from "./EarlyCheckInFields";
 import { CheckOutTimingFields } from "./CheckOutTimingFields";
 import { ReservationExperienceBillActions } from "./ReservationExperienceBillActions";
+import { ReservationErrorToast } from "./ReservationErrorToast";
 import { DateRangePicker } from "../../campaigns/components/DateRangePicker";
 import { reservationDetailPresentation } from "../utils/detail-rules";
 import { getCurrentUser } from "../../../lib/auth";
 import { formatStayDate } from "../constants/walk-in-data";
+import { todayJakarta } from "../utils/stay-dates";
+import { isValidGuestNik, normalizeGuestNik } from "../utils/guest-identity";
 import { useTranslations } from "../../../lib/i18n";
 import en from "../locales/en.json";
 import idLocale from "../locales/id.json";
@@ -72,14 +75,17 @@ function rupiah(value: number) {
 export function ReservationDetailActions({
   detail,
   onUpdated,
+  todayISO = todayJakarta(),
 }: {
   detail: ApiReservationDetail;
   onUpdated: (message: string) => Promise<void>;
+  todayISO?: string;
 }) {
   const { t } = useTranslations({ en, id: idLocale });
   const [action, setAction] = useState<Action | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const [validationAttempted, setValidationAttempted] = useState(false);
   const [roomOptions, setRoomOptions] = useState<
     Record<string, RoomUnitOption[]>
   >({});
@@ -92,6 +98,7 @@ export function ReservationDetailActions({
     detail.summary.remainingBalance,
   );
   const [paymentNotes, setPaymentNotes] = useState("");
+  const [guestNik, setGuestNik] = useState(detail.guest.nik ?? "");
   const [paymentKey, setPaymentKey] = useState("");
   const [acknowledged, setAcknowledged] = useState(false);
   const [checkInContext, setCheckInContext] = useState<CheckInContext | null>(
@@ -187,6 +194,14 @@ export function ReservationDetailActions({
   const isInHouse = detail.reservation.reservationStatus === "checked_in";
   const isPending = detail.reservation.reservationStatus === "pending";
   const hasBalance = detail.summary.remainingBalance > 0;
+  const checkInProjectedOutstanding =
+    detail.summary.remainingBalance +
+    (checkInContext?.required && earlyCheckIn.paymentTiming === "later"
+      ? earlyCheckIn.chargeAmount
+      : 0);
+  const outstandingCheckInBlocked =
+    checkInContext?.allowOutstandingCheckIn === false &&
+    checkInProjectedOutstanding > 0;
   const checkoutProjectedBalance =
     detail.summary.remainingBalance +
     (checkOutContext?.kind === "late_checkout" &&
@@ -205,8 +220,13 @@ export function ReservationDetailActions({
     0,
     checkoutProjectedBalance - checkoutDepositDeduction,
   );
+  const outstandingCheckOutBlocked =
+    checkOutContext?.allowOutstandingCheckOut === false &&
+    checkoutRemainingAfterDeductions > 0;
   const checkInActionDisabled =
+    !isValidGuestNik(guestNik) ||
     !checkInContext ||
+    outstandingCheckInBlocked ||
     (hasBalance && !acknowledged) ||
     (checkInContext.required &&
       (!earlyCheckIn.acknowledged ||
@@ -215,6 +235,7 @@ export function ReservationDetailActions({
           !earlyCheckIn.paymentMethodId)));
   const checkOutActionDisabled =
     !checkOutContext ||
+    outstandingCheckOutBlocked ||
     (checkOutContext.kind === "early_departure" &&
       !earlyDepartureAcknowledged) ||
     (checkOutContext.kind === "late_checkout" &&
@@ -228,6 +249,7 @@ export function ReservationDetailActions({
   async function openAction(next: Action) {
     setAction(next);
     setError("");
+    setValidationAttempted(false);
     setAcknowledged(false);
     setReason("");
     if (next === "extend") {
@@ -264,6 +286,7 @@ export function ReservationDetailActions({
       }
     }
     if (next === "check_in") {
+      setGuestNik(detail.guest.nik ?? "");
       setCheckInContext(null);
       setEarlyCheckIn({
         acknowledged: false,
@@ -347,6 +370,7 @@ export function ReservationDetailActions({
 
   async function submit() {
     if (!action || busy) return;
+    setValidationAttempted(true);
     const id = detail.reservation.id;
     const balance = detail.summary.remainingBalance;
     setError("");
@@ -359,6 +383,14 @@ export function ReservationDetailActions({
       return;
     }
     if (action === "check_in") {
+      if (outstandingCheckInBlocked) {
+        setError(t("detailActions.errors.outstandingCheckInDisabled"));
+        return;
+      }
+      if (!isValidGuestNik(guestNik)) {
+        setError(t("detailActions.errors.guestNikRequired"));
+        return;
+      }
       const selected = detail.rooms.map((room) => roomSelections[room.id]);
       if (
         selected.some((value) => !value) ||
@@ -421,6 +453,10 @@ export function ReservationDetailActions({
         return;
       }
       const willRemainOutstanding = checkoutRemainingAfterDeductions > 0;
+      if (outstandingCheckOutBlocked) {
+        setError(t("detailActions.errors.outstandingCheckOutDisabled"));
+        return;
+      }
       if (willRemainOutstanding && !canOverrideCheckout) {
         setError(t("detailActions.errors.checkoutOverrideRequired"));
         return;
@@ -482,6 +518,7 @@ export function ReservationDetailActions({
       }
       if (action === "check_in") {
         await checkInReservation(id, {
+          guestNik,
           acknowledgeOutstanding: balance > 0,
           ...(checkInContext?.required ? { earlyCheckIn } : {}),
           ...(requireDeposit
@@ -584,6 +621,14 @@ export function ReservationDetailActions({
 
   return (
     <>
+      {error && (
+        <ReservationErrorToast
+          message={error}
+          title={t("common.errorToastTitle")}
+          closeLabel={t("common.closeMessage")}
+          onClose={() => setError("")}
+        />
+      )}
       <div className="api-reservation-actions">
         {isPending && hasBalance && (
           <button
@@ -595,6 +640,10 @@ export function ReservationDetailActions({
           </button>
         )}
         {presentation.actions
+          .filter(
+            (item) =>
+              item !== "no_show" || detail.reservation.checkInDate === todayISO,
+          )
           .filter((item) => userPermissions.includes(actionPermissions[item]))
           .map((item) => {
             return (
@@ -925,6 +974,26 @@ export function ReservationDetailActions({
 
                 {action === "check_in" && (
                   <>
+                    <div className="reservation-operation-guest-identity">
+                      <label htmlFor="check-in-guest-nik">
+                        {t("detailActions.modal.guestNikLabel")} <span>*</span>
+                        <input
+                          id="check-in-guest-nik"
+                          inputMode="numeric"
+                          aria-invalid={
+                            validationAttempted && !isValidGuestNik(guestNik)
+                          }
+                          autoComplete="off"
+                          maxLength={16}
+                          value={guestNik}
+                          onChange={(event) =>
+                            setGuestNik(normalizeGuestNik(event.target.value))
+                          }
+                          placeholder="3200xxxxxxxxxxxx"
+                        />
+                        <small>{t("detailActions.modal.guestNikHint")}</small>
+                      </label>
+                    </div>
                     <div className="reservation-operation-rooms">
                       {detail.rooms.map((room, index) => {
                         const choices = roomOptions[room.roomTypeId] ?? [];
@@ -947,6 +1016,10 @@ export function ReservationDetailActions({
                             {detail.rooms.length > 1 ? ` #${index + 1}` : ""}{" "}
                             <span>*</span>
                             <select
+                              aria-invalid={
+                                validationAttempted &&
+                                !roomSelections[room.id]
+                              }
                               value={roomSelections[room.id] ?? ""}
                               onChange={(event) =>
                                 setRoomSelections((current) => ({
@@ -1051,6 +1124,11 @@ export function ReservationDetailActions({
                         methods={methods}
                       />
                     )}
+                    {outstandingCheckInBlocked && (
+                      <p className="reservation-operation-error">
+                        {t("detailActions.errors.outstandingCheckInDisabled")}
+                      </p>
+                    )}
                     {hasBalance && (
                       <label className="partial-check-in-confirmation">
                         <input
@@ -1150,6 +1228,11 @@ export function ReservationDetailActions({
                     })}
                     {checkoutRemainingAfterDeductions > 0 && (
                       <>
+                        {outstandingCheckOutBlocked && (
+                          <p className="reservation-operation-error">
+                            {t("detailActions.errors.outstandingCheckOutDisabled")}
+                          </p>
+                        )}
                         <p>
                           {t("detailActions.modal.remainingAfterCheckout", {
                             amount: rupiah(checkoutRemainingAfterDeductions),
@@ -1193,18 +1276,6 @@ export function ReservationDetailActions({
                   </label>
                 )}
 
-                {error && (
-                  <p
-                    className={
-                      action === "check_in"
-                        ? "reservation-operation-error"
-                        : "api-reservation-error"
-                    }
-                    role="alert"
-                  >
-                    {error}
-                  </p>
-                )}
               </div>
               <div
                 className={

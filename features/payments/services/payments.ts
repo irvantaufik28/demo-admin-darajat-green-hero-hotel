@@ -14,6 +14,9 @@ export type PaymentListItem = {
   paidAmount: number;
   refundedAmount: number;
   remainingBalance: number;
+  noShowPenaltyAmount: number | null;
+  settlementStatus: "settled" | "refund_required" | "manual_review_required" | null;
+  depositBalance: number;
   method: { id: string; name: string } | null;
 };
 
@@ -52,8 +55,10 @@ export type RefundListItem = {
   reservationId: string;
   bookingCode: string;
   source: string;
+  reservationStatus: string;
   guest: { fullName: string; phone: string };
   cancelledAt: string | null;
+  eventAt: string | null;
   paymentStatus: string;
   status: string;
   grossPaidAmount: number;
@@ -61,6 +66,8 @@ export type RefundListItem = {
   pendingRefundAmount: number;
   netPaidAmount: number;
   estimatedRefundAmount: number | null;
+  depositBalance: number;
+  noShowPenaltyAmount: number | null;
   maxRefundWithOverride: number;
   settlementCalculationStatus: string;
   policy: { name: string | null };
@@ -100,6 +107,7 @@ export function getOutstandingBalances(query: URLSearchParams, signal?: AbortSig
 export type RefundEligibility = {
   reservationId: string;
   bookingCode: string;
+  reservationStatus: string;
   hasCancellationPolicySnapshot: boolean;
   noRefundDecision: { occurredAt: string; details: { reason?: string } } | null;
   settlement: {
@@ -143,6 +151,7 @@ export type RefundEligibility = {
   pendingRefundAmount: number;
   maxRefundWithOverride: number;
   refunds: { id: string; paymentId: string; amount: number; status: string; reason: string | null; reference: string | null; processedAt: string | null }[];
+  deposits: { id: string; amountHeld: number; amountRefunded: number; amountDeducted: number; refundableRemaining: number; status: string }[];
   payments: { id: string; methodName: string | null; paidAt: string | null; amount: number; refundedAmount: number; pendingAmount: number; refundableRemaining: number }[];
 };
 
@@ -167,6 +176,17 @@ export function recordNoRefund(reservationId: string, reason: string) {
     method: "POST",
     body: { reason },
   });
+}
+
+export function refundNoShowDeposit(
+  reservationId: string,
+  depositId: string,
+  input: { reason: string; reference: string },
+) {
+  return apiRequest(
+    `reservations/${reservationId}/deposits/${depositId}/refund`,
+    { method: "POST", body: input },
+  );
 }
 
 export type PrepareRefundInput = {

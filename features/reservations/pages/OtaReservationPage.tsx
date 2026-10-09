@@ -10,6 +10,7 @@ import { QuantityControl } from "../components/QuantityControl";
 import { ReservationField } from "../components/ReservationField";
 import { SaveReservationConfirmation } from "../components/SaveReservationConfirmation";
 import { ReservationSuccessTransition } from "../components/ReservationSuccessTransition";
+import { ReservationErrorToast } from "../components/ReservationErrorToast";
 import {
   calculateNights,
   formatRupiah,
@@ -70,6 +71,7 @@ export function OtaReservationPage() {
   >({});
   const [addingExtra, setAddingExtra] = useState(false);
   const [feedback, setFeedback] = useState<Feedback | null>(null);
+  const [validationAttempted, setValidationAttempted] = useState(false);
   const [saveConfirmationOpen, setSaveConfirmationOpen] = useState(false);
   const [savedBookingId, setSavedBookingId] = useState<string | null>(null);
   const [saveBusy, setSaveBusy] = useState(false);
@@ -190,6 +192,7 @@ export function OtaReservationPage() {
       }),
     );
     setFeedback(null);
+    setValidationAttempted(false);
   }
 
   function updateRoomConfiguration(id: number, index: number, changes: Partial<RoomConfiguration>) {
@@ -245,6 +248,7 @@ export function OtaReservationPage() {
   }
 
   async function saveReservation() {
+    setValidationAttempted(true);
     if (minimumCheckIn && checkIn < minimumCheckIn)
       return setFeedback({ kind: "error", text: t("ota.feedback.checkInBeforeToday") });
     if (nights < 1)
@@ -313,6 +317,17 @@ export function OtaReservationPage() {
   return (
     <AdminShell title={t("shell.title")} context={t("shell.newReservation")} badge={t("shell.otaMode")}>
       <div className="walkin-page">
+        {(feedback?.kind === "error" || quoteError) && (
+          <ReservationErrorToast
+            message={quoteError || feedback?.text || ""}
+            title={t("common.errorToastTitle")}
+            closeLabel={t("common.closeMessage")}
+            onClose={() => {
+              setQuoteError("");
+              if (feedback?.kind === "error") setFeedback(null);
+            }}
+          />
+        )}
         <div className="walkin-heading">
           <div>
             <h1>{t("ota.title")}</h1>
@@ -328,12 +343,12 @@ export function OtaReservationPage() {
             ↻ &nbsp; {t("ota.resetForm")}
           </button>
         </div>
-        {feedback && (
+        {feedback && feedback.kind !== "error" && (
           <div
             className={
               "reservation-feedback reservation-feedback--" + feedback.kind
             }
-            role={feedback.kind === "error" ? "alert" : "status"}
+            role="status"
           >
             {feedback.text}
             <button
@@ -345,7 +360,6 @@ export function OtaReservationPage() {
             </button>
           </div>
         )}
-        {quoteError && <div className="reservation-feedback reservation-feedback--error" role="alert">{quoteError}</div>}
         {optionsLoading ? <LoadingSkeleton variant="form" rows={8} /> : <div className="walkin-columns">
           <div className="walkin-form-column">
             <section className="reservation-panel ota-source-panel">
@@ -382,6 +396,7 @@ export function OtaReservationPage() {
                   label={t("ota.channelLabel")}
                   htmlFor="ota-channel"
                   required
+                  invalid={validationAttempted && !channel}
                 >
                   <select
                     id="ota-channel"
@@ -398,6 +413,7 @@ export function OtaReservationPage() {
                   label={t("ota.referenceLabel")}
                   htmlFor="ota-reference"
                   required
+                  invalid={validationAttempted && !reference.trim()}
                 >
                   <input
                     id="ota-reference"
@@ -419,7 +435,16 @@ export function OtaReservationPage() {
                 </span>
               </div>
               <div className="stay-fields">
-                <ReservationField label={t("ota.stay.checkIn")} htmlFor="ota-check-in">
+                <ReservationField
+                  label={t("ota.stay.checkIn")}
+                  htmlFor="ota-check-in"
+                  required
+                  invalid={
+                    validationAttempted &&
+                    (!checkIn ||
+                      Boolean(minimumCheckIn && checkIn < minimumCheckIn))
+                  }
+                >
                   <input
                     id="ota-check-in"
                     type="date"
@@ -433,7 +458,12 @@ export function OtaReservationPage() {
                     }}
                   />
                 </ReservationField>
-                <ReservationField label={t("ota.stay.checkOut")} htmlFor="ota-check-out">
+                <ReservationField
+                  label={t("ota.stay.checkOut")}
+                  htmlFor="ota-check-out"
+                  required
+                  invalid={validationAttempted && nights < 1}
+                >
                   <input
                     id="ota-check-out"
                     type="date"
@@ -559,6 +589,8 @@ export function OtaReservationPage() {
                       <ReservationField
                         label={t("ota.rooms.rateLabel")}
                         htmlFor={"ota-rate-" + room.id}
+                        required
+                        invalid={validationAttempted && room.rate < 1}
                       >
                         <input
                           id={"ota-rate-" + room.id}
@@ -646,6 +678,7 @@ export function OtaReservationPage() {
                   label={t("ota.guest.fullName")}
                   htmlFor="ota-guest-name"
                   required
+                  invalid={validationAttempted && !guestName.trim()}
                 >
                   <input
                     id="ota-guest-name"
@@ -657,6 +690,7 @@ export function OtaReservationPage() {
                   label={t("ota.guest.whatsapp")}
                   htmlFor="ota-whatsapp"
                   required
+                  invalid={validationAttempted && !whatsapp.trim()}
                 >
                   <input
                     id="ota-whatsapp"

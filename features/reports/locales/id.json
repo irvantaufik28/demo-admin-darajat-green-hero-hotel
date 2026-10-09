@@ -128,7 +128,7 @@
       "refunded": "Dikembalikan",
       "outstanding": "Sisa Tagihan"
     },
-    "disclaimer": "Deposit Keamanan tidak termasuk dalam perhitungan pendapatan dan penerimaan bersih. Data diskon belum tersedia, sehingga ditampilkan Rp0.",
+    "disclaimer": "Deposit Keamanan tidak termasuk dalam perhitungan pendapatan dan penerimaan bersih. Diskon dihitung dari diskon room night yang tersimpan.",
     "filters": {
       "ariaLabel": "Filter pendapatan",
       "currency": "Mata Uang: IDR (Rupiah)",

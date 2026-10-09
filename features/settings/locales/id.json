@@ -156,9 +156,10 @@
     },
     "noShow": {
       "title": "No-show",
-      "handlingLabel": "Penanganan No-show",
-      "handlingValue": "Manual oleh Staf",
-      "help": "Staf menandai secara manual tamu terkonfirmasi sebagai no-show ketika tamu tidak datang."
+      "automaticLabel": "No-show Otomatis",
+      "automaticDescription": "Worker menandai reservasi terkonfirmasi yang belum check-in dan belum memiliki penetapan kamar.",
+      "cutoffLabel": "Waktu Cut-off",
+      "help": "Cut-off berlaku pada hari setelah tanggal check-in. Mode manual tetap tersedia jika otomatis dinonaktifkan."
     },
     "saved": "Pengaturan reservasi tersimpan.",
     "errors": {
@@ -166,6 +167,7 @@
       "loadFailed": "Pengaturan reservasi gagal dimuat.",
       "saveFailed": "Pengaturan reservasi gagal disimpan.",
       "timesRequired": "Waktu check-in dan check-out wajib diisi.",
+      "noShowCutoffRequired": "Waktu cut-off no-show wajib diisi.",
       "expiryRange": "Batas waktu pembayaran website harus antara 1 dan 1.440 menit."
     }
   }

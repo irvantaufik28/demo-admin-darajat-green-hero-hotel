@@ -21,8 +21,7 @@
       "sourceAll": "Sumber: Semua",
       "methodAriaLabel": "Metode pembayaran",
       "methodAll": "Metode: Semua",
-      "fromDateAriaLabel": "Tanggal check-in dari",
-      "toDateAriaLabel": "Tanggal check-in sampai",
+      "dateRangeAriaLabel": "Rentang tanggal check-in",
       "reset": "Atur Ulang"
     },
     "table": {
@@ -34,11 +33,18 @@
       "paid": "Dibayar",
       "refunded": "Dikembalikan",
       "remaining": "Sisa",
+      "noShowPenalty": "Penalti No Show",
       "paymentStatus": "Status Pembayaran",
+      "settlement": "Settlement",
       "method": "Metode",
       "action": "Aksi",
       "view": "Lihat",
       "emptyCell": "—"
+    },
+    "settlement": {
+      "settled": "Selesai",
+      "refundRequired": "Pengembalian diperlukan",
+      "manualReview": "Periksa manual"
     },
     "messages": {
       "empty": "Tidak ada pembayaran yang sesuai filter.",
@@ -63,7 +69,9 @@
       "paid": "Dibayar",
       "refunded": "Dikembalikan",
       "remaining": "Sisa",
+      "noShowPenalty": "Penalti No Show",
       "paymentStatus": "Status Pembayaran",
+      "settlement": "Settlement",
       "method": "Metode"
     }
   },
@@ -175,6 +183,7 @@
       "refunded": "Dikembalikan",
       "remaining": "Sisa",
       "securityDeposit": "Deposit Jaminan",
+      "settlement": "Settlement",
       "securityDepositNote": "Dicatat terpisah dari total reservasi.",
       "checkoutOutstandingReason": "Alasan check-out dengan sisa tagihan: {reason}",
       "recordPayment": "Catat Pembayaran",
@@ -219,6 +228,7 @@
   "refundModal": {
     "ariaLabel": "Kelola pengembalian dana",
     "title": "Pengembalian Manual",
+    "noShowTitle": "Settlement No Show",
     "closeAriaLabel": "Tutup pengembalian",
     "loading": "Memuat kelayakan refund...",
     "loadError": "Data refund gagal dimuat.",
@@ -226,15 +236,19 @@
       "booking": "Booking",
       "paid": "Dibayar",
       "cancellationPolicy": "Kebijakan pembatalan",
+      "noShowPolicy": "Kebijakan no-show",
       "manualReview": "Peninjauan manual",
       "cancellationCharge": "Biaya pembatalan",
+      "noShowPenalty": "Penalti no-show direalisasikan",
       "review": "Tinjau",
       "estimatedRefund": "Perkiraan refund",
-      "alreadyRefunded": "Sudah dikembalikan"
+      "alreadyRefunded": "Sudah dikembalikan",
+      "securityDepositReturn": "Deposit jaminan yang harus dikembalikan"
     },
     "calculation": {
       "ariaLabel": "Rincian perhitungan pembatalan",
       "title": "Perhitungan pembatalan",
+      "noShowTitle": "Perhitungan settlement no-show",
       "cancelledDaysBefore": "Dibatalkan {days} hari sebelum check-in.",
       "cancelledAfterCheckIn": "Dibatalkan setelah tanggal check-in.",
       "room": "Kamar",
@@ -277,6 +291,14 @@
       "noRefund": "No Refund",
       "completeRefund": "Refund Selesai"
     },
+    "deposit": {
+      "title": "Pengembalian Deposit Jaminan",
+      "description": "Deposit jaminan tidak menjadi penalti no-show dan harus dikembalikan.",
+      "heldAmount": "Deposit awal {amount}",
+      "reason": "Alasan pengembalian",
+      "reference": "Referensi pengembalian",
+      "refund": "Catat Deposit Dikembalikan"
+    },
     "history": {
       "title": "Riwayat Pengembalian",
       "reference": "Referensi: {reference}",
@@ -289,14 +311,16 @@
       "refundCompleted": "Refund selesai dan tercatat dalam riwayat pembayaran.",
       "noRefundCompleted": "No Refund selesai dan tercatat dalam audit trail.",
       "refundMarkedCompleted": "Refund berhasil diselesaikan.",
-      "refundMarkedFailed": "Refund ditandai gagal."
+      "refundMarkedFailed": "Refund ditandai gagal.",
+      "depositRefundCompleted": "Deposit jaminan berhasil dicatat sebagai dikembalikan."
     },
     "errors": {
       "noRefundAvailable": "Tidak ada refund yang dapat diselesaikan. Selesaikan refund pending terlebih dahulu.",
       "reasonRequired": "Alasan refund wajib diisi.",
       "overrideReasonRequired": "Alasan pengecualian atau peninjauan manual wajib diisi.",
       "noRefundReasonRequired": "Alasan No Refund wajib diisi.",
-      "processFailed": "Proses refund gagal."
+      "processFailed": "Proses refund gagal.",
+      "depositRefundDetailsRequired": "Alasan dan referensi pengembalian deposit wajib diisi."
     }
   },
   "invoice": {
@@ -308,6 +332,7 @@
     "brandAddress": "Jl. Raya Kamojang - Darajat, Samarang, Garut, Jawa Barat 44161",
     "invoiceTitle": "FAKTUR",
     "reservationCancelled": "Reservasi Dibatalkan",
+    "reservationNoShow": "Reservasi No Show",
     "billedTo": "Ditagihkan Kepada",
     "bookingRef": "Ref Booking",
     "night": "malam",
@@ -338,6 +363,8 @@
     },
     "cancellation": {
       "title": "Pembatalan & Pengembalian",
+      "noShowTitle": "Settlement No Show",
+      "noShowPenalty": "Penalti no-show direalisasikan",
       "loading": "Memuat perhitungan pembatalan...",
       "loadError": "Perhitungan pembatalan gagal dimuat: {error}",
       "savedPolicyDaysBefore": "Kebijakan yang tersimpan saat reservasi dibuat, dihitung berdasarkan pembatalan {days} hari sebelum check-in.",

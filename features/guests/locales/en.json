@@ -50,6 +50,7 @@
     "profile": {
       "title": "Guest Profile",
       "name": "Name",
+      "nik": "NIK",
       "phone": "Phone",
       "email": "Email",
       "address": "Address",

@@ -54,14 +54,15 @@ const headings: Record<Mode, (t: Translate) => string[]> = {
 };
 
 function RefundRow({ row, t }: { row: RefundListItem; t: Translate }) {
+  const totalReturn = (row.estimatedRefundAmount ?? 0) + row.depositBalance;
   return (
     <tr>
-      <td><strong className="payments-booking">{row.bookingCode}</strong><small>{dateLabel(row.cancelledAt)}</small></td>
+      <td><strong className="payments-booking">{row.bookingCode}</strong><small>{dateLabel(row.eventAt)}</small></td>
       <td><strong>{row.guest.fullName}</strong><small>{row.guest.phone}</small></td>
       <td>{label(row.source)}</td>
       <td>{row.policy.name ?? t("queues.table.manualReview")}</td>
       <td>{money(row.grossPaidAmount)}</td>
-      <td>{row.estimatedRefundAmount === null ? t("queues.table.review") : money(row.estimatedRefundAmount)}</td>
+      <td>{row.estimatedRefundAmount === null ? t("queues.table.review") : money(totalReturn)}</td>
       <td>{money(row.refundedAmount)}</td>
       <td><Badge value={row.status} /></td>
       <td><Link href={`/payments/${row.reservationId}`}>{t("queues.table.view")}</Link></td>

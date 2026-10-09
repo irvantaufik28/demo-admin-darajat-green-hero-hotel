@@ -43,7 +43,6 @@ export function SaveReservationConfirmation({
   earlyCheckIn,
   onEarlyCheckInChange,
   paymentMethods = [],
-  error,
 }: Props) {
   const { t } = useTranslations({ en, id });
   useEffect(() => {
@@ -60,6 +59,15 @@ export function SaveReservationConfirmation({
   }, [onCancel]);
 
   const checkIn = action === "check-in";
+  const projectedOutstanding =
+    outstandingBalance +
+    (checkIn && checkInContext?.required && earlyCheckIn?.paymentTiming === "later"
+      ? earlyCheckIn.chargeAmount
+      : 0);
+  const outstandingCheckInBlocked =
+    checkIn &&
+    checkInContext?.allowOutstandingCheckIn === false &&
+    projectedOutstanding > 0;
   return (
     <div
       className="reservation-operation-backdrop"
@@ -111,10 +119,14 @@ export function SaveReservationConfirmation({
               </span>
             </label>
           )}
+          {outstandingCheckInBlocked && (
+            <p className="reservation-operation-error">
+              {t("saveConfirmation.outstandingCheckInDisabled")}
+            </p>
+          )}
           {checkIn && checkInContext?.required && earlyCheckIn && onEarlyCheckInChange && (
             <EarlyCheckInFields context={checkInContext} value={earlyCheckIn} onChange={onEarlyCheckInChange} methods={paymentMethods} />
           )}
-          {error && <p className="reservation-operation-error" role="alert">{error}</p>}
         </div>
         <div className="reservation-operation-actions">
           <button
@@ -129,7 +141,7 @@ export function SaveReservationConfirmation({
             type="button"
             className="action-button"
             disabled={
-              busy || (checkIn && (!checkInContext || (outstandingBalance > 0 && !acknowledged) || (checkInContext.required && (!earlyCheckIn?.acknowledged || (earlyCheckIn.chargeAmount > 0 && earlyCheckIn.paymentTiming === "now" && !earlyCheckIn.paymentMethodId)))))
+              busy || outstandingCheckInBlocked || (checkIn && (!checkInContext || (outstandingBalance > 0 && !acknowledged) || (checkInContext.required && (!earlyCheckIn?.acknowledged || (earlyCheckIn.chargeAmount > 0 && earlyCheckIn.paymentTiming === "now" && !earlyCheckIn.paymentMethodId)))))
             }
             onClick={onConfirm}
           >

@@ -10,6 +10,46 @@ export type DetailPresentation = {
   actions: DetailAction[];
 };
 
+export function noShowSettlementPresentation(detail: ApiReservationDetail) {
+  const { reservation, summary } = detail;
+  const snapshot = reservation.noShowSettlementSnapshot;
+  const storedCharge = reservation.noShowChargeAmount;
+  const paidAmount = summary.paidAmount;
+  const isManualReview =
+    snapshot?.settlementStatus === "manual_review_required" ||
+    reservation.source === "ota" ||
+    (reservation.source === "website" && reservation.paymentStatus !== "paid");
+  const realizedPenalty = isManualReview
+    ? null
+    : snapshot?.amounts?.paymentAppliedToPenalty ??
+      (storedCharge === null
+        ? paidAmount
+        : Math.min(storedCharge, paidAmount));
+  const paymentRefundDue =
+    snapshot?.amounts?.maximumRefundWithoutOverride ??
+    (realizedPenalty === null ? 0 : Math.max(0, paidAmount - realizedPenalty));
+  const depositReturnRequired =
+    snapshot?.amounts?.depositReturnRequired ?? summary.depositBalance > 0;
+  const status = isManualReview
+    ? "manual_review_required"
+    : depositReturnRequired || paymentRefundDue > 0
+      ? "refund_required"
+      : "settled";
+
+  return {
+    status,
+    label:
+      status === "settled"
+        ? "Selesai"
+        : status === "refund_required"
+          ? "Pengembalian dana diperlukan"
+          : "Perlu pemeriksaan manual",
+    realizedPenalty,
+    paymentRefundDue,
+    depositReturnRequired,
+  };
+}
+
 export function reservationDetailPresentation(
   detail: ApiReservationDetail,
 ): DetailPresentation {
@@ -98,12 +138,27 @@ export function reservationDetailPresentation(
   }
 
   if (reservationStatus === "no_show") {
+    const settlement = noShowSettlementPresentation(detail);
+    const rupiah = (amount: number) =>
+      `Rp${new Intl.NumberFormat("id-ID").format(amount)}`;
+    const depositMessage = settlement.depositReturnRequired
+      ? ` Security deposit ${rupiah(summary.depositBalance)} harus dikembalikan.`
+      : "";
+    const refundMessage = settlement.paymentRefundDue > 0
+      ? ` Kelebihan pembayaran ${rupiah(settlement.paymentRefundDue)} harus dikembalikan.`
+      : "";
+    const description =
+      settlement.status === "manual_review_required"
+        ? reservation.source === "ota"
+          ? `Tamu tidak datang. Settlement no-show mengikuti kebijakan OTA dan perlu diperiksa manual.${depositMessage}`
+          : `Tamu tidak datang. Reservasi website belum lunas sehingga settlement perlu diperiksa manual.${depositMessage}`
+        : settlement.realizedPenalty && settlement.realizedPenalty > 0
+          ? `Tamu tidak datang. ${reservation.source === "website" ? "Pembayaran" : "Pembayaran/DP"} ${rupiah(settlement.realizedPenalty)} dicatat sebagai penalti no-show. Tidak ada sisa tagihan.${refundMessage}${depositMessage} Settlement: ${settlement.label}.`
+          : `Tamu tidak datang. Tidak ada pembayaran yang ditahan dan tidak ada sisa tagihan.${depositMessage} Settlement: ${settlement.label}.`;
+
     return {
       title: "No Show",
-      description:
-        reservation.noShowChargeAmount !== null
-          ? `Tamu tidak datang. Penalty no-show tercatat sebesar Rp${new Intl.NumberFormat("id-ID").format(reservation.noShowChargeAmount)}.`
-          : "Tamu tidak datang. Penalty memerlukan pemeriksaan manual.",
+      description,
       tone: "danger",
       actions: [],
     };

@@ -9,7 +9,10 @@ import {
   defaultReservationSettings,
   type ReservationSettings,
 } from "../constants/reservation-settings";
-import { getReservationSettings, updateReservationSettings } from "../services/reservation-settings";
+import {
+  getReservationSettings,
+  updateReservationSettings,
+} from "../services/reservation-settings";
 import { useTranslations } from "../../../lib/i18n";
 import en from "../locales/en.json";
 import id from "../locales/id.json";
@@ -33,9 +36,18 @@ function SettingToggle({
         <p>{description}</p>
       </div>
       <label className="reservation-setting-switch">
-        <input type="checkbox" checked={checked} onChange={(event) => onChange(event.target.checked)} aria-label={label} />
+        <input
+          type="checkbox"
+          checked={checked}
+          onChange={(event) => onChange(event.target.checked)}
+          aria-label={label}
+        />
         <span aria-hidden="true" />
-        <small>{checked ? t("reservationSettings.toggle.on") : t("reservationSettings.toggle.off")}</small>
+        <small>
+          {checked
+            ? t("reservationSettings.toggle.on")
+            : t("reservationSettings.toggle.off")}
+        </small>
       </label>
     </div>
   );
@@ -43,8 +55,12 @@ function SettingToggle({
 
 export function ReservationSettingsPage() {
   const { t } = useTranslations({ en, id });
-  const [settings, setSettings] = useState<ReservationSettings>(defaultReservationSettings);
-  const [saved, setSaved] = useState<ReservationSettings>(defaultReservationSettings);
+  const [settings, setSettings] = useState<ReservationSettings>(
+    defaultReservationSettings,
+  );
+  const [saved, setSaved] = useState<ReservationSettings>(
+    defaultReservationSettings,
+  );
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const [loading, setLoading] = useState(true);
@@ -56,15 +72,22 @@ export function ReservationSettingsPage() {
     const controller = new AbortController();
     async function load() {
       try {
-        if (!(await restoreSession())) throw new Error(t("reservationSettings.errors.sessionUnavailable"));
+        if (!(await restoreSession()))
+          throw new Error(t("reservationSettings.errors.sessionUnavailable"));
         const result = await getReservationSettings(controller.signal);
         if (controller.signal.aborted) return;
         setSettings(result.settings);
         setSaved(result.settings);
-        setCanEdit(getCurrentUser()?.permissions.includes("master.edit") ?? false);
+        setCanEdit(
+          getCurrentUser()?.permissions.includes("master.edit") ?? false,
+        );
       } catch (cause) {
         if (!controller.signal.aborted) {
-          setError(cause instanceof Error ? cause.message : t("reservationSettings.errors.loadFailed"));
+          setError(
+            cause instanceof Error
+              ? cause.message
+              : t("reservationSettings.errors.loadFailed"),
+          );
         }
       } finally {
         if (!controller.signal.aborted) setLoading(false);
@@ -74,7 +97,10 @@ export function ReservationSettingsPage() {
     return () => controller.abort();
   }, []);
 
-  function change<Key extends keyof ReservationSettings>(key: Key, value: ReservationSettings[Key]) {
+  function change<Key extends keyof ReservationSettings>(
+    key: Key,
+    value: ReservationSettings[Key],
+  ) {
     setSettings((current) => ({ ...current, [key]: value }));
     setError("");
     setNotice("");
@@ -86,8 +112,15 @@ export function ReservationSettingsPage() {
       setError(t("reservationSettings.errors.timesRequired"));
       return;
     }
-    if (!Number.isInteger(settings.websitePaymentExpiryMinutes) ||
-      settings.websitePaymentExpiryMinutes < 1 || settings.websitePaymentExpiryMinutes > 1440) {
+    if (!settings.noShowCutoffTime) {
+      setError(t("reservationSettings.errors.noShowCutoffRequired"));
+      return;
+    }
+    if (
+      !Number.isInteger(settings.websitePaymentExpiryMinutes) ||
+      settings.websitePaymentExpiryMinutes < 1 ||
+      settings.websitePaymentExpiryMinutes > 1440
+    ) {
       setError(t("reservationSettings.errors.expiryRange"));
       return;
     }
@@ -99,89 +132,181 @@ export function ReservationSettingsPage() {
       setSaved(result.settings);
       setNotice(t("reservationSettings.saved"));
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : t("reservationSettings.errors.saveFailed"));
+      setError(
+        cause instanceof Error
+          ? cause.message
+          : t("reservationSettings.errors.saveFailed"),
+      );
     } finally {
       setSaving(false);
     }
   }
 
   return (
-    <AdminShell title={t("shell.title")} context={t("shell.reservationContext")}>
+    <AdminShell
+      title={t("shell.title")}
+      context={t("shell.reservationContext")}
+    >
       <main className="reservation-settings-page">
         <header className="reservation-settings-heading">
           <h1>{t("reservationSettings.title")}</h1>
           <p>{t("reservationSettings.description")}</p>
         </header>
 
-        {loading ? <LoadingSkeleton variant="form" rows={8} /> : <form className="reservation-settings-panel" onSubmit={(event) => void save(event)}>
-          <section className="reservation-settings-section">
-            <h2>{t("reservationSettings.stayTime.title")}</h2>
-            <div className="reservation-setting-times">
-              <label>{t("reservationSettings.stayTime.checkInTime")}
-                <input type="time" value={settings.checkInTime}
-                  onChange={(event) => change("checkInTime", event.target.value)} />
+        {loading ? (
+          <LoadingSkeleton variant="form" rows={8} />
+        ) : (
+          <form
+            className="reservation-settings-panel"
+            onSubmit={(event) => void save(event)}
+          >
+            <section className="reservation-settings-section">
+              <h2>{t("reservationSettings.stayTime.title")}</h2>
+              <div className="reservation-setting-times">
+                <label>
+                  {t("reservationSettings.stayTime.checkInTime")}
+                  <input
+                    type="time"
+                    value={settings.checkInTime}
+                    onChange={(event) =>
+                      change("checkInTime", event.target.value)
+                    }
+                  />
+                </label>
+                <label>
+                  {t("reservationSettings.stayTime.checkOutTime")}
+                  <input
+                    type="time"
+                    value={settings.checkOutTime}
+                    onChange={(event) =>
+                      change("checkOutTime", event.target.value)
+                    }
+                  />
+                </label>
+              </div>
+            </section>
+
+            <section className="reservation-settings-section">
+              <h2>{t("reservationSettings.rules.title")}</h2>
+              <SettingToggle
+                label={t("reservationSettings.rules.autoConfirm.label")}
+                description={t(
+                  "reservationSettings.rules.autoConfirm.description",
+                )}
+                checked={settings.autoConfirmWebsiteAfterPayment}
+                onChange={(value) =>
+                  change("autoConfirmWebsiteAfterPayment", value)
+                }
+              />
+              <SettingToggle
+                label={t("reservationSettings.rules.allowCheckIn.label")}
+                description={t(
+                  "reservationSettings.rules.allowCheckIn.description",
+                )}
+                checked={settings.allowOutstandingCheckIn}
+                onChange={(value) => change("allowOutstandingCheckIn", value)}
+              />
+              <SettingToggle
+                label={t("reservationSettings.rules.allowCheckOut.label")}
+                description={t(
+                  "reservationSettings.rules.allowCheckOut.description",
+                )}
+                checked={settings.allowOutstandingCheckOut}
+                onChange={(value) => change("allowOutstandingCheckOut", value)}
+              />
+            </section>
+
+            <section className="reservation-settings-section">
+              <h2>{t("reservationSettings.websiteBooking.title")}</h2>
+              <label className="reservation-setting-expiry">
+                {t("reservationSettings.websiteBooking.expiryLabel")}
+                <span>
+                  <input
+                    type="number"
+                    min={1}
+                    max={1440}
+                    step={1}
+                    value={settings.websitePaymentExpiryMinutes}
+                    onChange={(event) =>
+                      change(
+                        "websitePaymentExpiryMinutes",
+                        Number(event.target.value),
+                      )
+                    }
+                  />
+                  <span>{t("reservationSettings.websiteBooking.minutes")}</span>
+                </span>
               </label>
-              <label>{t("reservationSettings.stayTime.checkOutTime")}
-                <input type="time" value={settings.checkOutTime}
-                  onChange={(event) => change("checkOutTime", event.target.value)} />
+              <p className="reservation-setting-help">
+                {t("reservationSettings.websiteBooking.help1")}
+              </p>
+              <p className="reservation-setting-help">
+                {t("reservationSettings.websiteBooking.help2")}
+              </p>
+            </section>
+
+            <section className="reservation-settings-section">
+              <h2>{t("reservationSettings.noShow.title")}</h2>
+              <SettingToggle
+                label={t("reservationSettings.noShow.automaticLabel")}
+                description={t(
+                  "reservationSettings.noShow.automaticDescription",
+                )}
+                checked={settings.noShowMode === "automatic"}
+                onChange={(value) =>
+                  change("noShowMode", value ? "automatic" : "manual")
+                }
+              />
+              <label className="reservation-setting-expiry">
+                {t("reservationSettings.noShow.cutoffLabel")}
+                <span>
+                  <input
+                    type="time"
+                    value={settings.noShowCutoffTime}
+                    disabled={settings.noShowMode !== "automatic"}
+                    onChange={(event) =>
+                      change("noShowCutoffTime", event.target.value)
+                    }
+                  />
+                  <span>WIB</span>
+                </span>
               </label>
-            </div>
-          </section>
+              <p className="reservation-setting-help">
+                {t("reservationSettings.noShow.help")}
+              </p>
+            </section>
 
-          <section className="reservation-settings-section">
-            <h2>{t("reservationSettings.rules.title")}</h2>
-            <SettingToggle
-              label={t("reservationSettings.rules.autoConfirm.label")}
-              description={t("reservationSettings.rules.autoConfirm.description")}
-              checked={settings.autoConfirmWebsiteAfterPayment}
-              onChange={(value) => change("autoConfirmWebsiteAfterPayment", value)}
-            />
-            <SettingToggle
-              label={t("reservationSettings.rules.allowCheckIn.label")}
-              description={t("reservationSettings.rules.allowCheckIn.description")}
-              checked={settings.allowOutstandingCheckIn}
-              onChange={(value) => change("allowOutstandingCheckIn", value)}
-            />
-            <SettingToggle
-              label={t("reservationSettings.rules.allowCheckOut.label")}
-              description={t("reservationSettings.rules.allowCheckOut.description")}
-              checked={settings.allowOutstandingCheckOut}
-              onChange={(value) => change("allowOutstandingCheckOut", value)}
-            />
-          </section>
-
-          <section className="reservation-settings-section">
-            <h2>{t("reservationSettings.websiteBooking.title")}</h2>
-            <label className="reservation-setting-expiry">{t("reservationSettings.websiteBooking.expiryLabel")}
-              <span>
-                <input type="number" min={1} max={1440} step={1}
-                  value={settings.websitePaymentExpiryMinutes}
-                  onChange={(event) => change("websitePaymentExpiryMinutes", Number(event.target.value))} />
-                <span>{t("reservationSettings.websiteBooking.minutes")}</span>
-              </span>
-            </label>
-            <p className="reservation-setting-help">{t("reservationSettings.websiteBooking.help1")}</p>
-            <p className="reservation-setting-help">{t("reservationSettings.websiteBooking.help2")}</p>
-          </section>
-
-          <section className="reservation-settings-section">
-            <h2>{t("reservationSettings.noShow.title")}</h2>
-            <div className="reservation-setting-fixed">
-              <strong>{t("reservationSettings.noShow.handlingLabel")}</strong>
-              <span>{t("reservationSettings.noShow.handlingValue")}</span>
-            </div>
-            <p className="reservation-setting-help">{t("reservationSettings.noShow.help")}</p>
-          </section>
-
-          {error && <p className="reservation-settings-error" role="alert">{error}</p>}
-          {notice && <p className="reservation-settings-notice" role="status">{notice}</p>}
-          <footer className="reservation-settings-actions">
-            <button type="button" disabled={loading || saving} onClick={() => {
-              setSettings({ ...saved }); setError(""); setNotice("");
-            }}>{t("common.cancel")}</button>
-            <button type="submit" disabled={!changed || loading || saving || !canEdit}>{saving ? t("common.saving") : t("common.saveChanges")}</button>
-          </footer>
-        </form>}
+            {error && (
+              <p className="reservation-settings-error" role="alert">
+                {error}
+              </p>
+            )}
+            {notice && (
+              <p className="reservation-settings-notice" role="status">
+                {notice}
+              </p>
+            )}
+            <footer className="reservation-settings-actions">
+              <button
+                type="button"
+                disabled={loading || saving}
+                onClick={() => {
+                  setSettings({ ...saved });
+                  setError("");
+                  setNotice("");
+                }}
+              >
+                {t("common.cancel")}
+              </button>
+              <button
+                type="submit"
+                disabled={!changed || loading || saving || !canEdit}
+              >
+                {saving ? t("common.saving") : t("common.saveChanges")}
+              </button>
+            </footer>
+          </form>
+        )}
       </main>
     </AdminShell>
   );

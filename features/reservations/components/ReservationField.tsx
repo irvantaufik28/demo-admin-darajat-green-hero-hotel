@@ -10,6 +10,7 @@ type Props = {
   children: ReactNode;
   optional?: boolean;
   required?: boolean;
+  invalid?: boolean;
 };
 
 export function ReservationField({
@@ -18,10 +19,17 @@ export function ReservationField({
   children,
   optional,
   required,
+  invalid,
 }: Props) {
   const { t } = useTranslations({ en, id });
   return (
-    <div className="reservation-field">
+    <div
+      className={
+        invalid
+          ? "reservation-field reservation-field--invalid"
+          : "reservation-field"
+      }
+    >
       <label htmlFor={htmlFor}>
         {label} {required && <span className="required-mark">*</span>}
         {optional && <span className="optional-mark">{t("common.optional")}</span>}

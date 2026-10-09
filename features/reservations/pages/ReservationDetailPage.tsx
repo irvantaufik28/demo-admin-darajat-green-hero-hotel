@@ -17,7 +17,10 @@ import {
   type ApiReservationDetail,
   type ReservationHistoryItem,
 } from "../services/api";
-import { reservationDetailPresentation } from "../utils/detail-rules";
+import {
+  noShowSettlementPresentation,
+  reservationDetailPresentation,
+} from "../utils/detail-rules";
 import { restoreSession } from "../../../lib/auth";
 import { useTranslations } from "../../../lib/i18n";
 import en from "../locales/en.json";
@@ -197,6 +200,10 @@ export function ReservationDetailPage() {
     reservation?.reservationStatus === "confirmed";
   const isOutstanding = (detail?.summary.remainingBalance ?? 0) > 0;
   const isInHouse = reservation?.reservationStatus === "checked_in";
+  const noShowSettlement =
+    detail?.reservation.reservationStatus === "no_show"
+      ? noShowSettlementPresentation(detail)
+      : null;
 
   return (
     <AdminShell
@@ -751,6 +758,11 @@ export function ReservationDetailPage() {
                   <SummaryRow name={t("detail.fields.reservationStatus")}>
                     <StatusBadge value={detail.reservation.reservationStatus} />
                   </SummaryRow>
+                  {noShowSettlement && (
+                    <SummaryRow name={t("detail.fields.settlement")}>
+                      {noShowSettlement.label}
+                    </SummaryRow>
+                  )}
                   {isPreStay && isOutstanding && (
                     <p className="pending-detail-summary-warning">
                       {reservation?.reservationStatus === "pending"

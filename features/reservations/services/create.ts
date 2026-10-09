@@ -74,25 +74,37 @@ export function getReservationAvailability(
     checkInDate,
     checkOutDate,
   });
-  return apiRequest<{ items: AvailableRoom[] }>(`reservations/availability?${query}`, { signal });
+  return apiRequest<{ items: AvailableRoom[] }>(
+    `reservations/availability?${query}`,
+    { signal },
+  );
 }
 
 export function getReservationExperiences(signal?: AbortSignal) {
-  return apiRequest<{ items: ExperienceOption[] }>("experiences?isActive=true&limit=100", { signal });
+  return apiRequest<{ items: ExperienceOption[] }>(
+    "experiences?isActive=true&limit=100",
+    { signal },
+  );
 }
 
 export function getReservationPaymentMethods(signal?: AbortSignal) {
-  return apiRequest<{ items: PaymentMethod[] }>("master/payment-methods", { signal });
+  return apiRequest<{ items: PaymentMethod[] }>("master/payment-methods", {
+    signal,
+  });
 }
 
-export function quoteReservation(source: ReservationSource, input: {
-  checkInDate: string;
-  checkOutDate: string;
-  totalAdults: number;
-  totalChildren: number;
-  rooms: SelectedRoom[];
-  experiences: SelectedExperience[];
-}, signal?: AbortSignal) {
+export function quoteReservation(
+  source: ReservationSource,
+  input: {
+    checkInDate: string;
+    checkOutDate: string;
+    totalAdults: number;
+    totalChildren: number;
+    rooms: SelectedRoom[];
+    experiences: SelectedExperience[];
+  },
+  signal?: AbortSignal,
+) {
   return apiRequest<ReservationQuote>("reservations/quote", {
     method: "POST",
     body: { source, ...input },
@@ -100,28 +112,30 @@ export function quoteReservation(source: ReservationSource, input: {
   });
 }
 
-export function createReservation(source: ReservationSource, input: {
-  idempotencyKey: string;
-  guest: { fullName: string; phone: string; email?: string };
-  checkInDate: string;
-  checkOutDate: string;
-  totalAdults: number;
-  totalChildren: number;
-  rooms: SelectedRoom[];
-  experiences: SelectedExperience[];
-  specialRequests?: string;
-  cancellationPolicyId?: string | null;
-  confirm: boolean;
-  checkIn: boolean;
-  acknowledgeOutstanding?: boolean;
-  earlyCheckIn?: EarlyCheckInInput;
-  payment?: { methodId: string; amount: number };
-  deposit?: { methodId: string; amount: number; notes?: string };
-}) {
-  return apiRequest<{ reservation: { id: string; bookingCode: string; reservationStatus: string } }>(
-    "reservations",
-    { method: "POST", body: { source, ...input } },
-  );
+export function createReservation(
+  source: ReservationSource,
+  input: {
+    idempotencyKey: string;
+    guest: { fullName: string; nik?: string; phone: string; email?: string };
+    checkInDate: string;
+    checkOutDate: string;
+    totalAdults: number;
+    totalChildren: number;
+    rooms: SelectedRoom[];
+    experiences: SelectedExperience[];
+    specialRequests?: string;
+    cancellationPolicyId?: string | null;
+    confirm: boolean;
+    checkIn: boolean;
+    acknowledgeOutstanding?: boolean;
+    earlyCheckIn?: EarlyCheckInInput;
+    payment?: { methodId: string; amount: number };
+    deposit?: { methodId: string; amount: number; notes?: string };
+  },
+) {
+  return apiRequest<{
+    reservation: { id: string; bookingCode: string; reservationStatus: string };
+  }>("reservations", { method: "POST", body: { source, ...input } });
 }
 
 export function getCreateCheckInContext(checkInDate: string) {

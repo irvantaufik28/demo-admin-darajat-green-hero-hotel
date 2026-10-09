@@ -7,6 +7,7 @@ import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { AdminShell } from "../../../components/layout/AdminShell";
 import { restoreSession } from "../../../lib/auth";
+import { DateRangePicker } from "../../campaigns/components/DateRangePicker";
 import { getPayments, type PaymentListItem } from "../services/payments";
 import { useTranslations, type Translate } from "../../../lib/i18n";
 import en from "../locales/en.json";
@@ -53,7 +54,9 @@ function exportCsv(rows: PaymentListItem[], t: Translate) {
     t("csv.columns.paid"),
     t("csv.columns.refunded"),
     t("csv.columns.remaining"),
+    t("csv.columns.noShowPenalty"),
     t("csv.columns.paymentStatus"),
+    t("csv.columns.settlement"),
     t("csv.columns.method"),
   ];
   const data = rows.map((row) => [
@@ -65,7 +68,9 @@ function exportCsv(rows: PaymentListItem[], t: Translate) {
     row.paidAmount,
     row.refundedAmount,
     row.remainingBalance,
+    row.noShowPenaltyAmount ?? "—",
     label(row.paymentStatus),
+    row.settlementStatus ? label(row.settlementStatus) : "—",
     row.method?.name ?? "—",
   ]);
   const csv = [columns, ...data]
@@ -284,27 +289,17 @@ export function PaymentsPage() {
               </option>
             ))}
           </select>
-          <div className="payments-date-filter">
-            <input
-              aria-label={t("list.filters.fromDateAriaLabel")}
-              type="date"
-              value={from}
-              onChange={(event) => {
-                setFrom(event.target.value);
-                setPage(1);
-              }}
-            />
-            <span>–</span>
-            <input
-              aria-label={t("list.filters.toDateAriaLabel")}
-              type="date"
-              value={to}
-              onChange={(event) => {
-                setTo(event.target.value);
-                setPage(1);
-              }}
-            />
-          </div>
+          <DateRangePicker
+            label={t("list.filters.dateRangeAriaLabel")}
+            start={from}
+            end={to}
+            numberOfMonths={2}
+            onChange={(start, end) => {
+              setFrom(start);
+              setTo(end);
+              setPage(1);
+            }}
+          />
           <button type="button" onClick={reset}>
             {t("list.filters.reset")}
           </button>
@@ -322,7 +317,9 @@ export function PaymentsPage() {
                   <th>{t("list.table.paid")}</th>
                   <th>{t("list.table.refunded")}</th>
                   <th>{t("list.table.remaining")}</th>
+                  <th>{t("list.table.noShowPenalty")}</th>
                   <th>{t("list.table.paymentStatus")}</th>
+                  <th>{t("list.table.settlement")}</th>
                   <th>{t("list.table.method")}</th>
                   <th>{t("list.table.action")}</th>
                 </tr>
@@ -379,11 +376,35 @@ export function PaymentsPage() {
                         {money(row.remainingBalance)}
                       </td>
                       <td>
+                        {row.noShowPenaltyAmount === null
+                          ? t("list.table.emptyCell")
+                          : money(row.noShowPenaltyAmount)}
+                      </td>
+                      <td>
                         <span
                           className={`reservations-source payments-badge--${badgeTone(label(row.paymentStatus))}`}
                         >
                           {label(row.paymentStatus)}
                         </span>
+                      </td>
+                      <td>
+                        {row.settlementStatus ? (
+                          <span
+                            className={`reservations-source payments-badge--${
+                              row.settlementStatus === "settled"
+                                ? "success"
+                                : "warning"
+                            }`}
+                          >
+                            {row.settlementStatus === "settled"
+                              ? t("list.settlement.settled")
+                              : row.settlementStatus === "refund_required"
+                                ? t("list.settlement.refundRequired")
+                                : t("list.settlement.manualReview")}
+                          </span>
+                        ) : (
+                          t("list.table.emptyCell")
+                        )}
                       </td>
                       <td>{row.method?.name ?? t("list.table.emptyCell")}</td>
                       <td>

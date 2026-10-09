@@ -5,6 +5,8 @@ export type ReservationSettings = {
   allowOutstandingCheckIn: boolean;
   allowOutstandingCheckOut: boolean;
   websitePaymentExpiryMinutes: number;
+  noShowMode: "manual" | "automatic";
+  noShowCutoffTime: string;
 };
 
 export const defaultReservationSettings: ReservationSettings = {
@@ -14,4 +16,6 @@ export const defaultReservationSettings: ReservationSettings = {
   allowOutstandingCheckIn: true,
   allowOutstandingCheckOut: true,
   websitePaymentExpiryMinutes: 30,
+  noShowMode: "automatic",
+  noShowCutoffTime: "06:00",
 };

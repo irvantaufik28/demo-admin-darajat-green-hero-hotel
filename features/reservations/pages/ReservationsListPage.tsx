@@ -6,6 +6,7 @@ import { LoadingSkeleton } from "../../../components/ui/LoadingSkeleton";
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { AdminShell } from "../../../components/layout/AdminShell";
+import { DateRangePicker } from "../../campaigns/components/DateRangePicker";
 import { calculateNights, formatStayDate } from "../constants/walk-in-data";
 import { getReservations, type ReservationListItem } from "../services/api";
 import { restoreSession } from "../../../lib/auth";
@@ -109,8 +110,8 @@ export function ReservationsListPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [search, setSearch] = useState("");
-  const [stayFilter, setStayFilter] = useState("all");
-  const [customDate, setCustomDate] = useState("");
+  const [stayDateFrom, setStayDateFrom] = useState("");
+  const [stayDateTo, setStayDateTo] = useState("");
   const [sourceFilter, setSourceFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
   const [paymentFilter, setPaymentFilter] = useState("all");
@@ -156,8 +157,10 @@ export function ReservationsListPage() {
             query.set("reservationStatus", statusFilter.replace("-", "_"));
           if (paymentFilter !== "all")
             query.set("paymentStatus", paymentFilter);
-          if (stayFilter === "custom" && customDate)
-            query.set("stayDate", customDate);
+          if (stayDateFrom && stayDateTo) {
+            query.set("stayDateFrom", stayDateFrom);
+            query.set("stayDateTo", stayDateTo);
+          }
           if (sortDirection !== "default")
             query.set("sort", `booking_code_${sortDirection}`);
           const result = await getReservations(query, controller.signal);
@@ -185,8 +188,8 @@ export function ReservationsListPage() {
   }, [
     page,
     search,
-    stayFilter,
-    customDate,
+    stayDateFrom,
+    stayDateTo,
     sourceFilter,
     statusFilter,
     paymentFilter,
@@ -200,15 +203,16 @@ export function ReservationsListPage() {
   const visible = filtered;
   const hasFilters =
     !!search ||
-    stayFilter !== "all" ||
+    !!stayDateFrom ||
+    !!stayDateTo ||
     sourceFilter !== "all" ||
     statusFilter !== "all" ||
     paymentFilter !== "all";
 
   function resetFilters() {
     setSearch("");
-    setStayFilter("all");
-    setCustomDate("");
+    setStayDateFrom("");
+    setStayDateTo("");
     setSourceFilter("all");
     setStatusFilter("all");
     setPaymentFilter("all");
@@ -289,28 +293,17 @@ export function ReservationsListPage() {
         </div>
         <div className="reservations-list-toolbar">
           <div className="reservations-list-filters">
-            <select
-              aria-label={t("list.filters.stayDateAriaLabel")}
-              value={stayFilter}
-              onChange={(event) => {
-                setStayFilter(event.target.value);
+            <DateRangePicker
+              label={t("list.filters.stayDateAriaLabel")}
+              start={stayDateFrom}
+              end={stayDateTo}
+              numberOfMonths={2}
+              onChange={(start, end) => {
+                setStayDateFrom(start);
+                setStayDateTo(end);
                 setPage(1);
               }}
-            >
-              <option value="all">{t("list.filters.stayDateAll")}</option>
-              <option value="custom">{t("list.filters.stayDateCustom")}</option>
-            </select>
-            {stayFilter === "custom" && (
-              <input
-                type="date"
-                aria-label={t("list.filters.stayDatePickAriaLabel")}
-                value={customDate}
-                onChange={(event) => {
-                  setCustomDate(event.target.value);
-                  setPage(1);
-                }}
-              />
-            )}
+            />
             <select
               aria-label={t("list.filters.sourceAriaLabel")}
               value={sourceFilter}

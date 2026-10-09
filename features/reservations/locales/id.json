@@ -27,6 +27,7 @@
     "adults": "Dewasa",
     "children": "Anak",
     "notAssigned": "Belum Ditetapkan",
+    "errorToastTitle": "Periksa kembali data reservasi",
     "closeMessage": "Tutup pesan",
     "closeModal": "Tutup modal",
     "saving": "Menyimpan...",
@@ -281,7 +282,8 @@
       "remainingBalanceOutstanding": "Sisa Tagihan (Belum Lunas)",
       "depositBalance": "Saldo Deposit",
       "paymentStatus": "Status Pembayaran",
-      "reservationStatus": "Status Reservasi"
+      "reservationStatus": "Status Reservasi",
+      "settlement": "Settlement"
     },
     "rooms": {
       "assignedAtCheckIn": "Nomor kamar ditetapkan saat check-in.",
@@ -368,6 +370,8 @@
       "paymentTimingLater": "Jadikan tagihan bayar nanti",
       "paymentTimingNow": "Catat Pembayaran sekarang",
       "assignRoom": "Tetapkan {roomType}",
+      "guestNikLabel": "NIK Tamu Pemesan",
+      "guestNikHint": "Masukkan 16 digit NIK sesuai identitas tamu pemesan.",
       "selectRoom": "Pilih kamar",
       "roomAvailable": "{roomNumber} — Tersedia",
       "assignAtArrival": "Pilih nomor kamar saat tamu tiba di hotel.",
@@ -398,7 +402,9 @@
       "checkoutRulesLoadError": "Aturan checkout gagal dimuat.",
       "paymentInvalid": "Pilih metode dan isi pembayaran antara Rp1 sampai sisa tagihan.",
       "roomsRequired": "Pilih nomor kamar berbeda untuk setiap kamar reservasi.",
+      "guestNikRequired": "NIK tamu pemesan wajib diisi dengan 16 digit sebelum check-in.",
       "balanceConfirmRequired": "Konfirmasi sisa tagihan sebelum check-in.",
+      "outstandingCheckInDisabled": "Check-in hanya dapat dilanjutkan setelah pembayaran lunas karena check-in dengan sisa tagihan dinonaktifkan.",
       "earlyCheckInRequired": "Konfirmasi early check-in sebelum melanjutkan.",
       "earlyCheckInMethodRequired": "Pilih metode pembayaran biaya early check-in.",
       "depositRequired": "Isi jumlah deposit dan pilih metode pembayaran deposit.",
@@ -407,6 +413,7 @@
       "lateCheckoutRequired": "Konfirmasi late checkout sebelum melanjutkan.",
       "lateCheckoutMethodRequired": "Pilih metode pembayaran biaya late checkout.",
       "checkoutOverrideRequired": "Saldo setelah pemotongan deposit harus lunas, atau checkout dilakukan oleh Owner/Manager.",
+      "outstandingCheckOutDisabled": "Check-out hanya dapat dilanjutkan setelah sisa tagihan lunas karena check-out dengan sisa tagihan dinonaktifkan.",
       "checkoutReasonRequired": "Centang konfirmasi dan tulis alasan checkout dengan sisa tagihan.",
       "refundReferenceRequired": "Isi referensi refund untuk setiap deposit yang dikembalikan.",
       "cancelReasonRequired": "Alasan pembatalan wajib diisi.",
@@ -525,6 +532,7 @@
     "bookingTotal": "Booking total {amount}",
     "includingEarlyCheckIn": " termasuk biaya early check-in",
     "balanceAcknowledgement": "Saya mengonfirmasi sisa tagihan {amount} telah dijelaskan kepada tamu. Jika belum lunas saat check-out, petugas wajib mencatat konfirmasi dan alasan.",
+    "outstandingCheckInDisabled": "Check-in hanya dapat dilanjutkan setelah pembayaran lunas karena check-in dengan sisa tagihan dinonaktifkan.",
     "checkInButton": "Konfirmasi Simpan & Check-in",
     "saveButton": "Konfirmasi Simpan Reservasi"
   },
@@ -1030,6 +1038,7 @@
     },
     "guest": {
       "fullName": "Nama Lengkap",
+      "nik": "NIK (Wajib saat check-in)",
       "whatsapp": "WhatsApp",
       "email": "Email",
       "notes": "Catatan"
@@ -1130,6 +1139,7 @@
       "roomsUnavailable": "Kamar yang dipilih tidak tersedia untuk kapasitas atau tanggal ini.",
       "waitQuote": "Tunggu perhitungan harga dari API selesai.",
       "guestRequired": "Nama tamu dan nomor WhatsApp wajib diisi.",
+      "guestNikRequired": "NIK tamu pemesan wajib diisi dengan 16 digit sebelum check-in.",
       "roomNumbersRequired": "Pilih nomor untuk setiap kamar sebelum check-in.",
       "duplicateRoomNumbers": "Nomor kamar tidak boleh digunakan dua kali.",
       "partialInvalid": "Pembayaran Partial harus lebih dari Rp0 dan kurang dari total reservasi.",

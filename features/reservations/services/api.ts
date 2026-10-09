@@ -175,9 +175,29 @@ export type ApiReservationDetail = {
     noShowAt: string | null;
     noShowReason: string | null;
     noShowChargeAmount: number | null;
+    noShowSettlementSnapshot: {
+      settlementStatus?:
+        | "settled"
+        | "refund_required"
+        | "manual_review_required";
+      strategy?:
+        | "website_prepaid_policy"
+        | "payment_forfeiture"
+        | "ota_manual_review";
+      amounts?: {
+        policyNoShowCharge?: number | null;
+        noShowCharge?: number | null;
+        paymentAppliedToPenalty?: number | null;
+        uncollectedPenaltyAmount?: number | null;
+        maximumRefundWithoutOverride?: number | null;
+        estimatedAmountDue?: number | null;
+        depositReturnRequired?: boolean;
+      };
+    } | null;
   };
   guest: {
     fullName: string;
+    nik: string | null;
     phone: string;
     email: string | null;
   };
@@ -346,6 +366,7 @@ export function confirmReservation(id: string) {
 export function checkInReservation(
   id: string,
   input: {
+    guestNik?: string;
     acknowledgeOutstanding?: boolean;
     rooms: { reservationRoomId: string; roomUnitId: string }[];
     deposit?: { amount: number; methodId: string; notes?: string };
@@ -371,6 +392,7 @@ export type CheckInContext = {
   serverTime: string;
   standardCheckInTime: string;
   required: boolean;
+  allowOutstandingCheckIn: boolean;
 };
 
 export function getCheckInContext(checkInDate: string) {
@@ -650,6 +672,7 @@ export type CheckOutContext = {
   serverDate: string;
   serverTime: string;
   standardCheckOutTime: string;
+  allowOutstandingCheckOut: boolean;
   kind: "normal" | "early_departure" | "late_checkout";
 };
 

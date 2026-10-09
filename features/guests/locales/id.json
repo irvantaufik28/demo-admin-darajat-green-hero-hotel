@@ -50,6 +50,7 @@
     "profile": {
       "title": "Profil Tamu",
       "name": "Nama",
+      "nik": "NIK",
       "phone": "Telepon",
       "email": "Email",
       "address": "Alamat",

@@ -7,6 +7,7 @@ import {
   failRefund,
   getRefundEligibility,
   recordNoRefund,
+  refundNoShowDeposit,
   type RefundEligibility,
 } from "../services/payments";
 import { useTranslations, type Translate } from "../../../lib/i18n";
@@ -44,6 +45,8 @@ export function RefundModal({ reservationId, canManage, onClose, onChanged }: Pr
   const [overrideReason, setOverrideReason] = useState("");
   const [references, setReferences] = useState<Record<string, string>>({});
   const [failReasons, setFailReasons] = useState<Record<string, string>>({});
+  const [depositReferences, setDepositReferences] = useState<Record<string, string>>({});
+  const [depositReasons, setDepositReasons] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
@@ -63,6 +66,7 @@ export function RefundModal({ reservationId, canManage, onClose, onChanged }: Pr
   }, [reservationId]);
 
   const canOverridePolicy = eligibility?.hasCancellationPolicySnapshot ?? false;
+  const isNoShow = eligibility?.reservationStatus === "no_show";
   const estimated = eligibility?.settlement.amounts.estimatedRefundAmount;
   const policyLimit = Math.max(
     0,
@@ -76,7 +80,11 @@ export function RefundModal({ reservationId, canManage, onClose, onChanged }: Pr
     refundAmount === 0 &&
     (eligibility?.grossPaidAmount ?? 0) > 0 &&
     (eligibility?.pendingRefundAmount ?? 0) === 0 &&
-    (eligibility?.refundedAmount ?? 0) === 0;
+    (eligibility?.refundedAmount ?? 0) === 0 &&
+    !(
+      isNoShow &&
+      (eligibility?.deposits.some((deposit) => deposit.refundableRemaining > 0) ?? false)
+    );
 
   async function run(action: () => Promise<unknown>, message: string) {
     setBusy(true);
@@ -121,28 +129,42 @@ export function RefundModal({ reservationId, canManage, onClose, onChanged }: Pr
     void run(() => recordNoRefund(reservationId, reason.trim()), t("refundModal.notices.noRefundCompleted"));
   }
 
+  function refundDeposit(depositId: string) {
+    const reason = depositReasons[depositId]?.trim();
+    const reference = depositReferences[depositId]?.trim();
+    if (!reason || !reference) {
+      setError(t("refundModal.errors.depositRefundDetailsRequired"));
+      return;
+    }
+    void run(
+      () => refundNoShowDeposit(reservationId, depositId, { reason, reference }),
+      t("refundModal.notices.depositRefundCompleted"),
+    );
+  }
+
   return <div className="payment-invoice-overlay" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}>
     <section className="payment-invoice-modal payment-refund-modal" role="dialog" aria-modal="true" aria-label={t("refundModal.ariaLabel")}>
-      <header><h2>{t("refundModal.title")}</h2><button type="button" aria-label={t("refundModal.closeAriaLabel")} onClick={onClose}>×</button></header>
+      <header><h2>{isNoShow ? t("refundModal.noShowTitle") : t("refundModal.title")}</h2><button type="button" aria-label={t("refundModal.closeAriaLabel")} onClick={onClose}>×</button></header>
       <div className="payment-refund-content">
         {!eligibility ? <p>{error || t("refundModal.loading")}</p> : <>
           <div className="payment-refund-summary">
             <div><span>{t("refundModal.summary.booking")}</span><strong>{eligibility.bookingCode}</strong></div>
             <div><span>{t("refundModal.summary.paid")}</span><strong>{money(eligibility.grossPaidAmount)}</strong></div>
-            <div><span>{t("refundModal.summary.cancellationPolicy")}</span><strong>{eligibility.settlement.policy.name ?? t("refundModal.summary.manualReview")}</strong></div>
-            <div><span>{t("refundModal.summary.cancellationCharge")}</span><strong>{eligibility.settlement.amounts.cancellationCharge === null ? t("refundModal.summary.review") : money(eligibility.settlement.amounts.cancellationCharge)}</strong></div>
+            <div><span>{isNoShow ? t("refundModal.summary.noShowPolicy") : t("refundModal.summary.cancellationPolicy")}</span><strong>{eligibility.settlement.policy.name ?? t("refundModal.summary.manualReview")}</strong></div>
+            <div><span>{isNoShow ? t("refundModal.summary.noShowPenalty") : t("refundModal.summary.cancellationCharge")}</span><strong>{eligibility.settlement.amounts.cancellationCharge === null ? t("refundModal.summary.review") : money(eligibility.settlement.amounts.cancellationCharge)}</strong></div>
             <div><span>{t("refundModal.summary.estimatedRefund")}</span><strong>{estimated == null
               ? eligibility.settlement.amounts.maximumRefundWithoutOverride === null
                 ? t("refundModal.summary.review")
                 : `${money(eligibility.settlement.amounts.maximumRefundWithoutOverride)} · ${t("refundModal.summary.review")}`
               : money(estimated)}</strong></div>
             <div><span>{t("refundModal.summary.alreadyRefunded")}</span><strong>{money(eligibility.refundedAmount)}</strong></div>
+            {isNoShow && eligibility.deposits.some((deposit) => deposit.refundableRemaining > 0) && <div><span>{t("refundModal.summary.securityDepositReturn")}</span><strong>{money(eligibility.deposits.reduce((sum, deposit) => sum + deposit.refundableRemaining, 0))}</strong></div>}
           </div>
           <section className="payment-refund-calculation" aria-label={t("refundModal.calculation.ariaLabel")}>
-            <h3>{t("refundModal.calculation.title")}</h3>
-            <p>{eligibility.settlement.policy.daysBeforeCheckIn >= 0
+            <h3>{isNoShow ? t("refundModal.calculation.noShowTitle") : t("refundModal.calculation.title")}</h3>
+            {!isNoShow && <p>{eligibility.settlement.policy.daysBeforeCheckIn >= 0
               ? t("refundModal.calculation.cancelledDaysBefore", { days: eligibility.settlement.policy.daysBeforeCheckIn })
-              : t("refundModal.calculation.cancelledAfterCheckIn")}</p>
+              : t("refundModal.calculation.cancelledAfterCheckIn")}</p>}
             {(eligibility.settlement.policy.rooms ?? []).length > 0 ? (
               <div className="payment-refund-room-list">
                 {(eligibility.settlement.policy.rooms ?? []).map((room) => (
@@ -174,6 +196,18 @@ export function RefundModal({ reservationId, canManage, onClose, onChanged }: Pr
           {eligibility.settlement.reviewReasons.length > 0 && <p className="payment-refund-warning">{t("refundModal.needsReview", { reasons: eligibility.settlement.reviewReasons.join("; ") })}</p>}
           {canOverridePolicy && estimated === 0 && !overridePolicy && <p className="payment-refund-warning">{t("refundModal.zeroRefundWarning")}</p>}
           {eligibility.noRefundDecision && <p className="payment-refund-notice">{t("refundModal.noRefundCompleted", { reason: eligibility.noRefundDecision.details.reason ?? "—" })}</p>}
+          {isNoShow && eligibility.deposits.some((deposit) => deposit.refundableRemaining > 0) && <div className="payment-refund-form">
+            <h3>{t("refundModal.deposit.title")}</h3>
+            <p>{t("refundModal.deposit.description")}</p>
+            {eligibility.deposits.filter((deposit) => deposit.refundableRemaining > 0).map((deposit) => <div className="payment-refund-item" key={deposit.id}>
+              <div><strong>{money(deposit.refundableRemaining)}</strong><small>{t("refundModal.deposit.heldAmount", { amount: money(deposit.amountHeld) })}</small></div>
+              {canManage && <div className="payment-refund-pending">
+                <label>{t("refundModal.deposit.reason")}<input value={depositReasons[deposit.id] ?? ""} onChange={(event) => setDepositReasons((current) => ({ ...current, [deposit.id]: event.target.value }))} /></label>
+                <label>{t("refundModal.deposit.reference")}<input value={depositReferences[deposit.id] ?? ""} onChange={(event) => setDepositReferences((current) => ({ ...current, [deposit.id]: event.target.value }))} /></label>
+                <button type="button" disabled={busy || !depositReasons[deposit.id]?.trim() || !depositReferences[deposit.id]?.trim()} onClick={() => refundDeposit(deposit.id)}>{t("refundModal.deposit.refund")}</button>
+              </div>}
+            </div>)}
+          </div>}
           {canManage && eligibility.maxRefundWithOverride > 0 && !eligibility.noRefundDecision && <div className="payment-refund-form">
             <h3>{t("refundModal.form.title")}</h3>
             {eligibility.payments.length > 0 && <p>{t("refundModal.form.fundsNote")}</p>}

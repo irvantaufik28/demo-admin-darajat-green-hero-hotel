@@ -48,6 +48,8 @@ export function PaymentInvoicePreview({
   const { t } = useTranslations({ en, id });
   const { reservation, guest, summary } = detail;
   const cancelled = reservation.reservationStatus === "cancelled";
+  const noShow = reservation.reservationStatus === "no_show";
+  const settledReservation = cancelled || noShow;
   const settlement = refundEligibility?.settlement;
 
   return (
@@ -58,7 +60,7 @@ export function PaymentInvoicePreview({
         <header>
           <h2>{t("invoice.title")}</h2>
           <div>
-            <button type="button" disabled={cancelled && (!settlement || refundLoading)} onClick={() => window.print()}>
+            <button type="button" disabled={settledReservation && (!settlement || refundLoading)} onClick={() => window.print()}>
               {t("invoice.printSavePdf")}
             </button>
             <button type="button" aria-label={t("invoice.closeAriaLabel")} onClick={onClose}>×</button>
@@ -74,6 +76,7 @@ export function PaymentInvoicePreview({
               <strong>{t("invoice.invoiceTitle")}</strong>
               <span>INV-{reservation.bookingCode.replace("GH-", "")}</span>
               {cancelled && <span>{t("invoice.reservationCancelled")}</span>}
+              {noShow && <span>{t("invoice.reservationNoShow")}</span>}
             </div>
           </div>
           <div className="payment-invoice-info">
@@ -112,7 +115,7 @@ export function PaymentInvoicePreview({
             <div><span>{t("invoice.totals.totalCharges")}</span><strong>{money(summary.bookingTotal)}</strong></div>
             <div><span>{t("invoice.totals.amountPaid")}</span><strong>{money(summary.grossPaidAmount)}</strong></div>
             {summary.refundedAmount > 0 && <div><span>{t("invoice.totals.refundCompleted")}</span><strong>−{money(summary.refundedAmount)}</strong></div>}
-            {cancelled
+            {settledReservation
               ? <div><span>{t("invoice.totals.netPaidAfterRefund")}</span><strong>{money(summary.grossPaidAmount - summary.refundedAmount)}</strong></div>
               : <div><span>{t("invoice.totals.balanceDue")}</span><strong>{money(summary.remainingBalance)}</strong></div>}
           </div>
@@ -148,15 +151,15 @@ export function PaymentInvoicePreview({
             </section>
           )}
 
-          {cancelled && (
+          {settledReservation && (
             <section className="payment-invoice-cancellation">
-              <h3>{t("invoice.cancellation.title")}</h3>
+              <h3>{noShow ? t("invoice.cancellation.noShowTitle") : t("invoice.cancellation.title")}</h3>
               {refundLoading && <p>{t("invoice.cancellation.loading")}</p>}
               {refundError && <p role="alert">{t("invoice.cancellation.loadError", { error: refundError })}</p>}
               {settlement && <>
-                <p>{settlement.policy.daysBeforeCheckIn >= 0
+                {!noShow && <p>{settlement.policy.daysBeforeCheckIn >= 0
                   ? t("invoice.cancellation.savedPolicyDaysBefore", { days: settlement.policy.daysBeforeCheckIn })
-                  : t("invoice.cancellation.savedPolicyAfterCheckIn")}</p>
+                  : t("invoice.cancellation.savedPolicyAfterCheckIn")}</p>}
                 {settlement.policy.rooms.length > 0 ? (
                   <div className="payment-invoice-policy-rooms">
                     {settlement.policy.rooms.map((room) => (
@@ -176,7 +179,7 @@ export function PaymentInvoicePreview({
                 <div className="payment-invoice-cancellation-totals">
                   <div><span>{t("invoice.cancellation.roomCharges")}</span><strong>{money(settlement.amounts.roomTotal)}</strong></div>
                   <div><span>{t("invoice.cancellation.otherCharges")}</span><strong>{money(settlement.amounts.otherCharges)}</strong></div>
-                  <div><span>{t("invoice.cancellation.cancellationCharge")}</span><strong>{settlement.amounts.cancellationCharge === null ? t("invoice.cancellation.review") : money(settlement.amounts.cancellationCharge)}</strong></div>
+                  <div><span>{noShow ? t("invoice.cancellation.noShowPenalty") : t("invoice.cancellation.cancellationCharge")}</span><strong>{settlement.amounts.cancellationCharge === null ? t("invoice.cancellation.review") : money(settlement.amounts.cancellationCharge)}</strong></div>
                   <div><span>{t("invoice.cancellation.refundLimit")}</span><strong>{settlement.amounts.maximumRefundWithoutOverride === null ? t("invoice.cancellation.review") : money(settlement.amounts.maximumRefundWithoutOverride)}</strong></div>
                   {refundEligibility.pendingRefundAmount > 0 && <div><span>{t("invoice.cancellation.refundPending")}</span><strong>{money(refundEligibility.pendingRefundAmount)}</strong></div>}
                   <div><span>{t("invoice.cancellation.refundCompleted")}</span><strong>{money(refundEligibility.refundedAmount)}</strong></div>

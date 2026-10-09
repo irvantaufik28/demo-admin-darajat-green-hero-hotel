@@ -7,6 +7,7 @@ import Link from "next/link";
 import { AdminShell } from "../../../components/layout/AdminShell";
 import { LoadingSkeleton } from "../../../components/ui/LoadingSkeleton";
 import { restoreSession } from "../../../lib/auth";
+import { DateRangePicker } from "../../campaigns/components/DateRangePicker";
 import {
   getReportFilterOptions,
   getReservationsReport,
@@ -390,27 +391,17 @@ export function ReservationsReportPage() {
                 </option>
               </select>
             </label>
-            <div className="report-reservations-dates">
-              <input
-                aria-label={t("reservations.filters.fromDate")}
-                type="date"
-                value={from}
-                onChange={(event) => {
-                  setFrom(event.target.value);
-                  setPage(1);
-                }}
-              />
-              <span>–</span>
-              <input
-                aria-label={t("reservations.filters.toDate")}
-                type="date"
-                value={to}
-                onChange={(event) => {
-                  setTo(event.target.value);
-                  setPage(1);
-                }}
-              />
-            </div>
+            <DateRangePicker
+              label={`${t("reservations.filters.fromDate")} – ${t("reservations.filters.toDate")}`}
+              start={from}
+              end={to}
+              numberOfMonths={2}
+              onChange={(start, end) => {
+                setFrom(start);
+                setTo(end);
+                setPage(1);
+              }}
+            />
           </div>
           <div className="report-reservations-filter-extra">
             <select

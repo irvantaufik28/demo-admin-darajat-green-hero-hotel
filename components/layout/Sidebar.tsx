@@ -39,27 +39,47 @@ const items: Item[] = [
   { label: "Cancellation Policies", icon: "policy" },
   { label: "Campaigns & Promotions", icon: "campaign" },
   { label: "Experiences", icon: "experiences" },
-  { label: "Payments", icon: "payments", children: ["All Transactions", "Refunds", "Outstanding Balance"] },
+  {
+    label: "Payments",
+    icon: "payments",
+    children: ["All Transactions", "Refunds", "Outstanding Balance"],
+  },
   { label: "Guests", icon: "guests" },
-  { label: "Master", icon: "rooms", children: [
-    "Amenities", "Bed Types", "Meal Types", "Room View Types", "Floor", "Capacity Patterns",
-    "Experience Categories", "OTA Channels", "Payment Methods", "Cancellation Policy Types",
-  ] },
-  { label: "Reports", icon: "reports", children: ["Reservation Report", "Room Performance", "Revenue"] },
-  { label: "Settings", icon: "settings", children: ["Reservation Settings", "Users", "Roles & Permissions"] },
+  {
+    label: "Master",
+    icon: "rooms",
+    children: [
+      "Amenities",
+      "Bed Types",
+      "Meal Types",
+      "Room View Types",
+      "Floor",
+      "Capacity Patterns",
+      "Experience Categories",
+      "OTA Channels",
+      "Payment Methods",
+      "Cancellation Policy Types",
+    ],
+  },
+  {
+    label: "Reports",
+    icon: "reports",
+    children: ["Reservation Report", "Room Performance", "Revenue"],
+  },
+  {
+    label: "Settings",
+    icon: "settings",
+    children: ["Reservation Settings", "Users", "Roles & Permissions"],
+  },
 ];
 const websiteItems: Item[] = [
   { label: "Hotel Info", icon: "settings" },
-  { label: "Homepage", icon: "dashboard" },
   { label: "Favorite Rooms", icon: "rooms" },
-  { label: "Facilities", icon: "experiences" },
   { label: "Gallery", icon: "reports" },
-  { label: "Testimonials", icon: "guests" },
-  { label: "Contact & Location", icon: "globe" },
 ];
 const reservationRoutes: Record<string, string> = {
   "All Transactions": "/payments/transactions",
-  "Refunds": "/payments/refunds",
+  Refunds: "/payments/refunds",
   "Outstanding Balance": "/payments/outstanding",
   "New Reservation": "/reservations/create-reservation-walkin",
   "Phone Reservation": "/reservations/create-reservation-phone",
@@ -72,15 +92,15 @@ const reservationRoutes: Record<string, string> = {
   "Room Numbers": "/rooms/numbers",
   "Reservation Report": "/reports/reservations",
   "Room Performance": "/reports/room-performance",
-  "Revenue": "/reports/revenue",
+  Revenue: "/reports/revenue",
   "Roles & Permissions": "/settings/roles-permissions",
-  "Users": "/settings/users",
+  Users: "/settings/users",
   "Reservation Settings": "/settings/reservations",
-  "Amenities": "/master/amenities",
+  Amenities: "/master/amenities",
   "Bed Types": "/master/bed-types",
   "Meal Types": "/master/meal-types",
   "Room View Types": "/master/room-view-types",
-  "Floor": "/master/floor",
+  Floor: "/master/floor",
   "Capacity Patterns": "/master/capacity-patterns",
   "Experience Categories": "/master/experience-categories",
   "OTA Channels": "/master/ota-channels",
@@ -90,14 +110,16 @@ const reservationRoutes: Record<string, string> = {
 
 // Top-level items that have their own dedicated route
 const topLevelRoutes: Record<string, string> = {
-  "Dashboard": "/dashboard",
+  Dashboard: "/dashboard",
   "Reservation Calendar": "/reservations/room-rack",
   "Prices & Stocks": "/prices-stocks",
   "Cancellation Policies": "/cancellation-policies",
   "Campaigns & Promotions": "/campaigns",
-  "Experiences": "/experiences",
-  "Guests": "/guests",
+  Experiences: "/experiences",
+  Guests: "/guests",
   "Favorite Rooms": "/web-settings/favorite-rooms",
+  "Hotel Info": "/web-settings/hotel-info",
+  Gallery: "/web-settings/gallery",
 };
 
 let openGroupsCache: string[] | null = null;
@@ -105,10 +127,14 @@ let openGroupsCache: string[] | null = null;
 export function hydrateSidebarOpenGroups() {
   if (openGroupsCache !== null) return;
   try {
-    const stored: unknown = JSON.parse(sessionStorage.getItem("green-hero-sidebar-open-groups") || "null");
+    const stored: unknown = JSON.parse(
+      sessionStorage.getItem("green-hero-sidebar-open-groups") || "null",
+    );
     if (Array.isArray(stored)) {
-      openGroupsCache = stored.filter((value): value is string =>
-        typeof value === "string" && items.some((item) => item.label === value && item.children),
+      openGroupsCache = stored.filter(
+        (value): value is string =>
+          typeof value === "string" &&
+          items.some((item) => item.label === value && item.children),
       );
     }
   } catch {
@@ -130,10 +156,10 @@ export function Sidebar({
     pathname.startsWith("/web-settings") ? "website" : "hotelier",
   );
   const [menuSearch, setMenuSearch] = useState("");
-  const currentGroup =
-    pathname.startsWith("/payments")
-      ? "Payments"
-      : pathname.startsWith("/reservations") && pathname !== "/reservations/room-rack"
+  const currentGroup = pathname.startsWith("/payments")
+    ? "Payments"
+    : pathname.startsWith("/reservations") &&
+        pathname !== "/reservations/room-rack"
       ? "Reservations"
       : pathname.startsWith("/rooms")
         ? "Rooms"
@@ -141,24 +167,35 @@ export function Sidebar({
           ? "Reports"
           : pathname.startsWith("/master")
             ? "Master"
-          : pathname.startsWith("/settings")
-            ? "Settings"
-            : null;
+            : pathname.startsWith("/settings")
+              ? "Settings"
+              : null;
   const [openGroups, setOpenGroups] = useState<string[]>(
     () => openGroupsCache ?? (currentGroup ? [currentGroup] : []),
   );
   const expanded = pinned || hovered || mobileOpen;
-  const visibleItems = (section === "hotelier" ? items : websiteItems).filter((item) => {
-    const term = menuSearch.trim().toLowerCase();
-    const label = section === "website" ? t("websiteItems." + item.label) : t("items." + item.label);
-    return !term || label.toLowerCase().includes(term) ||
-      item.children?.some((child) => child.toLowerCase().includes(term));
-  });
-  const groupIsOpen = (item: Item) => openGroups.includes(item.label) || Boolean(
-    menuSearch.trim() && item.children?.some((child) =>
-      child.toLowerCase().includes(menuSearch.trim().toLowerCase()),
-    ),
+  const visibleItems = (section === "hotelier" ? items : websiteItems).filter(
+    (item) => {
+      const term = menuSearch.trim().toLowerCase();
+      const label =
+        section === "website"
+          ? t("websiteItems." + item.label)
+          : t("items." + item.label);
+      return (
+        !term ||
+        label.toLowerCase().includes(term) ||
+        item.children?.some((child) => child.toLowerCase().includes(term))
+      );
+    },
   );
+  const groupIsOpen = (item: Item) =>
+    openGroups.includes(item.label) ||
+    Boolean(
+      menuSearch.trim() &&
+      item.children?.some((child) =>
+        child.toLowerCase().includes(menuSearch.trim().toLowerCase()),
+      ),
+    );
 
   useEffect(() => {
     if (openGroupsCache === null) openGroupsCache = openGroups;
@@ -170,7 +207,10 @@ export function Sidebar({
         ? current.filter((value) => value !== label)
         : [...current, label];
       openGroupsCache = next;
-      sessionStorage.setItem("green-hero-sidebar-open-groups", JSON.stringify(next));
+      sessionStorage.setItem(
+        "green-hero-sidebar-open-groups",
+        JSON.stringify(next),
+      );
       return next;
     });
     if (!expanded) setHovered(true);
@@ -214,13 +254,24 @@ export function Sidebar({
               <Icon name="pin" width={15} height={15} />
             </button>
           </div>
-          <div className="sidebar-section-tabs" role="tablist" aria-label="Area navigasi">
+          <div
+            className="sidebar-section-tabs"
+            role="tablist"
+            aria-label="Area navigasi"
+          >
             <button
               type="button"
               role="tab"
               aria-selected={section === "hotelier"}
-              className={section === "hotelier" ? "sidebar-section-tab sidebar-section-tab--active" : "sidebar-section-tab"}
-              onClick={() => { setSection("hotelier"); setMenuSearch(""); }}
+              className={
+                section === "hotelier"
+                  ? "sidebar-section-tab sidebar-section-tab--active"
+                  : "sidebar-section-tab"
+              }
+              onClick={() => {
+                setSection("hotelier");
+                setMenuSearch("");
+              }}
               title="Hotelier"
             >
               <Icon name="rooms" width={18} height={18} />
@@ -230,8 +281,15 @@ export function Sidebar({
               type="button"
               role="tab"
               aria-selected={section === "website"}
-              className={section === "website" ? "sidebar-section-tab sidebar-section-tab--active" : "sidebar-section-tab"}
-              onClick={() => { setSection("website"); setMenuSearch(""); }}
+              className={
+                section === "website"
+                  ? "sidebar-section-tab sidebar-section-tab--active"
+                  : "sidebar-section-tab"
+              }
+              onClick={() => {
+                setSection("website");
+                setMenuSearch("");
+              }}
               title={t("website.title")}
             >
               <Icon name="globe" width={18} height={18} />
@@ -248,17 +306,19 @@ export function Sidebar({
               aria-label={t("website.searchLabel")}
             />
           </div>
-          {section === "hotelier" && <div className="sidebar-action">
-            <Link
-              className="sidebar-new-button"
-              href="/reservations/create-reservation-walkin"
-              onClick={onCloseMobile}
-              title={t("newReservation")}
-            >
-              <Icon name="plus" />
-              <span>{t("newReservation")}</span>
-            </Link>
-          </div>}
+          {section === "hotelier" && (
+            <div className="sidebar-action">
+              <Link
+                className="sidebar-new-button"
+                href="/reservations/create-reservation-walkin"
+                onClick={onCloseMobile}
+                title={t("newReservation")}
+              >
+                <Icon name="plus" />
+                <span>{t("newReservation")}</span>
+              </Link>
+            </div>
+          )}
           <nav className="sidebar-navigation" aria-label={t("aria.mainMenu")}>
             {visibleItems.map((item) => (
               <div key={item.label}>
@@ -272,41 +332,68 @@ export function Sidebar({
                         : "sidebar-link"
                     }
                     aria-current={
-                      pathname === topLevelRoutes[item.label] ? "page" : undefined
+                      pathname === topLevelRoutes[item.label]
+                        ? "page"
+                        : undefined
                     }
-                    title={section === "website" ? t("websiteItems." + item.label) : t("items." + item.label)}
+                    title={
+                      section === "website"
+                        ? t("websiteItems." + item.label)
+                        : t("items." + item.label)
+                    }
                     onClick={onCloseMobile}
                   >
                     <Icon name={item.icon} />
-                    <span className="sidebar-link__label">{section === "website" ? t("websiteItems." + item.label) : t("items." + item.label)}</span>
+                    <span className="sidebar-link__label">
+                      {section === "website"
+                        ? t("websiteItems." + item.label)
+                        : t("items." + item.label)}
+                    </span>
                   </Link>
                 ) : (
                   <>
                     <button
                       type="button"
                       className={
-                        ((item.label === "Reservations" &&
+                        (item.label === "Reservations" &&
                           pathname.startsWith("/reservations") &&
                           pathname !== "/reservations/room-rack") ||
-                          (item.label === "Rooms" && pathname.startsWith("/rooms")) ||
-                          (item.label === "Payments" && pathname.startsWith("/payments")) ||
-                          (item.label === "Master" && pathname.startsWith("/master")) ||
-                          (item.label === "Settings" && pathname.startsWith("/settings")))
+                        (item.label === "Rooms" &&
+                          pathname.startsWith("/rooms")) ||
+                        (item.label === "Payments" &&
+                          pathname.startsWith("/payments")) ||
+                        (item.label === "Master" &&
+                          pathname.startsWith("/master")) ||
+                        (item.label === "Settings" &&
+                          pathname.startsWith("/settings"))
                           ? "sidebar-link sidebar-link--active"
                           : "sidebar-link"
                       }
-                      title={section === "website" ? t("websiteItems." + item.label) : item.label}
+                      title={
+                        section === "website"
+                          ? t("websiteItems." + item.label)
+                          : item.label
+                      }
                       aria-expanded={
                         item.children ? groupIsOpen(item) : undefined
                       }
                       onClick={() => {
                         if (item.children) {
                           toggleGroup(item.label);
-                        } else onUnavailable(section === "website" ? t("websiteItems." + item.label) : item.label);
+                        } else
+                          onUnavailable(
+                            section === "website"
+                              ? t("websiteItems." + item.label)
+                              : item.label,
+                          );
                       }}
                     >
                       <Icon name={item.icon} />
-                      <span className="sidebar-link__label">{section === "website" ? t("websiteItems." + item.label) : t("items." + item.label)}</span>
+                      <span className="sidebar-link__label">
+                        {section === "website"
+                          ? t("websiteItems." + item.label)
+                          : t("items." + item.label)}
+                      </span>
                       {item.children && (
                         <Icon
                           name="chevron"
@@ -322,43 +409,64 @@ export function Sidebar({
                     </button>
                     {item.children && expanded && (
                       <div
-                        className={groupIsOpen(item)
-                          ? "sidebar-submenu-wrap sidebar-submenu-wrap--open"
-                          : "sidebar-submenu-wrap"}
+                        className={
+                          groupIsOpen(item)
+                            ? "sidebar-submenu-wrap sidebar-submenu-wrap--open"
+                            : "sidebar-submenu-wrap"
+                        }
                         aria-hidden={!groupIsOpen(item)}
                         inert={!groupIsOpen(item)}
-                      ><div className="sidebar-submenu">
-                        {item.children.filter((child) =>
-                          !menuSearch.trim() || item.label.toLowerCase().includes(menuSearch.trim().toLowerCase()) ||
-                          child.toLowerCase().includes(menuSearch.trim().toLowerCase()),
-                        ).map((child) =>
-                          reservationRoutes[child] ? (
-                            <Link
-                              className={
-                                (pathname === reservationRoutes[child] ||
-                                  (child === "All Transactions" && pathname === "/payments") ||
-                                  (child === "All Transactions" && /^\/payments\/[^/]+$/.test(pathname) && !["refunds", "outstanding", "transactions"].includes(pathname.split("/")[2])) ||
-                                  (child === "Room Types" && pathname.startsWith("/rooms") && !pathname.startsWith("/rooms/numbers")))
-                                  ? "sidebar-submenu__active"
-                                  : ""
-                              }
-                              href={reservationRoutes[child]}
-                              key={child}
-                              onClick={onCloseMobile}
-                            >
-                              {t("items." + child)}
-                            </Link>
-                          ) : (
-                            <button
-                              type="button"
-                              key={child}
-                              onClick={() => onUnavailable(child)}
-                            >
-                              {t("items." + child)}
-                            </button>
-                          ),
-                        )}
-                      </div></div>
+                      >
+                        <div className="sidebar-submenu">
+                          {item.children
+                            .filter(
+                              (child) =>
+                                !menuSearch.trim() ||
+                                item.label
+                                  .toLowerCase()
+                                  .includes(menuSearch.trim().toLowerCase()) ||
+                                child
+                                  .toLowerCase()
+                                  .includes(menuSearch.trim().toLowerCase()),
+                            )
+                            .map((child) =>
+                              reservationRoutes[child] ? (
+                                <Link
+                                  className={
+                                    pathname === reservationRoutes[child] ||
+                                    (child === "All Transactions" &&
+                                      pathname === "/payments") ||
+                                    (child === "All Transactions" &&
+                                      /^\/payments\/[^/]+$/.test(pathname) &&
+                                      ![
+                                        "refunds",
+                                        "outstanding",
+                                        "transactions",
+                                      ].includes(pathname.split("/")[2])) ||
+                                    (child === "Room Types" &&
+                                      pathname.startsWith("/rooms") &&
+                                      !pathname.startsWith("/rooms/numbers"))
+                                      ? "sidebar-submenu__active"
+                                      : ""
+                                  }
+                                  href={reservationRoutes[child]}
+                                  key={child}
+                                  onClick={onCloseMobile}
+                                >
+                                  {t("items." + child)}
+                                </Link>
+                              ) : (
+                                <button
+                                  type="button"
+                                  key={child}
+                                  onClick={() => onUnavailable(child)}
+                                >
+                                  {t("items." + child)}
+                                </button>
+                              ),
+                            )}
+                        </div>
+                      </div>
                     )}
                   </>
                 )}
